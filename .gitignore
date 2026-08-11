@@ -1,0 +1,19 @@
+# Local and deployment secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Next.js build output
+.next/
+node_modules/
+
+# Local tooling and deploy state
+.vercel/
+.superpowers/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+*.log
