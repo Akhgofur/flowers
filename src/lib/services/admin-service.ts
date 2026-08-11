@@ -2,7 +2,12 @@ import "server-only";
 import { revalidateTag } from "next/cache";
 import { CATALOG_CACHE_TAGS, SITE_SETTINGS_CACHE_TAG } from "@/lib/cache";
 import type { OrderStatus } from "@/lib/contracts";
-import type { CategoryInput, ProductInput, SiteSettingsInput } from "@/lib/validations";
+import type {
+  CategoryInput,
+  ProductInput,
+  ProductPatchInput,
+  SiteSettingsInput,
+} from "@/lib/validations";
 import {
   archiveAdminProduct,
   createAdminCategory as createAdminCategoryRepository,
@@ -12,6 +17,7 @@ import {
   findAdminProducts,
   findAdminSettings,
   hideAdminCategory,
+  patchAdminProduct,
   updateAdminCategory,
   updateAdminProduct,
   updateAdminSettings,
@@ -38,6 +44,12 @@ export async function createAdminProduct(input: ProductInput) {
 
 export async function editAdminProduct(id: string, input: ProductInput) {
   const product = await updateAdminProduct(id, input);
+  invalidatePublicCatalog();
+  return product;
+}
+
+export async function patchAdminProductFields(id: string, input: ProductPatchInput) {
+  const product = await patchAdminProduct(id, input);
   invalidatePublicCatalog();
   return product;
 }

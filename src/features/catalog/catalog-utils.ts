@@ -50,6 +50,9 @@ export function applyCatalogFilters(
       return false;
     }
 
-    return product.price >= filters.minPrice && product.price <= filters.maxPrice;
+    return (
+      product.price === undefined ||
+      (product.price >= filters.minPrice && product.price <= filters.maxPrice)
+    );
   });
 }

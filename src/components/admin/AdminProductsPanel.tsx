@@ -236,7 +236,42 @@ export function AdminProductsPanel({
     setEditingId(product.id);
     setError(null);
     setNotice(null);
-    setIsFormOpen(true);
+    setIsFormOpen(false);
+  };
+
+  const saveInline = async (product: AdminProduct) => {
+    if (isSaving) return;
+    setError(null);
+    try {
+      const price = draft.price.trim() === "" ? null : integer(draft.price, "Narx");
+      const stockQuantity = integer(draft.stockQuantity, "Qoldiq");
+      const patch: Record<string, unknown> = {};
+      if (draft.translations.ru.name.trim() !== product.translations.ru.name) {
+        patch.translations = { ru: { name: draft.translations.ru.name.trim() } };
+      }
+      if (draft.categoryId !== product.categoryId) patch.categoryId = draft.categoryId;
+      if (price !== product.price) patch.price = price;
+      if (stockQuantity !== product.stockQuantity) patch.stockQuantity = stockQuantity;
+      if (draft.status !== product.status) patch.status = draft.status;
+
+      if (Object.keys(patch).length === 0) return closeForm();
+      setIsSaving(true);
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const result = await readResponse(response);
+      if (!response.ok || !result.product) throw new Error(result.error ?? "Mahsulot saqlanmadi.");
+      setProducts((current) => current.map((candidate) => candidate.id === result.product?.id ? result.product : candidate));
+      setNotice("Mahsulot yangilandi.");
+      closeForm();
+      router.refresh();
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "Mahsulot saqlanmadi.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -536,12 +571,16 @@ export function AdminProductsPanel({
               <tbody>
                 {products.map((product) => (
                   <tr key={product.id}>
-                    <td><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></td>
+                    <td>{editingId === product.id ? <><input aria-label="Mahsulot nomi" value={draft.translations.ru.name} onChange={(event) => updateTranslation("name", event.target.value)} /><select aria-label="Kategoriya" value={draft.categoryId} onChange={(event) => update("categoryId", event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.translations.uz.name}</option>)}</select></> : <><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></>}</td>
                     <td>{categoryNames.get(product.categoryId) ?? "O‘chirilgan kategoriya"}</td>
-                    <td>{formatSum(product.price, "uz")}</td>
-                    <td>{product.stockQuantity}</td>
-                    <td><span className="admin-status" data-status={product.status}>{product.status}</span></td>
-                    <td><div className="admin-row-actions"><button type="button" onClick={() => openEdit(product)}>Tahrirlash</button><button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button></div></td>
+                    <td>
+                      {editingId === product.id ? <input aria-label="Narx" inputMode="numeric" value={draft.price} onChange={(event) => update("price", event.target.value)} /> : product.price === undefined
+                        ? "Narx so‘rov bo‘yicha"
+                        : formatSum(product.price, "uz")}
+                    </td>
+                    <td>{editingId === product.id ? <input aria-label="Qoldiq" inputMode="numeric" value={draft.stockQuantity} onChange={(event) => update("stockQuantity", event.target.value)} /> : product.stockQuantity}</td>
+                    <td>{editingId === product.id ? <select aria-label="Holat" value={draft.status} onChange={(event) => update("status", event.target.value as ProductStatus)}><option value="draft">Qoralama</option><option value="published">E’lon qilingan</option><option value="archived">Arxiv</option></select> : <span className="admin-status" data-status={product.status}>{product.status}</span>}</td>
+                    <td><div className="admin-row-actions">{editingId === product.id ? <><button type="button" onClick={() => saveInline(product)} disabled={isSaving}>{isSaving ? "Saqlanmoqda…" : "Saqlash"}</button><button type="button" onClick={closeForm} disabled={isSaving}>Bekor qilish</button></> : <><button type="button" onClick={() => openEdit(product)}>Tahrirlash</button><button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button></>}</div></td>
                   </tr>
                 ))}
               </tbody>

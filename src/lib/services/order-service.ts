@@ -202,6 +202,7 @@ function createMongoOrderStore(): OrderStore {
         {
           _id: productId,
           status: "published",
+          price: { $exists: true, $ne: null },
           stockQuantity: { $gte: quantity },
         },
         { $inc: { stockQuantity: -quantity } },
@@ -220,6 +221,9 @@ function createMongoOrderStore(): OrderStore {
         .exec()) as unknown as ProductRecord | null;
 
       if (!document) return null;
+      if (document.price === undefined) {
+        throw new Error("Reserved product is missing a price.");
+      }
 
       const translation = resolveProductTranslation(document, locale);
       if (!translation) return null;

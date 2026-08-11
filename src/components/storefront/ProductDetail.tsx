@@ -89,7 +89,11 @@ export function ProductDetail({ product }: ProductDetailProps) {
           <p className="product-detail__description">{product.description}</p>
 
           <div className="product-detail__price">
-            <strong>{formatSum(product.price, locale)}</strong>
+            <strong>
+              {product.price === undefined
+                ? t("priceOnRequest")
+                : formatSum(product.price, locale)}
+            </strong>
             {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
           </div>
 
@@ -109,6 +113,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
           </dl>
 
           <div className="product-detail__actions">
+            {product.price === undefined ? null : <>
             <div className="quantity-control" aria-label={t("quantity")}>
               <button
                 type="button"
@@ -131,6 +136,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
             <button className="primary-button" type="button" onClick={addProductToCart}>
               {t("addToCart")}
             </button>
+            </>}
             <button
               className="product-detail__favorite"
               type="button"

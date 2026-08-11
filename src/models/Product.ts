@@ -12,7 +12,7 @@ export type ProductDocument = {
   slug: string;
   translations: Localized<ProductTranslation>;
   categoryId: Types.ObjectId;
-  price: number;
+  price?: number;
   originalPrice?: number;
   currency: "UZS";
   images: ProductImage[];
@@ -114,7 +114,7 @@ const productSchema = new Schema<ProductDocument>(
     },
     price: {
       type: Number,
-      required: true,
+      required: false,
       min: 1,
       validate: { validator: integerValidator, message: "Price must be an integer." },
     },
@@ -185,8 +185,16 @@ const productSchema = new Schema<ProductDocument>(
 
 productSchema.pre("validate", function validatePriceRelationship() {
   if (
+    this.price === undefined &&
+    (this.originalPrice !== undefined || this.isOnSale)
+  ) {
+    this.invalidate("price", "Inquiry-only products cannot have sale pricing.");
+  }
+
+  if (
     this.originalPrice !== undefined &&
     this.originalPrice !== null &&
+    this.price !== undefined &&
     this.originalPrice <= this.price
   ) {
     this.invalidate(

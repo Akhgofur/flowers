@@ -113,6 +113,28 @@ describe("Mongoose model invariants", () => {
     expect((validationError as { errors?: Record<string, unknown> }).errors?.stockQuantity).toBeDefined();
   });
 
+  it("allows a published inquiry-only product but rejects its sale metadata", async () => {
+    await expect(
+      new ProductModel({
+        ...localizedProductDocument,
+        price: undefined,
+        originalPrice: undefined,
+        isOnSale: false,
+      }).validate()
+    ).resolves.toBeUndefined();
+
+    const invalidSale = new ProductModel({
+      ...localizedProductDocument,
+      price: undefined,
+      originalPrice: 200_000,
+      isOnSale: true,
+    });
+    const validationError = await invalidSale.validate().catch((error: unknown) => error);
+
+    expect(validationError).toBeInstanceOf(Error);
+    expect((validationError as { errors?: Record<string, unknown> }).errors?.price).toBeDefined();
+  });
+
   it("does not shadow Mongoose's internal isNew document lifecycle flag", () => {
     const product = new ProductModel(validProductDocument);
 

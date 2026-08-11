@@ -91,7 +91,11 @@ export function ProductQuickView({
           </div>
 
           <div className="quick-view__price">
-            <strong>{formatSum(product.price, locale)}</strong>
+            <strong>
+              {product.price === undefined
+                ? t("priceOnRequest")
+                : formatSum(product.price, locale)}
+            </strong>
             {product.originalPrice ? (
               <s>{formatSum(product.originalPrice, locale)}</s>
             ) : null}
@@ -119,6 +123,7 @@ export function ProductQuickView({
             </div>
           </dl>
 
+          {product.price === undefined ? null : (
           <div className="quick-view__purchase">
             <div className="quantity-control">
               <button
@@ -147,6 +152,7 @@ export function ProductQuickView({
               {t("addToCart")}
             </button>
           </div>
+          )}
         </div>
       </div>
     </div>

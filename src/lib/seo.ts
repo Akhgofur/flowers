@@ -191,17 +191,21 @@ export function buildProductJsonLd(
       "@type": "Brand",
       name: settings.siteName,
     },
-    offers: {
-      "@type": "Offer",
-      url: absoluteUrl(productPath),
-      priceCurrency: product.currency,
-      price: String(product.price),
-      availability:
-        product.stockQuantity > 0
-          ? "https://schema.org/InStock"
-          : "https://schema.org/OutOfStock",
-      itemCondition: "https://schema.org/NewCondition",
-    },
+    ...(product.price === undefined
+      ? {}
+      : {
+          offers: {
+            "@type": "Offer",
+            url: absoluteUrl(productPath),
+            priceCurrency: product.currency,
+            price: String(product.price),
+            availability:
+              product.stockQuantity > 0
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            itemCondition: "https://schema.org/NewCondition",
+          },
+        }),
   };
 }
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   checkoutSchema,
   orderStatusSchema,
+  productPatchInputSchema,
   productInputSchema,
   siteSettingsInputSchema,
 } from "./validations";
@@ -139,6 +140,34 @@ describe("commerce validation boundaries", () => {
       "pushti-lola-buketi"
     );
     expect(() => orderStatusSchema.parse("paid")).toThrow();
+  });
+
+  it("accepts an inquiry-only product with no price", () => {
+    const parsed = productInputSchema.parse({
+      ...validProductInput,
+      price: undefined,
+    });
+
+    expect(parsed.price).toBeUndefined();
+    expect(parsed.originalPrice).toBeUndefined();
+    expect(parsed.isOnSale).toBe(false);
+  });
+
+  it("rejects sale pricing for an inquiry-only product", () => {
+    expect(() =>
+      productInputSchema.parse({
+        ...validProductInput,
+        price: undefined,
+        originalPrice: 200_000,
+        isOnSale: true,
+      })
+    ).toThrow(/price/i);
+  });
+
+  it("accepts a minimal product patch but rejects empty and unknown patches", () => {
+    expect(productPatchInputSchema.parse({ price: null })).toEqual({ price: null });
+    expect(() => productPatchInputSchema.parse({})).toThrow(/required/i);
+    expect(() => productPatchInputSchema.parse({ price: 100_000, images: [] })).toThrow();
   });
 
   it("accepts only the three supported checkout locales", () => {

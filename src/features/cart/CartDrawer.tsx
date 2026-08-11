@@ -18,6 +18,10 @@ export type CartDrawerProps = {
   onContinueShopping: () => void;
 };
 
+function isPricedProduct(product: Product | undefined): product is Product & { price: number } {
+  return product?.price !== undefined;
+}
+
 export function CartDrawer({
   open,
   lines,
@@ -44,7 +48,7 @@ export function CartDrawer({
 
     return lines.flatMap((line) => {
       const product = productsById.get(line.productId);
-      return product ? [{ line, product }] : [];
+      return isPricedProduct(product) ? [{ line, product }] : [];
     });
   }, [lines, products]);
 

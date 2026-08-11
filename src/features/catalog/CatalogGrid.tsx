@@ -109,7 +109,11 @@ export function CatalogGrid({
                 </p>
                 <h3>{product.name}</h3>
                 <div className="product-card__price">
-                  <strong>{formatSum(product.price, locale)}</strong>
+                  <strong>
+                    {product.price === undefined
+                      ? t("priceOnRequest")
+                      : formatSum(product.price, locale)}
+                  </strong>
                   {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
                 </div>
                 <div className="product-card__actions">
@@ -121,15 +125,17 @@ export function CatalogGrid({
                   >
                     {t("viewProduct")}
                   </button>
-                  <button
-                    className="product-cart-button"
-                    type="button"
-                    aria-label={t("addToCartAria", { name: product.name })}
-                    onClick={() => onAddToCart(product)}
-                  >
-                    <span aria-hidden="true">+</span>
-                    {t("addToCart")}
-                  </button>
+                  {product.price === undefined ? null : (
+                    <button
+                      className="product-cart-button"
+                      type="button"
+                      aria-label={t("addToCartAria", { name: product.name })}
+                      onClick={() => onAddToCart(product)}
+                    >
+                      <span aria-hidden="true">+</span>
+                      {t("addToCart")}
+                    </button>
+                  )}
                 </div>
               </div>
             </article>

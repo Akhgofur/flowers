@@ -60,7 +60,7 @@ export type CatalogProduct = {
   shortDescription: string;
   description: string;
   composition: string[];
-  price: number;
+  price?: number;
   originalPrice?: number;
   currency: "UZS";
   images: ProductImage[];
@@ -144,7 +144,7 @@ export type AdminProduct = {
   slug: string;
   translations: Localized<ProductTranslation>;
   categoryId: string;
-  price: number;
+  price?: number;
   originalPrice?: number;
   currency: "UZS";
   images: ProductImage[];

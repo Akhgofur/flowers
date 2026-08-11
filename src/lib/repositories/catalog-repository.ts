@@ -65,7 +65,7 @@ export function toCatalogProduct(
     shortDescription: translation.shortDescription,
     description: translation.description,
     composition: [...translation.composition],
-    price: document.price,
+    ...(document.price === undefined ? {} : { price: document.price }),
     ...(document.originalPrice === undefined
       ? {}
       : { originalPrice: document.originalPrice }),

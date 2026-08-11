@@ -28,6 +28,12 @@ type CheckoutForm = Omit<CheckoutInput["customer"], "deliveryDate" | "comment"> 
 
 type CheckoutResponse = { order?: OrderCreationResult; error?: string };
 
+function isPricedProduct(
+  product: CatalogProduct | undefined
+): product is CatalogProduct & { price: number } {
+  return product?.price !== undefined;
+}
+
 const EMPTY_FORM: CheckoutForm = {
   fullName: "",
   phone: "",
@@ -96,7 +102,7 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
     () =>
       lines.flatMap((line) => {
         const product = productsById.get(line.productId);
-        return product ? [{ line, product }] : [];
+        return isPricedProduct(product) ? [{ line, product }] : [];
       }),
     [lines, productsById]
   );

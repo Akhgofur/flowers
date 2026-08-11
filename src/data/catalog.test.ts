@@ -49,7 +49,7 @@ it("provides the six expected unique category IDs", () => {
 it("provides positive integer product prices", () => {
   expect(
     PRODUCTS.every(
-      (product) => Number.isInteger(product.price) && product.price > 0
+      (product) => product.price !== undefined && Number.isInteger(product.price) && product.price > 0
     )
   ).toBe(true);
 });

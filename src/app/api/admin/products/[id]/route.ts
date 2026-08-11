@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminErrorResponse, assertSameOrigin, requireAdmin } from "@/lib/admin-api";
-import { editAdminProduct, removeAdminProduct } from "@/lib/services/admin-service";
-import { objectIdSchema, productInputSchema } from "@/lib/validations";
+import { patchAdminProductFields, removeAdminProduct } from "@/lib/services/admin-service";
+import { objectIdSchema, productPatchInputSchema } from "@/lib/validations";
 
 export const runtime = "nodejs";
 
@@ -23,12 +23,12 @@ export async function PATCH(request: Request, { params }: ProductContext) {
       return NextResponse.json({ error: "Mahsulot JSON formatida bo'lishi kerak." }, { status: 400 });
     }
 
-    const parsed = productInputSchema.safeParse(body);
+    const parsed = productPatchInputSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json({ error: "Mahsulot ma'lumotlarini tekshiring." }, { status: 400 });
     }
 
-    return NextResponse.json({ product: await editAdminProduct(id, parsed.data) });
+    return NextResponse.json({ product: await patchAdminProductFields(id, parsed.data) });
   } catch (error) {
     return adminErrorResponse(error);
   }

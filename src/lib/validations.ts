@@ -19,6 +19,7 @@ const slugSchema = z
   .max(120)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase and URL-safe");
 const moneySchema = z.number().int().positive();
+const optionalMoneySchema = moneySchema.optional();
 const nonNegativeIntegerSchema = z.number().int().min(0);
 
 export const productTranslationInputSchema = z
@@ -89,8 +90,8 @@ export const productInputSchema = z
     slug: slugSchema,
     translations: localizedProductInputSchema,
     categoryId: objectIdSchema,
-    price: moneySchema,
-    originalPrice: moneySchema.optional(),
+    price: optionalMoneySchema,
+    originalPrice: optionalMoneySchema,
     currency: z.literal("UZS").default("UZS"),
     images: z.array(productImageSchema).min(1).max(8),
     flowerTypes: z.array(z.string().trim().min(1).max(48)).min(1).max(12),
@@ -104,7 +105,19 @@ export const productInputSchema = z
   })
   .strict()
   .superRefine((input, context) => {
-    if (input.originalPrice !== undefined && input.originalPrice <= input.price) {
+    if (input.price === undefined && (input.originalPrice !== undefined || input.isOnSale)) {
+      context.addIssue({
+        code: "custom",
+        path: ["price"],
+        message: "Inquiry-only products cannot have sale pricing.",
+      });
+    }
+
+    if (
+      input.price !== undefined &&
+      input.originalPrice !== undefined &&
+      input.originalPrice <= input.price
+    ) {
       context.addIssue({
         code: "custom",
         path: ["originalPrice"],
@@ -119,6 +132,27 @@ export const productInputSchema = z
         message: "Sale products require an original price.",
       });
     }
+  });
+
+export const productPatchInputSchema = z
+  .object({
+    translations: z
+      .object({
+        ru: z.object({ name: textSchema.max(140) }).strict(),
+      })
+      .strict()
+      .optional(),
+    categoryId: objectIdSchema.optional(),
+    price: z.number().int().positive().nullable().optional(),
+    stockQuantity: nonNegativeIntegerSchema.optional(),
+    sortOrder: nonNegativeIntegerSchema.optional(),
+    status: z.enum(PRODUCT_STATUSES).optional(),
+    isFeatured: z.boolean().optional(),
+    isNew: z.boolean().optional(),
+  })
+  .strict()
+  .refine((patch) => Object.keys(patch).length > 0, {
+    message: "At least one product field is required.",
   });
 
 export const categoryInputSchema = z
@@ -197,5 +231,6 @@ export const siteSettingsInputSchema = z
   .strict();
 
 export type ProductInput = z.infer<typeof productInputSchema>;
+export type ProductPatchInput = z.infer<typeof productPatchInputSchema>;
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
 export type SiteSettingsInput = z.infer<typeof siteSettingsInputSchema>;

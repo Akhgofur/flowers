@@ -9,7 +9,12 @@ import type {
 import { AdminNotFoundError } from "@/lib/admin-api";
 import { resolveSiteSettingsTranslation } from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
-import type { CategoryInput, ProductInput, SiteSettingsInput } from "@/lib/validations";
+import type {
+  CategoryInput,
+  ProductInput,
+  ProductPatchInput,
+  SiteSettingsInput,
+} from "@/lib/validations";
 import { CategoryModel, type CategoryDocument } from "@/models/Category";
 import { OrderModel, type OrderDocument } from "@/models/Order";
 import { ProductModel, type ProductDocument } from "@/models/Product";
@@ -41,7 +46,7 @@ function toAdminProduct(document: ProductRecord): AdminProduct {
       en: { ...document.translations.en, composition: [...document.translations.en.composition] },
     },
     categoryId: document.categoryId.toString(),
-    price: document.price,
+    ...(document.price === undefined ? {} : { price: document.price }),
     ...(document.originalPrice === undefined ? {} : { originalPrice: document.originalPrice }),
     currency: "UZS",
     images: document.images.map((image) => ({ ...image })),
@@ -192,6 +197,45 @@ export async function updateAdminProduct(
     setAndUnsetOptionalFields(splitProductInput(input), PRODUCT_OPTIONAL_FIELDS),
     { new: true, runValidators: true }
   )
+    .lean()
+    .exec()) as unknown as ProductRecord | null;
+
+  if (!document) throw new AdminNotFoundError("Mahsulot topilmadi.");
+  return toAdminProduct(document);
+}
+
+export async function patchAdminProduct(
+  id: string,
+  input: ProductPatchInput
+): Promise<AdminProduct> {
+  await dbConnect();
+  if (input.categoryId) await ensureCategoryExists(input.categoryId);
+
+  const set: Record<string, unknown> = {};
+  const unset: Record<string, 1> = {};
+  if (input.translations?.ru?.name) set["translations.ru.name"] = input.translations.ru.name;
+  if (input.categoryId) set.categoryId = input.categoryId;
+  if (input.stockQuantity !== undefined) set.stockQuantity = input.stockQuantity;
+  if (input.sortOrder !== undefined) set.sortOrder = input.sortOrder;
+  if (input.status !== undefined) set.status = input.status;
+  if (input.isFeatured !== undefined) set.isFeatured = input.isFeatured;
+  if (input.isNew !== undefined) set.isNewArrival = input.isNew;
+  if (input.price === null) {
+    unset.price = 1;
+    unset.originalPrice = 1;
+    set.isOnSale = false;
+  } else if (input.price !== undefined) {
+    set.price = input.price;
+  }
+
+  const update = {
+    ...(Object.keys(set).length > 0 ? { $set: set } : {}),
+    ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}),
+  };
+  const document = (await ProductModel.findByIdAndUpdate(id, update, {
+    new: true,
+    runValidators: true,
+  })
     .lean()
     .exec()) as unknown as ProductRecord | null;
 

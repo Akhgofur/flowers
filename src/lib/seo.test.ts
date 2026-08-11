@@ -77,6 +77,12 @@ describe("public SEO builders", () => {
     expect(jsonLd.inLanguage).toBe("ru-RU");
   });
 
+  it("does not publish a structured Offer for an inquiry-only product", () => {
+    const jsonLd = buildProductJsonLd({ ...product, price: undefined }, "ru", settings);
+
+    expect(jsonLd).not.toHaveProperty("offers");
+  });
+
   it("creates crawlable canonical metadata and escapes JSON-LD script contents", () => {
     const metadata = buildProductMetadata(product, "ru", settings);
     const breadcrumb = buildBreadcrumbJsonLd([
