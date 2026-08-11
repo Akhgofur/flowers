@@ -1,7 +1,12 @@
 import type { MetadataRoute } from "next";
-import { CATEGORIES, PRODUCTS } from "@/data/catalog";
+import { PRODUCTS } from "@/data/catalog";
+import { LOCALES, type Locale } from "@/i18n/config";
 import type { PublicSitemapEntries } from "@/lib/contracts";
-import { absoluteUrl } from "@/lib/seo";
+import {
+  absoluteUrl,
+  buildAbsoluteLanguageAlternates,
+  localizedPublicPath,
+} from "@/lib/seo";
 import { getPublishedSitemapEntries } from "@/lib/services/catalog-service";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +19,7 @@ function bootstrapSitemapEntries(): PublicSitemapEntries {
       slug: product.slug ?? product.id,
       updatedAt: BOOTSTRAP_UPDATED_AT,
     })),
-    categories: CATEGORIES.map((category) => ({
-      slug: category.id,
-      updatedAt: BOOTSTRAP_UPDATED_AT,
-    })),
+    categories: [],
   };
 }
 
@@ -33,20 +35,28 @@ async function loadSitemapEntries(): Promise<PublicSitemapEntries> {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries = await loadSitemapEntries();
 
+  const localizedEntries = (
+    path: string,
+    config: Omit<MetadataRoute.Sitemap[number], "url" | "alternates">
+  ): MetadataRoute.Sitemap =>
+    LOCALES.map((locale: Locale) => ({
+      ...config,
+      url: absoluteUrl(localizedPublicPath(locale, path)),
+      alternates: { languages: buildAbsoluteLanguageAlternates(path) },
+    }));
+
   return [
-    { url: absoluteUrl("/"), changeFrequency: "daily", priority: 1 },
-    { url: absoluteUrl("/gullar"), changeFrequency: "daily", priority: 0.9 },
-    ...entries.categories.map((category) => ({
-      url: absoluteUrl(`/gullar?category=${encodeURIComponent(category.slug)}`),
-      lastModified: category.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
-    ...entries.products.map((product) => ({
-      url: absoluteUrl(`/gullar/${encodeURIComponent(product.slug)}`),
-      lastModified: product.updatedAt,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    })),
+    ...localizedEntries("/", { changeFrequency: "daily", priority: 1 }),
+    ...localizedEntries("/catalog", {
+      changeFrequency: "daily",
+      priority: 0.9,
+    }),
+    ...entries.products.flatMap((product) =>
+      localizedEntries(`/products/${encodeURIComponent(product.slug)}`, {
+        lastModified: product.updatedAt,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      })
+    ),
   ];
 }

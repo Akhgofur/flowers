@@ -1,17 +1,33 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { StorefrontShell } from "@/components/storefront/StorefrontShell";
 import type { PublicCatalogFilters } from "@/lib/contracts";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
+import { buildPageMetadata } from "@/lib/seo";
+import { getPublicSiteSettings } from "@/lib/services/public-settings-service";
 
-export const metadata: Metadata = {
-  title: "Flower catalog",
-  description:
-    "Fresh bouquets, roses, tulips and orchids with delivery across Tashkent.",
-};
+export async function generateMetadata({
+  params,
+}: Pick<CatalogPageProps, "params">): Promise<Metadata> {
+  const { locale: candidate } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
+  const [t, settings] = await Promise.all([
+    getTranslations({ locale, namespace: "Metadata" }),
+    getPublicSiteSettings(locale),
+  ]);
+
+  return buildPageMetadata({
+    locale,
+    title: t("catalogTitle"),
+    description: t("catalogDescription"),
+    path: "/catalog",
+    settings,
+  });
+}
 
 export const dynamic = "force-dynamic";
 
-type CatalogPageProps = {
+export type CatalogPageProps = {
   params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };

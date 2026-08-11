@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { CatalogProduct } from "@/lib/contracts";
 import {
   buildBreadcrumbJsonLd,
+  buildLanguageAlternates,
   buildProductJsonLd,
   buildProductMetadata,
+  buildWebsiteJsonLd,
+  localizedPublicPath,
   serializeJsonLd,
   type PublicSeoSettings,
 } from "./seo";
@@ -43,8 +46,19 @@ const product: CatalogProduct = {
 };
 
 describe("public SEO builders", () => {
-  it("builds canonical UZS Product JSON-LD for a published product", () => {
-    const jsonLd = buildProductJsonLd(product, settings);
+  it("builds Russian-default localized paths and hreflang alternates", () => {
+    expect(localizedPublicPath("ru", "/")).toBe("/ru");
+    expect(localizedPublicPath("en", "/catalog")).toBe("/en/catalog");
+    expect(buildLanguageAlternates("/catalog")).toEqual({
+      "ru-RU": "/ru/catalog",
+      "uz-UZ": "/uz/catalog",
+      en: "/en/catalog",
+      "x-default": "/ru/catalog",
+    });
+  });
+
+  it("builds canonical localized UZS Product JSON-LD for a published product", () => {
+    const jsonLd = buildProductJsonLd(product, "ru", settings);
 
     expect(jsonLd).toMatchObject({
       "@context": "https://schema.org",
@@ -57,25 +71,45 @@ describe("public SEO builders", () => {
         availability: "https://schema.org/InStock",
       },
     });
-    expect(jsonLd.url).toBe("https://nafis.uz/gullar/qirmizi-atirgul-buketi");
+    expect(jsonLd.url).toBe(
+      "https://nafis.uz/ru/products/qirmizi-atirgul-buketi"
+    );
+    expect(jsonLd.inLanguage).toBe("ru-RU");
   });
 
   it("creates crawlable canonical metadata and escapes JSON-LD script contents", () => {
-    const metadata = buildProductMetadata(product);
+    const metadata = buildProductMetadata(product, "ru", settings);
     const breadcrumb = buildBreadcrumbJsonLd([
-      { name: "Bosh sahifa", path: "/" },
-      { name: product.name, path: `/gullar/${product.slug}` },
+      { name: "Главная", path: "/ru" },
+      { name: product.name, path: `/ru/products/${product.slug}` },
     ]);
     const serialized = serializeJsonLd({ description: "</script><script>alert(1)</script>" });
 
     expect(metadata.alternates?.canonical).toBe(
-      "/gullar/qirmizi-atirgul-buketi"
+      "/ru/products/qirmizi-atirgul-buketi"
     );
+    expect(metadata.alternates?.languages).toEqual({
+      "ru-RU": "/ru/products/qirmizi-atirgul-buketi",
+      "uz-UZ": "/uz/products/qirmizi-atirgul-buketi",
+      en: "/en/products/qirmizi-atirgul-buketi",
+      "x-default": "/ru/products/qirmizi-atirgul-buketi",
+    });
+    expect(metadata.openGraph).toMatchObject({
+      locale: "ru_RU",
+      alternateLocale: ["uz_UZ", "en_US"],
+    });
     expect(metadata.robots).toEqual({ index: true, follow: true });
     expect(breadcrumb).toMatchObject({
       "@type": "BreadcrumbList",
       itemListElement: [{ position: 1 }, { position: 2 }],
     });
     expect(serialized).not.toContain("</script>");
+  });
+
+  it("marks website structured data with the active language and URL", () => {
+    expect(buildWebsiteJsonLd("en", settings)).toMatchObject({
+      inLanguage: "en-US",
+      url: "https://nafis.uz/en",
+    });
   });
 });

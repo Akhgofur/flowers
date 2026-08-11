@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { PRODUCTS } from "@/data/catalog";
 import { ProductDetail } from "@/components/storefront/ProductDetail";
 import { toBootstrapCatalogProduct } from "@/components/storefront/storefront-mappers";
@@ -39,16 +40,23 @@ export async function generateMetadata({
 }: ProductPageProps): Promise<Metadata> {
   const { locale: candidate, slug } = await params;
   const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
-  const product = await loadProduct(locale, slug);
+  const [product, t] = await Promise.all([
+    loadProduct(locale, slug),
+    getTranslations({ locale, namespace: "Metadata" }),
+  ]);
 
   if (!product) {
     return {
-      title: "Mahsulot topilmadi",
+      title: t("notFoundTitle"),
       robots: { index: false, follow: false },
     };
   }
 
-  return buildProductMetadata(product, await getPublicSiteSettings(locale));
+  return buildProductMetadata(
+    product,
+    locale,
+    await getPublicSiteSettings(locale)
+  );
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -58,13 +66,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   if (!product) notFound();
 
+  const [settings, tHeader] = await Promise.all([
+    getPublicSiteSettings(locale),
+    getTranslations({ locale, namespace: "Header" }),
+  ]);
   const productJsonLd = serializeJsonLd(
-    buildProductJsonLd(product, await getPublicSiteSettings(locale))
+    buildProductJsonLd(product, locale, settings)
   );
   const breadcrumbJsonLd = serializeJsonLd(
     buildBreadcrumbJsonLd([
-      { name: "Bosh sahifa", path: `/${locale}` },
-      { name: "Gullar", path: `/${locale}/catalog` },
+      { name: tHeader("navHome"), path: `/${locale}` },
+      { name: tHeader("navCatalog"), path: `/${locale}/catalog` },
       { name: product.name, path: `/${locale}/products/${product.slug}` },
     ])
   );

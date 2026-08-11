@@ -1,10 +1,9 @@
 import { ImageResponse } from "next/og";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/config";
+import { formatSum } from "@/shared/format";
 
-// ImageResponse is verified in the Edge runtime here; importing the Mongo/Mongoose
-// stack into this specialized metadata route makes the Node dev route unstable.
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
-export const alt = "Nafis Flowers mahsulot previewi";
+export const alt = "Nafis Flowers product preview";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -52,21 +51,30 @@ async function loadOpenGraphProduct(locale: string, slug: string): Promise<OpenG
   }
 }
 
-function formatOpenGraphSum(value: number): string {
-  return `${Math.round(value)
-    .toString()
-    .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} so'm`;
-}
+const OPEN_GRAPH_COPY: Record<Locale, { brand: string; delivery: string }> = {
+  ru: {
+    brand: "NAFIS · ДОМ ЦВЕТОВ",
+    delivery: "Собрано сегодня · доставлено с заботой",
+  },
+  uz: {
+    brand: "NAFIS · GULLAR UYI",
+    delivery: "Bugun terilgan · mehr bilan yetkazilgan",
+  },
+  en: {
+    brand: "NAFIS · HOUSE OF FLOWERS",
+    delivery: "Gathered today · delivered with care",
+  },
+};
 
 export default async function ProductOpenGraphImage({
   params,
 }: ProductOpenGraphImageProps) {
-  const { locale, slug } = await params;
+  const { locale: candidate, slug } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
   const product = await loadOpenGraphProduct(locale, slug);
+  const copy = OPEN_GRAPH_COPY[locale];
   const title = product?.name ?? "Nafis Flowers";
-  const price = product
-    ? formatOpenGraphSum(product.price)
-    : "Toshkent bo'ylab yetkazib berish";
+  const price = product ? formatSum(product.price, locale) : copy.delivery;
 
   return new ImageResponse(
     (
@@ -90,7 +98,7 @@ export default async function ProductOpenGraphImage({
             color: "#c84464",
           }}
         >
-          NAFIS · GULLAR UYI
+          {copy.brand}
         </div>
         <div style={{ display: "flex", flexDirection: "column", maxWidth: "800px" }}>
           <div style={{ display: "flex", fontSize: 72, fontWeight: 700, lineHeight: 1.1 }}>
@@ -101,7 +109,7 @@ export default async function ProductOpenGraphImage({
           </div>
         </div>
         <div style={{ display: "flex", fontSize: 26, color: "#6f4d56" }}>
-          Bugun terilgan · Mehr bilan yetkazilgan
+          {copy.delivery}
         </div>
       </div>
     ),

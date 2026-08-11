@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  type Locale,
+} from "@/i18n/config";
 import type { CatalogProduct } from "@/lib/contracts";
 
 const FALLBACK_SITE_URL = "https://nafis.uz";
@@ -11,15 +16,36 @@ export type PublicSeoSettings = {
   address?: string;
   instagramUrl?: string;
   telegramUrl?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoOgImage?: { url: string; alt: string };
+};
+
+const HTML_LOCALES: Record<Locale, string> = {
+  ru: "ru-RU",
+  uz: "uz-UZ",
+  en: "en-US",
+};
+
+const HREFLANG_LOCALES: Record<Locale, string> = {
+  ru: "ru-RU",
+  uz: "uz-UZ",
+  en: "en",
+};
+
+const OPEN_GRAPH_LOCALES: Record<Locale, string> = {
+  ru: "ru_RU",
+  uz: "uz_UZ",
+  en: "en_US",
 };
 
 export const DEFAULT_PUBLIC_SEO_SETTINGS: PublicSeoSettings = {
   siteName: "Nafis Flowers",
   siteDescription:
-    "Toshkent bo'ylab nafis guldastalar va tezkor yetkazib berish xizmati.",
+    "Авторские букеты и бережная доставка цветов по Ташкенту.",
   phone: "+998 71 200 07 07",
   email: "salom@nafis.uz",
-  address: "Toshkent, O'zbekiston",
+  address: "Ташкент, Узбекистан",
 };
 
 export type BreadcrumbItem = {
@@ -48,54 +74,126 @@ export function absoluteUrl(path: string): string {
   return new URL(path, getSiteUrl()).toString();
 }
 
-export function buildProductMetadata(
-  product: CatalogProduct,
-  settings: PublicSeoSettings = DEFAULT_PUBLIC_SEO_SETTINGS
-): Metadata {
-  const title = product.seoTitle?.trim() || product.name;
-  const description = product.seoDescription?.trim() || product.shortDescription;
-  const canonicalPath = `/gullar/${product.slug}`;
+export function localizedPublicPath(locale: Locale, path: string): string {
+  const normalizedPath = path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
+  return `/${locale}${normalizedPath}`;
+}
+
+export function buildLanguageAlternates(path: string): Record<string, string> {
+  const languages = Object.fromEntries(
+    LOCALES.map((locale) => [
+      HREFLANG_LOCALES[locale],
+      localizedPublicPath(locale, path),
+    ])
+  );
+
+  return {
+    ...languages,
+    "x-default": localizedPublicPath(DEFAULT_LOCALE, path),
+  };
+}
+
+export function buildAbsoluteLanguageAlternates(
+  path: string
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(buildLanguageAlternates(path)).map(([language, value]) => [
+      language,
+      absoluteUrl(value),
+    ])
+  );
+}
+
+export function buildPageMetadata({
+  locale,
+  title,
+  description,
+  path,
+  settings = DEFAULT_PUBLIC_SEO_SETTINGS,
+  index = true,
+}: {
+  locale: Locale;
+  title: string;
+  description: string;
+  path: string;
+  settings?: PublicSeoSettings;
+  index?: boolean;
+}): Metadata {
+  const canonicalPath = localizedPublicPath(locale, path);
+  const alternateLocale = LOCALES.filter((candidate) => candidate !== locale).map(
+    (candidate) => OPEN_GRAPH_LOCALES[candidate]
+  );
+  const images = settings.seoOgImage
+    ? [{ url: settings.seoOgImage.url, alt: settings.seoOgImage.alt }]
+    : undefined;
 
   return {
     title,
     description,
-    alternates: { canonical: canonicalPath },
-    robots: { index: true, follow: true },
+    alternates: {
+      canonical: canonicalPath,
+      languages: buildLanguageAlternates(path),
+    },
+    robots: { index, follow: index },
     openGraph: {
       type: "website",
-      locale: "uz_UZ",
+      locale: OPEN_GRAPH_LOCALES[locale],
+      alternateLocale,
       title,
       description,
       url: canonicalPath,
       siteName: settings.siteName,
+      images,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
+      images: images?.map((image) => image.url),
     },
   };
 }
 
+export function buildProductMetadata(
+  product: CatalogProduct,
+  locale: Locale,
+  settings: PublicSeoSettings = DEFAULT_PUBLIC_SEO_SETTINGS
+): Metadata {
+  const title = product.seoTitle?.trim() || product.name;
+  const description = product.seoDescription?.trim() || product.shortDescription;
+
+  return buildPageMetadata({
+    locale,
+    title,
+    description,
+    path: `/products/${product.slug}`,
+    settings,
+  });
+}
+
 export function buildProductJsonLd(
   product: CatalogProduct,
+  locale: Locale,
   settings: PublicSeoSettings = DEFAULT_PUBLIC_SEO_SETTINGS
 ) {
+  const productPath = localizedPublicPath(locale, `/products/${product.slug}`);
+
   return {
     "@context": "https://schema.org",
     "@type": "Product",
+    inLanguage: HTML_LOCALES[locale],
     name: product.name,
     description: product.seoDescription?.trim() || product.description,
     image: product.images.map((image) => image.url),
     sku: product.id,
-    url: absoluteUrl(`/gullar/${product.slug}`),
+    url: absoluteUrl(productPath),
     brand: {
       "@type": "Brand",
       name: settings.siteName,
     },
     offers: {
       "@type": "Offer",
-      url: absoluteUrl(`/gullar/${product.slug}`),
+      url: absoluteUrl(productPath),
       priceCurrency: product.currency,
       price: String(product.price),
       availability:
@@ -121,6 +219,7 @@ export function buildBreadcrumbJsonLd(items: readonly BreadcrumbItem[]) {
 }
 
 export function buildOrganizationJsonLd(
+  locale: Locale,
   settings: PublicSeoSettings = DEFAULT_PUBLIC_SEO_SETTINGS
 ) {
   return {
@@ -128,7 +227,8 @@ export function buildOrganizationJsonLd(
     "@type": "LocalBusiness",
     name: settings.siteName,
     description: settings.siteDescription,
-    url: getSiteUrl().toString(),
+    url: absoluteUrl(localizedPublicPath(locale, "/")),
+    inLanguage: HTML_LOCALES[locale],
     telephone: settings.phone,
     email: settings.email,
     address: settings.address
@@ -146,14 +246,15 @@ export function buildOrganizationJsonLd(
 }
 
 export function buildWebsiteJsonLd(
+  locale: Locale,
   settings: PublicSeoSettings = DEFAULT_PUBLIC_SEO_SETTINGS
 ) {
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: settings.siteName,
-    url: getSiteUrl().toString(),
-    inLanguage: "uz",
+    url: absoluteUrl(localizedPublicPath(locale, "/")),
+    inLanguage: HTML_LOCALES[locale],
   };
 }
 

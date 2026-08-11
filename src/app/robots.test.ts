@@ -11,7 +11,7 @@ describe("robots", () => {
       rules: {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin/", "/api/"],
+        disallow: ["/admin/", "/api/", "/*/checkout"],
       },
       sitemap: "https://shop.nafis.uz/sitemap.xml",
     });

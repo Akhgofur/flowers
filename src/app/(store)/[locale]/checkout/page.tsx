@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { CheckoutClient } from "@/components/checkout/CheckoutClient";
 import { PRODUCTS } from "@/data/catalog";
 import type { CatalogProduct } from "@/lib/contracts";
@@ -6,12 +7,30 @@ import { getPublishedCatalog } from "@/lib/services/catalog-service";
 import { toBootstrapCatalogProduct } from "@/components/storefront/storefront-mappers";
 import type { Locale } from "@/i18n/config";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
+import { buildPageMetadata } from "@/lib/seo";
+import { getPublicSiteSettings } from "@/lib/services/public-settings-service";
 
-export const metadata: Metadata = {
-  title: "Checkout",
-  description: "Complete your Nafis Flowers delivery order.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale: candidate } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
+  const [t, settings] = await Promise.all([
+    getTranslations({ locale, namespace: "Metadata" }),
+    getPublicSiteSettings(locale),
+  ]);
+
+  return buildPageMetadata({
+    locale,
+    title: t("checkoutTitle"),
+    description: t("checkoutDescription"),
+    path: "/checkout",
+    settings,
+    index: false,
+  });
+}
 
 export const dynamic = "force-dynamic";
 

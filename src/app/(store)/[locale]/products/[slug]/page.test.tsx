@@ -8,6 +8,11 @@ const catalogService = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/services/catalog-service", () => catalogService);
+vi.mock("next-intl/server", () => ({
+  getTranslations: vi.fn(async ({ namespace }: { namespace: string }) =>
+    (key: string) => `${namespace}.${key}`
+  ),
+}));
 
 import ProductPage, { generateMetadata } from "./page";
 
@@ -49,8 +54,12 @@ describe("product detail server route", () => {
     });
 
     expect(metadata.alternates?.canonical).toBe(
-      "/gullar/qirmizi-atirgul-buketi"
+      "/ru/products/qirmizi-atirgul-buketi"
     );
+    expect(metadata.alternates?.languages).toMatchObject({
+      "ru-RU": "/ru/products/qirmizi-atirgul-buketi",
+      "x-default": "/ru/products/qirmizi-atirgul-buketi",
+    });
     expect(metadata.robots).toEqual({ index: true, follow: true });
   });
 
