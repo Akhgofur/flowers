@@ -19,3 +19,6 @@ test-results/
 /nafis-*-production-*.png
 *.tsbuildinfo
 *.log
+
+.vercel
+.env*
