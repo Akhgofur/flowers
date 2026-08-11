@@ -8,7 +8,7 @@ export default function StoreError({ reset }: Readonly<{ error: Error & { digest
 
   return (
     <main className="route-shell route-shell--error" role="alert">
-      <p className="eyebrow">Nafis Flowers</p>
+      <p className="eyebrow">Floraluxe</p>
       <h1>{t("unexpected")}</h1>
       <div className="route-shell__actions">
         <button className="primary-button" type="button" onClick={reset}>

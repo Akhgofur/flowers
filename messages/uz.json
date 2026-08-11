@@ -1,6 +1,6 @@
 {
   "Metadata": {
-    "siteTitle": "Nafis Flowers — Toshkent bo‘ylab gul yetkazib berish",
+    "siteTitle": "Floraluxe — Toshkent bo‘ylab gul yetkazib berish",
     "siteDescription": "Mualliflik buketlari, yangi gullar va Toshkent bo‘ylab ehtiyotkor yetkazib berish.",
     "homeTitle": "Yetkazib beriladigan premium gullar",
     "homeDescription": "Eng muhim tuyg‘ularingiz uchun mualliflik buketini tanlang.",
@@ -34,7 +34,7 @@
     "menuOpen": "Mobil menyuni ochish",
     "menuClose": "Mobil menyuni yopish",
     "language": "Til",
-    "homeLabel": "Nafis bosh sahifasi",
+    "homeLabel": "Floraluxe bosh sahifasi",
     "navigationLabel": "Asosiy navigatsiya",
     "mobileNavigationLabel": "Mobil navigatsiya",
     "aboutShortcut": "Biz haqimizda bo‘limiga o‘tish",
@@ -92,7 +92,7 @@
   "Promo": {
     "kicker": "TAYYOR SOVG‘A MAROSIMI",
     "title": "Guldan ko‘ra ko‘proq e’tibor",
-    "description": "Nafis quti, tabriknoma va yangi gullarni bir tanlovda jamlang. Floristimiz uni siz uchun tayyorlaydi.",
+    "description": "Floraluxe quti, tabriknoma va yangi gullarni bir tanlovda jamlang. Floristimiz uni siz uchun tayyorlaydi.",
     "cta": "Sovg‘a qutilarini tanlash"
   },
   "Catalog": {
@@ -100,7 +100,7 @@
     "title": "Katalog",
     "subtitle": "So‘zsiz hamma narsani ayta oladigan buketni toping.",
     "showcaseKicker": "FLORIST TANLOVI",
-    "showcaseTitle": "Nafis kolleksiyasi",
+    "showcaseTitle": "Floraluxe kolleksiyasi",
     "showcaseDescription": "Kayfiyat, gul turi va byudjetga mos kompozitsiyani toping. Har biri buyurtma kuni yangi gullardan tayyorlanadi.",
     "all": "Barchasi",
     "new": "Yangi",
@@ -125,7 +125,7 @@
     "newBadge": "Yangi",
     "saleBadge": "Aksiya",
     "noResults": "Mos buket topilmadi",
-    "noResultsDescription": "Filtrlarni tozalab, Nafis kolleksiyasini yana ko‘ring.",
+    "noResultsDescription": "Filtrlarni tozalab, Floraluxe kolleksiyasini yana ko‘ring.",
     "resetAll": "Tozalash",
     "imageAlt": "{name} gul kompozitsiyasi",
     "viewProductAria": "{name}ni ko‘rish",
@@ -170,7 +170,7 @@
     "imageAlt": "{name}, {number}-rasm",
     "description": "Tavsif",
     "saleBadge": "Aksiya",
-    "collection": "Nafis kolleksiyasi",
+    "collection": "Floraluxe kolleksiyasi",
     "modalClose": "Mahsulot oynasini yopish",
     "detailLink": "To‘liq tavsif va buyurtma sahifasi",
     "addedToCart": "{name} savatga qo‘shildi.",
@@ -265,8 +265,8 @@
     "contacts": "Kontaktlar",
     "privacy": "Maxfiylik",
     "payment": "Yetkazilganda naqd yoki karta orqali to‘lov",
-    "copyright": "© {year} Nafis Flowers. Barcha huquqlar himoyalangan.",
-    "assurancesLabel": "Nafis xizmat kafolatlari",
+    "copyright": "© {year} Floraluxe. Barcha huquqlar himoyalangan.",
+    "assurancesLabel": "Floraluxe xizmat kafolatlari",
     "fastTitle": "Tez yetkazish",
     "fastCopy": "Toshkent bo‘ylab 90 daqiqadan boshlab.",
     "freshTitle": "Yangi gullar",

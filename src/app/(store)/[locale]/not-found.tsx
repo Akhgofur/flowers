@@ -6,7 +6,7 @@ export default function StoreNotFound() {
 
   return (
     <main className="store-not-found" aria-labelledby="store-not-found-title">
-      <p className="eyebrow">Nafis Flowers</p>
+      <p className="eyebrow">Floraluxe</p>
       <h1 id="store-not-found-title">{t("notFoundTitle")}</h1>
       <p>{t("notFoundDescription")}</p>
       <Link className="primary-button" href="/catalog">

@@ -3,7 +3,7 @@ import robots from "./robots";
 
 describe("robots", () => {
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://shop.nafis.uz";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://shop.floraluxe.uz";
   });
 
   it("allows public pages and blocks admin and API crawlers", () => {
@@ -13,7 +13,7 @@ describe("robots", () => {
         allow: "/",
         disallow: ["/admin/", "/api/", "/*/checkout"],
       },
-      sitemap: "https://shop.nafis.uz/sitemap.xml",
+      sitemap: "https://shop.floraluxe.uz/sitemap.xml",
     });
   });
 });

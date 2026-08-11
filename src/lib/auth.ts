@@ -51,7 +51,7 @@ export function getAuthOptions(): NextAuthOptions {
 
           return {
             id: "nafis-admin",
-            name: "Nafis Admin",
+            name: "Floraluxe Admin",
             email: env.ADMIN_EMAIL,
           };
         },

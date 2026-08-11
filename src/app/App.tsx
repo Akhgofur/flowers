@@ -326,6 +326,7 @@ export default function App({
         <Header
           cartItemCount={cartItemCount}
           isCartOpen={isCartOpen}
+          brandLogo={siteSettings?.brandLogo}
           onOpenCart={toggleCart}
         />
 

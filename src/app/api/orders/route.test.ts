@@ -79,7 +79,7 @@ describe("POST /api/orders", () => {
   it("rate-limits by request identity and creates a server-priced pending order", async () => {
     orderService.createPendingOrder.mockResolvedValue({
       orderId: "507f191e810c19729de860ea",
-      orderNumber: "NF-20260811-ORDER1234",
+      orderNumber: "FL-20260811-ORDER1234",
       total: 320_000,
       status: "pending",
     });
@@ -92,7 +92,7 @@ describe("POST /api/orders", () => {
     await expect(response.json()).resolves.toEqual({
       order: {
         orderId: "507f191e810c19729de860ea",
-        orderNumber: "NF-20260811-ORDER1234",
+        orderNumber: "FL-20260811-ORDER1234",
         total: 320_000,
         status: "pending",
       },
@@ -113,7 +113,7 @@ describe("POST /api/orders", () => {
   it("still returns a created order when the optional notifier unexpectedly throws", async () => {
     orderService.createPendingOrder.mockResolvedValue({
       orderId: "507f191e810c19729de860ea",
-      orderNumber: "NF-20260811-ORDER1234",
+      orderNumber: "FL-20260811-ORDER1234",
       total: 320_000,
       status: "pending",
     });

@@ -55,7 +55,7 @@ describe("CheckoutClient", () => {
         JSON.stringify({
           order: {
             orderId: "507f191e810c19729de860ea",
-            orderNumber: "NF-20260811-ORDER1234",
+            orderNumber: "FL-20260811-ORDER1234",
             total: 320_000,
             status: "pending",
           },

@@ -52,7 +52,7 @@ it.each([
   }
 );
 
-it("renders the Nafis catalog shell", () => {
+it("renders the Floraluxe catalog shell", () => {
   render(<App />);
 
   expect(
@@ -428,7 +428,7 @@ it("uses a truthful floral fallback in every image render path", async () => {
     expect(image.src).not.toBe(originalSource);
     expect(image.src).toMatch(/^https:\/\//);
     expect(image).toHaveAttribute("data-image-fallback", "true");
-    expect(image).toHaveAttribute("alt", "Nafis gullari — muqobil rasm");
+    expect(image).toHaveAttribute("alt", "Floraluxe gullari — muqobil rasm");
   };
 
   assertFallback(

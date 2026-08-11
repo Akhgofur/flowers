@@ -6,7 +6,7 @@ import {
 } from "./order-notification-service";
 
 const order: NewOrderNotification = {
-  orderNumber: "NF-20260811-AB12",
+  orderNumber: "FL-20260811-AB12",
   total: 420_000,
   paymentMethod: "card_on_delivery",
   customer: {
@@ -20,7 +20,7 @@ const order: NewOrderNotification = {
 
 describe("order notifications", () => {
   it("formats a plain-text operator message without payment-provider claims", () => {
-    expect(formatNewOrderNotification(order)).toContain("Yangi buyurtma: NF-20260811-AB12");
+    expect(formatNewOrderNotification(order)).toContain("Yangi buyurtma: FL-20260811-AB12");
     expect(formatNewOrderNotification(order)).toContain("To'lov: Yetkazilganda karta");
     expect(formatNewOrderNotification(order)).not.toContain("Payme");
   });

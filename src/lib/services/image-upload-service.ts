@@ -53,7 +53,7 @@ export async function uploadProductImage(
   });
 
   const uploaded = await cloudinary.uploader.upload(dataUri, {
-    folder: "nafis-flowers/products",
+    folder: "floraluxe/products",
     resource_type: "image",
     overwrite: false,
     unique_filename: true,

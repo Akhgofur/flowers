@@ -8,6 +8,6 @@ describe("createOrderNumber", () => {
       () => "deafbeef-0000-4000-8000-000000000000"
     );
 
-    expect(number).toBe("NF-20260811-DEAFBEEF00");
+    expect(number).toBe("FL-20260811-DEAFBEEF00");
   });
 });

@@ -32,14 +32,14 @@ describe("uploadProductImage", () => {
     vi.clearAllMocks();
     cloudinary.v2.uploader.upload.mockResolvedValue({
       secure_url: "https://res.cloudinary.com/nafis/image/upload/rose.webp",
-      public_id: "nafis-flowers/products/rose",
+      public_id: "floraluxe/products/rose",
     });
   });
 
   it("validates inputs and uploads a safe data URI only after validation", async () => {
     await expect(uploadProductImage(validFile, "Pushti atirgul buketi")).resolves.toEqual({
       url: "https://res.cloudinary.com/nafis/image/upload/rose.webp",
-      publicId: "nafis-flowers/products/rose",
+      publicId: "floraluxe/products/rose",
       alt: "Pushti atirgul buketi",
     });
 
@@ -51,7 +51,7 @@ describe("uploadProductImage", () => {
     });
     expect(cloudinary.v2.uploader.upload).toHaveBeenCalledWith(
       "data:image/webp;base64,cm9zZQ==",
-      expect.objectContaining({ folder: "nafis-flowers/products", resource_type: "image" })
+      expect.objectContaining({ folder: "floraluxe/products", resource_type: "image" })
     );
   });
 

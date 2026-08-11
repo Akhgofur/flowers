@@ -224,21 +224,21 @@ describe("commerce validation boundaries", () => {
 
   it("keeps public SEO settings bounded and requires a complete Open Graph image", () => {
     const settings = siteSettingsInputSchema.parse({
-      siteName: "Nafis Flowers",
+      siteName: "Floraluxe",
       translations: {
         ru: {
           siteDescription: "Авторские букеты в Ташкенте.",
-          seoTitle: "Nafis Flowers — доставка цветов",
+          seoTitle: "Floraluxe — доставка цветов",
           seoDescription: "Свежие букеты и бережная доставка.",
         },
         uz: {
           siteDescription: "Toshkent bo'ylab nafis guldastalar.",
-          seoTitle: "Nafis Flowers — Toshkentda gullar",
+          seoTitle: "Floraluxe — Toshkentda gullar",
           seoDescription: "Yangi buketlar va tezkor yetkazib berish.",
         },
         en: {
           siteDescription: "Signature bouquets in Tashkent.",
-          seoTitle: "Nafis Flowers — flower delivery",
+          seoTitle: "Floraluxe — flower delivery",
           seoDescription: "Fresh bouquets and thoughtful delivery.",
         },
       },
@@ -246,14 +246,14 @@ describe("commerce validation boundaries", () => {
       workingHours: "08:00–22:00",
       seoOgImage: {
         url: "https://res.cloudinary.com/nafis/image/upload/og.jpg",
-        alt: "Nafis Flowers uchun pushti gullar kompozitsiyasi",
+        alt: "Floraluxe uchun pushti gullar kompozitsiyasi",
       },
     });
 
     expect(settings.seoOgImage?.url).toContain("res.cloudinary.com");
     expect(() =>
       siteSettingsInputSchema.parse({
-        siteName: "Nafis Flowers",
+        siteName: "Floraluxe",
         translations: {
           ru: { siteDescription: "Авторские букеты в Ташкенте." },
           uz: { siteDescription: "Toshkent bo'ylab nafis guldastalar." },

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { AdminSignOutButton } from "./AdminSignOutButton";
 
@@ -20,9 +21,9 @@ export function AdminShell({ email, children }: AdminShellProps) {
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <Link href="/admin" className="admin-wordmark" aria-label="Nafis admin paneli">
-          <span aria-hidden="true">✿</span>
-          <strong>Nafis</strong>
+        <Link href="/admin" className="admin-wordmark" aria-label="Floraluxe admin paneli">
+          <Image src="/brand/floraluxe-mark.jpg" alt="" width={42} height={42} aria-hidden="true" />
+          <strong>Floraluxe</strong>
           <small>ADMIN STUDIO</small>
         </Link>
 
@@ -47,7 +48,7 @@ export function AdminShell({ email, children }: AdminShellProps) {
 
       <div className="admin-content">
         <header className="admin-topbar">
-          <p>NAFIS FLOWERS / BOSHQARUV</p>
+          <p>FLORALUXE / BOSHQARUV</p>
           <span>Har bir o‘zgarish katalogga avtomatik tatbiq etiladi</span>
         </header>
         <main className="admin-main">{children}</main>

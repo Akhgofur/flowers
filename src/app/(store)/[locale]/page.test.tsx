@@ -13,7 +13,7 @@ vi.mock("@/components/storefront/LanguageSwitcher", () => ({
 import StorePage from "./page";
 
 describe("store route shell", () => {
-  it("renders the Nafis storefront route shell", async () => {
+  it("renders the Floraluxe storefront route shell", async () => {
     render(await StorePage({ params: Promise.resolve({ locale: "ru" }) }));
 
     expect(screen.getByRole("main", { name: /каталог/i })).toBeInTheDocument();

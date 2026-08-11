@@ -190,7 +190,7 @@ function makeService(store: InMemoryOrderStore) {
   return createOrderService({
     store,
     now: () => new Date("2026-08-11T10:00:00.000Z"),
-    generateOrderNumber: () => "NF-20260811-TESTNUMBER",
+    generateOrderNumber: () => "FL-20260811-TESTNUMBER",
   });
 }
 
@@ -202,7 +202,7 @@ describe("transactional order service", () => {
 
     expect(result).toEqual({
       orderId: "order-1",
-      orderNumber: "NF-20260811-TESTNUMBER",
+      orderNumber: "FL-20260811-TESTNUMBER",
       total: 410_000,
       status: "pending",
     });
@@ -311,11 +311,11 @@ describe("transactional order service", () => {
     const service = createOrderService({
       store,
       now: () => new Date("2026-08-11T10:00:00.000Z"),
-      generateOrderNumber: () => `NF-20260811-RETRY${++generated}`,
+      generateOrderNumber: () => `FL-20260811-RETRY${++generated}`,
     });
 
     await expect(service.createPendingOrder(checkoutInput)).resolves.toMatchObject({
-      orderNumber: "NF-20260811-RETRY2",
+      orderNumber: "FL-20260811-RETRY2",
     });
     expect(store.orders).toHaveLength(1);
     expect(store.products.get(redRoseId)?.stockQuantity).toBe(2);

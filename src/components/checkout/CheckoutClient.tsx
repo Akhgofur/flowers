@@ -191,9 +191,14 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
       <header className="checkout-header">
         <div className="shell checkout-header__inner">
           <Link className="wordmark" href="/" aria-label={tHeader("homeLabel")}>
-            <span className="wordmark__bloom" aria-hidden="true">✿</span>
-            <span>Nafis</span>
-            <small>{tHeader("brandSubtitle")}</small>
+            <Image
+              className="wordmark__image"
+              src="/brand/floraluxe-logo.jpg"
+              alt="Floraluxe"
+              width={320}
+              height={120}
+              priority
+            />
           </Link>
           <Link className="checkout-back-link" href="/catalog">
             ← {t("backCatalog")}

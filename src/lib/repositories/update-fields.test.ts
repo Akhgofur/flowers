@@ -5,18 +5,18 @@ describe("setAndUnsetOptionalFields", () => {
   it("keeps defined values and explicitly clears omitted optional fields", () => {
     expect(
       setAndUnsetOptionalFields(
-        { name: "Nafis", seoTitle: undefined, deliveryFee: 20_000 },
+        { name: "Floraluxe", seoTitle: undefined, deliveryFee: 20_000 },
         ["seoTitle", "seoDescription"]
       )
     ).toEqual({
-      $set: { name: "Nafis", deliveryFee: 20_000 },
+      $set: { name: "Floraluxe", deliveryFee: 20_000 },
       $unset: { seoTitle: "", seoDescription: "" },
     });
   });
 
   it("does not issue an empty $unset document", () => {
     expect(
-      setAndUnsetOptionalFields({ name: "Nafis", seoTitle: "Gullar" }, ["seoTitle"])
-    ).toEqual({ $set: { name: "Nafis", seoTitle: "Gullar" } });
+      setAndUnsetOptionalFields({ name: "Floraluxe", seoTitle: "Gullar" }, ["seoTitle"])
+    ).toEqual({ $set: { name: "Floraluxe", seoTitle: "Gullar" } });
   });
 });

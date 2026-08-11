@@ -6,7 +6,7 @@ import {
 } from "@/i18n/config";
 import type { CatalogProduct } from "@/lib/contracts";
 
-const FALLBACK_SITE_URL = "https://nafis.uz";
+const FALLBACK_SITE_URL = "https://floraluxe.uz";
 
 export type PublicSeoSettings = {
   siteName: string;
@@ -40,12 +40,11 @@ const OPEN_GRAPH_LOCALES: Record<Locale, string> = {
 };
 
 export const DEFAULT_PUBLIC_SEO_SETTINGS: PublicSeoSettings = {
-  siteName: "Nafis Flowers",
+  siteName: "Floraluxe",
   siteDescription:
     "Авторские букеты и бережная доставка цветов по Ташкенту.",
-  phone: "+998 71 200 07 07",
-  email: "salom@nafis.uz",
-  address: "Ташкент, Узбекистан",
+  phone: "+998 88 780 22 08",
+  address: "Юнусабад, Ташкент",
 };
 
 export type BreadcrumbItem = {
@@ -228,7 +227,7 @@ export function buildOrganizationJsonLd(
 ) {
   return {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    "@type": ["Organization", "Florist"],
     name: settings.siteName,
     description: settings.siteDescription,
     url: absoluteUrl(localizedPublicPath(locale, "/")),

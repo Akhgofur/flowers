@@ -1,4 +1,4 @@
-# Nafis Flowers
+# Floraluxe
 
 Toshkent uchun uch tilli premium gul katalogi. Loyiha **Next.js App Router**, TypeScript, MongoDB, server-rendered SEO sahifalari, guest checkout va bir-adminli boshqaruv panelidan iborat.
 
@@ -26,7 +26,7 @@ Payme, Click va boshqa online-payment gateway bu versiyaga ataylab kiritilmagan.
 - Mehmon checkout: server narxi, transaction ichidagi stock reservation, status transitionlari va bekor qilinganda qoldiqni aynan bir marta qaytarish.
 - NextAuth Credentials orqali server-side himoyalangan `/admin` paneli: mahsulot, kategoriya, buyurtma va do‘kon sozlamalari.
 - Admin Cloudinary upload: JPG/PNG/WebP, 5 MB gacha, alt matni majburiy; Cloudinary secretlari browserga chiqmaydi.
-- Sozlangan bo‘lsa SMTP va Telegramga yangi buyurtma xabari. Provider xatosi saqlangan buyurtmani bekor qilmaydi.
+- MongoDB outbox orqali Telegram guruhiga ishonchli yangi buyurtma xabari: avtomatik retry, admin’dan qayta yuborish va provider xatosida ham saqlangan buyurtmani bekor qilmaslik.
 
 ## Lokal ishga tushirish
 
@@ -38,7 +38,7 @@ Copy-Item .env.example .env.local
 `.env.local` ichiga kamida quyidagilarni kiriting:
 
 ```dotenv
-MONGODB_URI=mongodb://127.0.0.1:27017/nafis_flowers?replicaSet=rs0
+MONGODB_URI=mongodb://127.0.0.1:27017/floraluxe?replicaSet=rs0
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=kamida-32-belgilik-tasodifiy-secret
 ADMIN_EMAIL=admin@example.com
@@ -83,7 +83,7 @@ Production uchun `MONGODB_URI` Vercel serverlaridan ochiq bo‘lgan MongoDB Atla
 
 To‘liq deploy ketma-ketligi [Vercel release checklist](./docs/release/vercel-checklist.md)da yozilgan.
 
-## Ixtiyoriy integratsiyalar
+## Integratsiyalar
 
 Cloudinary rasm uploadi uchun:
 
@@ -93,25 +93,15 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 ```
 
-Yangi buyurtma xabarlari uchun barcha SMTP qiymatlari birga bo‘lishi kerak:
-
-```dotenv
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_USER=
-SMTP_PASSWORD=
-SMTP_FROM=
-ORDER_NOTIFICATION_EMAIL=
-```
-
-Telegram uchun:
+Telegram buyurtma xabarlari uchun:
 
 ```dotenv
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
+CRON_SECRET=kamida-32-belgilik-tasodifiy-secret
 ```
 
-Bu ixtiyoriy qiymatlar bo‘sh bo‘lsa checkout normal ishlashda davom etadi. Notification yuborilmagani order javobini `503` qilmaydi.
+Buyurtma MongoDB transaction ichida notification outbox yozuvi bilan birga saqlanadi. Checkout commit’dan keyin Telegramga darhol yuborishga urinadi; vaqtinchalik xatoda Vercel Cron `/api/cron/order-notifications` orqali 1, 5, 15, 60 va 240 daqiqalik interval bilan qayta urinadi. Telegram javob bermagani order javobini `503` qilmaydi. Bot real guruhga xabar yuborishi uchun `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` va Vercel’dagi `CRON_SECRET` production environment’da majburiy.
 
 ## Tekshiruvlar
 
@@ -127,7 +117,7 @@ Testlar locale routing, schema va API validation, stock reservation/cancellation
 
 ## Xavfsizlik chegaralari
 
-- `MONGODB_URI`, `NEXTAUTH_SECRET`, admin parol hash, Cloudinary secretlari, SMTP paroli va Telegram tokeni source controlga kiritilmaydi.
+- `MONGODB_URI`, `NEXTAUTH_SECRET`, admin parol hash, Cloudinary secretlari, Telegram tokeni va cron secret source controlga kiritilmaydi.
 - Admin mutationlari session va same-origin tekshiruvi bilan himoyalangan.
 - Client narxi, jami va inventory ishonchli manba emas; server har safar product snapshot va stockni qayta tekshiradi.
 - Payment status bu versiyada faqat `unpaid`; Payme/Click yoki boshqa online to‘lov mavjudligi haqida UI va API’da da’vo yo‘q.

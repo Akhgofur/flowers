@@ -24,5 +24,5 @@ export function createOrderNumber(date = new Date(), randomId: RandomId = random
     throw new Error("Order number generator returned too little entropy.");
   }
 
-  return `NF-${formatUtcDate(date)}-${suffix}`;
+  return `FL-${formatUtcDate(date)}-${suffix}`;
 }

@@ -5,7 +5,7 @@ import type { AdminSiteSettings } from "@/lib/contracts";
 import { AdminSettingsPanel } from "./AdminSettingsPanel";
 
 const settings: AdminSiteSettings = {
-  siteName: "Nafis Flowers",
+  siteName: "Floraluxe",
   translations: {
     ru: { siteDescription: "Авторские букеты в Ташкенте." },
     uz: { siteDescription: "Toshkentdagi mualliflik buketlari." },

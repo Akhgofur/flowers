@@ -3,6 +3,7 @@ import type { CatalogProduct } from "@/lib/contracts";
 import {
   buildBreadcrumbJsonLd,
   buildLanguageAlternates,
+  buildOrganizationJsonLd,
   buildProductJsonLd,
   buildProductMetadata,
   buildWebsiteJsonLd,
@@ -12,10 +13,10 @@ import {
 } from "./seo";
 
 const settings: PublicSeoSettings = {
-  siteName: "Nafis Flowers",
+  siteName: "Floraluxe",
   siteDescription: "Toshkent bo'ylab nafis guldastalar.",
   phone: "+998712000707",
-  email: "salom@nafis.uz",
+  email: "salom@floraluxe.uz",
   address: "Toshkent, O'zbekiston",
 };
 
@@ -73,7 +74,7 @@ describe("public SEO builders", () => {
       },
     });
     expect(jsonLd.url).toBe(
-      "https://nafis.uz/ru/products/qirmizi-atirgul-buketi"
+      "https://floraluxe.uz/ru/products/qirmizi-atirgul-buketi"
     );
     expect(jsonLd.inLanguage).toBe("ru-RU");
   });
@@ -116,7 +117,15 @@ describe("public SEO builders", () => {
   it("marks website structured data with the active language and URL", () => {
     expect(buildWebsiteJsonLd("en", settings)).toMatchObject({
       inLanguage: "en-US",
-      url: "https://nafis.uz/en",
+      url: "https://floraluxe.uz/en",
+    });
+  });
+
+  it("identifies the business as an organization and florist", () => {
+    expect(buildOrganizationJsonLd("ru", settings)).toMatchObject({
+      "@type": ["Organization", "Florist"],
+      name: "Floraluxe",
+      inLanguage: "ru-RU",
     });
   });
 });

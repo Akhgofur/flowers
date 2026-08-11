@@ -119,7 +119,7 @@ async function sendEmail(config: EmailNotificationConfig, text: string): Promise
   await transporter.sendMail({
     from: config.from,
     to: config.to,
-    subject: "Nafis Flowers: yangi buyurtma",
+    subject: "Floraluxe: yangi buyurtma",
     text,
   });
 }

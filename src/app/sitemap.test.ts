@@ -10,7 +10,7 @@ import sitemap from "./sitemap";
 
 describe("sitemap", () => {
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_SITE_URL = "https://shop.nafis.uz";
+    process.env.NEXT_PUBLIC_SITE_URL = "https://shop.floraluxe.uz";
     catalogService.getPublishedSitemapEntries.mockResolvedValue({
       products: [
         {
@@ -29,20 +29,20 @@ describe("sitemap", () => {
 
     expect(entries).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ url: "https://shop.nafis.uz/ru" }),
-        expect.objectContaining({ url: "https://shop.nafis.uz/uz/catalog" }),
+        expect.objectContaining({ url: "https://shop.floraluxe.uz/ru" }),
+        expect.objectContaining({ url: "https://shop.floraluxe.uz/uz/catalog" }),
         expect.objectContaining({
-          url: "https://shop.nafis.uz/en/products/qirmizi-atirgul-buketi",
+          url: "https://shop.floraluxe.uz/en/products/qirmizi-atirgul-buketi",
           lastModified: new Date("2026-08-11T00:00:00.000Z"),
           alternates: {
             languages: {
               "ru-RU":
-                "https://shop.nafis.uz/ru/products/qirmizi-atirgul-buketi",
+                "https://shop.floraluxe.uz/ru/products/qirmizi-atirgul-buketi",
               "uz-UZ":
-                "https://shop.nafis.uz/uz/products/qirmizi-atirgul-buketi",
-              en: "https://shop.nafis.uz/en/products/qirmizi-atirgul-buketi",
+                "https://shop.floraluxe.uz/uz/products/qirmizi-atirgul-buketi",
+              en: "https://shop.floraluxe.uz/en/products/qirmizi-atirgul-buketi",
               "x-default":
-                "https://shop.nafis.uz/ru/products/qirmizi-atirgul-buketi",
+                "https://shop.floraluxe.uz/ru/products/qirmizi-atirgul-buketi",
             },
           },
         }),

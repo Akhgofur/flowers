@@ -3,7 +3,7 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/config";
 import { formatSum } from "@/shared/format";
 
 export const dynamic = "force-dynamic";
-export const alt = "Nafis Flowers product preview";
+export const alt = "Floraluxe product preview";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -53,15 +53,15 @@ async function loadOpenGraphProduct(locale: string, slug: string): Promise<OpenG
 
 const OPEN_GRAPH_COPY: Record<Locale, { brand: string; delivery: string }> = {
   ru: {
-    brand: "NAFIS · ДОМ ЦВЕТОВ",
+    brand: "FLORALUXE · ДОМ ЦВЕТОВ",
     delivery: "Собрано сегодня · доставлено с заботой",
   },
   uz: {
-    brand: "NAFIS · GULLAR UYI",
+    brand: "FLORALUXE · GULLAR UYI",
     delivery: "Bugun terilgan · mehr bilan yetkazilgan",
   },
   en: {
-    brand: "NAFIS · HOUSE OF FLOWERS",
+    brand: "FLORALUXE · HOUSE OF FLOWERS",
     delivery: "Gathered today · delivered with care",
   },
 };
@@ -73,7 +73,7 @@ export default async function ProductOpenGraphImage({
   const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
   const product = await loadOpenGraphProduct(locale, slug);
   const copy = OPEN_GRAPH_COPY[locale];
-  const title = product?.name ?? "Nafis Flowers";
+  const title = product?.name ?? "Floraluxe";
   const price = product ? formatSum(product.price, locale) : copy.delivery;
 
   return new ImageResponse(

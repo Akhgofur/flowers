@@ -63,7 +63,7 @@ describe("Mongoose model invariants", () => {
   it("requires all three localized site settings documents", async () => {
     const settings = new SiteSettingsModel({
       key: "default",
-      siteName: "Nafis Flowers",
+      siteName: "Floraluxe",
       translations: {
         ru: { siteDescription: "Авторские букеты в Ташкенте." },
         uz: { siteDescription: "Toshkentdagi mualliflik buketlari." },
@@ -198,7 +198,7 @@ describe("Mongoose model invariants", () => {
 
   it("rejects any order status outside the defined lifecycle", async () => {
     const order = new OrderModel({
-      number: "NF-20260811-0001",
+      number: "FL-20260811-0001",
       locale: "ru",
       customer: {
         fullName: "Ali Valiyev",
@@ -232,7 +232,7 @@ describe("Mongoose model invariants", () => {
 
   it("rejects an unsupported order locale", async () => {
     const order = new OrderModel({
-      number: "NF-20260811-0002",
+      number: "FL-20260811-0002",
       locale: "de",
       customer: {
         fullName: "Ali Valiyev",

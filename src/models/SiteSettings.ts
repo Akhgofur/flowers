@@ -60,7 +60,7 @@ const siteSettingsSchema = new Schema<SiteSettingsDocument>(
     siteName: {
       type: String,
       required: true,
-      default: "Nafis Flowers",
+      default: "Floraluxe",
       trim: true,
       maxlength: 100,
     },

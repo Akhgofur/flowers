@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -47,8 +48,9 @@ export function AdminLoginForm({ authConfigured = true }: AdminLoginFormProps) {
   return (
     <main className="admin-login-page">
       <div className="admin-login-card">
-        <Link href="/" className="admin-login-card__brand" aria-label="Nafis bosh sahifasi">
-          <span aria-hidden="true">✿</span> Nafis
+        <Link href="/" className="admin-login-card__brand" aria-label="Floraluxe bosh sahifasi">
+          <Image src="/brand/floraluxe-mark.jpg" alt="" width={46} height={46} aria-hidden="true" />
+          Floraluxe
         </Link>
         <p className="eyebrow">Yopiq hudud</p>
         <h1>Administrator kirishi</h1>

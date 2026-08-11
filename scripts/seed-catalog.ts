@@ -38,7 +38,7 @@ const seedStockQuantity = 20;
 
 const DEFAULT_SEED_SETTINGS: SeedSiteSettings = {
   key: "default",
-  siteName: "Nafis Flowers",
+  siteName: "Floraluxe",
   translations: {
     ru: {
       siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту.",
@@ -53,8 +53,7 @@ const DEFAULT_SEED_SETTINGS: SeedSiteSettings = {
       deliveryPolicy: "Delivery across Tashkent; timing is confirmed by our operator.",
     },
   },
-  phone: "+998 71 200 07 07",
-  email: "salom@nafis.uz",
+  phone: "+998 88 780 22 08",
   address: "Yunusobod, Toshkent",
   workingHours: "08:00–22:00",
   deliveryFee: 0,

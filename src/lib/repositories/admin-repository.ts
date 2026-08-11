@@ -32,7 +32,7 @@ type NotificationRecord = OrderNotificationDocument & { _id: Types.ObjectId };
 type SettingsRecord = SiteSettingsDocument & { _id: Types.ObjectId };
 
 const DEFAULT_SETTINGS: AdminSiteSettings = {
-  siteName: "Nafis Flowers",
+  siteName: "Floraluxe",
   translations: {
     ru: { siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту." },
     uz: { siteDescription: "Toshkent bo‘ylab mualliflik buketlari va ehtiyotkor yetkazib berish." },

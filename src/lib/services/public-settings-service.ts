@@ -22,9 +22,10 @@ const DEFAULT_TRANSLATIONS: Record<Locale, SiteSettingsTranslation> = {
 };
 
 const DEFAULT_UNIVERSAL_SETTINGS = {
-  siteName: "Nafis Flowers",
-  phone: "+998 71 200 07 07",
-  email: "salom@nafis.uz",
+  siteName: "Floraluxe",
+  brandLogo: { url: "/brand/floraluxe-logo.jpg", alt: "Floraluxe" },
+  brandMark: { url: "/brand/floraluxe-mark.jpg", alt: "Floraluxe belgisi" },
+  phone: "+998 88 780 22 08",
   address: "Yunusobod, Toshkent",
   workingHours: "08:00–22:00",
 };
@@ -48,8 +49,12 @@ async function readPublicSiteSettings(locale: Locale): Promise<PublicSiteSetting
 
   return {
     siteName: document.siteName,
-    ...(document.brandLogo === undefined ? {} : { brandLogo: { ...document.brandLogo } }),
-    ...(document.brandMark === undefined ? {} : { brandMark: { ...document.brandMark } }),
+    brandLogo: document.brandLogo === undefined
+      ? { ...DEFAULT_UNIVERSAL_SETTINGS.brandLogo }
+      : { ...document.brandLogo },
+    brandMark: document.brandMark === undefined
+      ? { ...DEFAULT_UNIVERSAL_SETTINGS.brandMark }
+      : { ...document.brandMark },
     siteDescription: translation.siteDescription,
     ...(document.phone === undefined ? {} : { phone: document.phone }),
     ...(document.email === undefined ? {} : { email: document.email }),

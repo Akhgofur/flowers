@@ -1,17 +1,14 @@
 import type { PublicSiteSettings } from "@/lib/contracts";
 import { useTranslations } from "next-intl";
+import Image from "next/image";
 
 type FooterProps = { settings?: PublicSiteSettings };
 
 const FALLBACK_SETTINGS: Required<
-  Pick<
-    PublicSiteSettings,
-    "siteName" | "phone" | "email" | "address" | "workingHours"
-  >
+  Pick<PublicSiteSettings, "siteName" | "phone" | "address" | "workingHours">
 > = {
-  siteName: "Nafis Flowers",
-  phone: "+998 71 200 07 07",
-  email: "salom@nafis.uz",
+  siteName: "Floraluxe",
+  phone: "+998 88 780 22 08",
   address: "Yunusobod, Toshkent",
   workingHours: "08:00–22:00",
 };
@@ -54,7 +51,13 @@ export function Footer({ settings }: FooterProps) {
       <div className="footer-main">
         <div className="shell footer-grid">
           <section id="about" tabIndex={-1}>
-            <p className="footer-wordmark">{value.siteName}</p>
+            <Image
+              className="footer-wordmark-image"
+              src={settings?.brandLogo?.url ?? "/brand/floraluxe-logo.jpg"}
+              alt={settings?.brandLogo?.alt ?? value.siteName}
+              width={320}
+              height={120}
+            />
             <h2>{t("aboutTitle")}</h2>
             <p>{description}</p>
           </section>
@@ -65,7 +68,7 @@ export function Footer({ settings }: FooterProps) {
           <section id="contact" tabIndex={-1}>
             <h2>{t("contactTitle")}</h2>
             <a href={phoneHref(value.phone)}>{value.phone}</a>
-            <a href={`mailto:${value.email}`}>{value.email}</a>
+            {value.email ? <a href={`mailto:${value.email}`}>{value.email}</a> : null}
             <p>{value.address}</p>
           </section>
         </div>

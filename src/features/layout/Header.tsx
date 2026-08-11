@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/storefront/LanguageSwitcher";
+import type { ProductImage } from "@/lib/contracts";
 
 export type HeaderProps = {
   cartItemCount: number;
   isCartOpen: boolean;
+  brandLogo?: ProductImage;
   onOpenCart: (origin: HTMLElement) => void;
 };
 
@@ -18,7 +21,7 @@ const NAVIGATION_LINKS = [
   { href: "#contact", label: "navContacts" },
 ] as const;
 
-export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
+export function Header({ cartItemCount, isCartOpen, brandLogo, onOpenCart }: HeaderProps) {
   const t = useTranslations("Header");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -58,9 +61,15 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
 
       <div className="shell header-main">
         <Link className="wordmark" href="/" aria-label={t("homeLabel")}>
-          <span className="wordmark__bloom" aria-hidden="true">✿</span>
-          <span>Nafis</span>
-          <small>{t("brandSubtitle")}</small>
+          <Image
+            className="wordmark__image"
+            src={brandLogo?.url ?? "/brand/floraluxe-logo.jpg"}
+            alt={brandLogo?.alt ?? "Floraluxe"}
+            width={320}
+            height={120}
+            priority
+          />
+          <span className="visually-hidden">Floraluxe</span>
         </Link>
 
         <nav className="desktop-nav" aria-label={t("navigationLabel")}>
