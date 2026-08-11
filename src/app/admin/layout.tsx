@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { fontVariables } from "@/app/fonts";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function AdminRootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="uz">
+    <html lang="uz" className={fontVariables}>
       <body>{children}</body>
     </html>
   );

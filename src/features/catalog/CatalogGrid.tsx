@@ -44,6 +44,14 @@ export function CatalogGrid({
     KNOWN_FLOWER_TYPES.has(flowerType)
       ? t(`flowerTypes.${flowerType}` as "flowerTypes.rose")
       : flowerType;
+  const productMetaLabel = (product: Product) => {
+    const categoryLabel = categoryNames.get(product.category) ?? product.category;
+    const flowerLabels = product.flowerTypes.map(flowerTypeLabel).filter(
+      (label) => label.localeCompare(categoryLabel, locale, { sensitivity: "base" }) !== 0
+    );
+
+    return [categoryLabel, flowerLabels.join(", ")].filter(Boolean).join(" · ");
+  };
 
   return (
     <div className="catalog-results">
@@ -97,8 +105,7 @@ export function CatalogGrid({
 
               <div className="product-card__body">
                 <p className="product-card__meta">
-                  {categoryNames.get(product.category) ?? product.category} ·{" "}
-                  {product.flowerTypes.map(flowerTypeLabel).join(", ")}
+                  {productMetaLabel(product)}
                 </p>
                 <h3>{product.name}</h3>
                 <div className="product-card__price">

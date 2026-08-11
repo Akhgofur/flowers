@@ -11,6 +11,7 @@ import {
   serializeJsonLd,
 } from "@/lib/seo";
 import { getPublicSiteSettings } from "@/lib/services/public-settings-service";
+import { fontVariables } from "@/app/fonts";
 import "@/app/globals.css";
 
 export function generateStaticParams() {
@@ -62,7 +63,11 @@ export default async function StoreLocaleLayout({
   const websiteJsonLd = serializeJsonLd(buildWebsiteJsonLd(locale, settings));
 
   return (
-    <html lang={locale} data-scroll-behavior="smooth">
+    <html
+      lang={locale}
+      className={fontVariables}
+      data-scroll-behavior="smooth"
+    >
       <body>
         <script
           type="application/ld+json"

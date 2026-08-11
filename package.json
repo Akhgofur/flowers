@@ -11,9 +11,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
     "seed:catalog": "tsx scripts/seed-catalog.ts"
   },
   "dependencies": {
+    "@next/env": "^16.3.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.10.0",
     "mongoose": "^9.9.2",
@@ -27,6 +29,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",

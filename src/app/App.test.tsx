@@ -252,7 +252,11 @@ it("closes the mobile navigation after a navigation link is selected", async () 
   const menuButton = screen.getByRole("button", { name: /mobil menyuni ochish/i });
   await user.click(menuButton);
   const mobileNavigation = screen.getByRole("navigation", { name: /mobil navigatsiya/i });
-  await user.click(within(mobileNavigation).getByRole("link", { name: /katalog/i }));
+  const catalogLink = within(mobileNavigation).getByRole("link", { name: /katalog/i });
+  catalogLink.addEventListener("click", (event) => event.preventDefault(), {
+    once: true,
+  });
+  await user.click(catalogLink);
 
   expect(menuButton).toHaveAttribute("aria-expanded", "false");
   expect(mobileNavigation).not.toBeInTheDocument();

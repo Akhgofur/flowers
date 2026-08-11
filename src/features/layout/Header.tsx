@@ -118,6 +118,9 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
           className="mobile-nav"
           aria-label={t("mobileNavigationLabel")}
         >
+          <div className="shell mobile-nav__language">
+            <LanguageSwitcher />
+          </div>
           <div className="shell mobile-nav__links">
             {NAVIGATION_LINKS.map((link) => (
               <Link
