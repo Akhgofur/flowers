@@ -19,6 +19,7 @@ import { checkoutSchema } from "@/lib/validations";
 import { OrderModel, type OrderDocument } from "@/models/Order";
 import { ProductModel, type ProductDocument } from "@/models/Product";
 import { SiteSettingsModel } from "@/models/SiteSettings";
+import { OrderNotificationModel } from "@/models/OrderNotification";
 import { createOrderNumber } from "./order-number";
 import { assertAllowedOrderTransition } from "./order-transitions";
 import type { Locale } from "@/i18n/config";
@@ -97,6 +98,11 @@ export type OrderStore = {
     record: PendingOrderRecord,
     transaction: OrderTransaction
   ): Promise<StoredOrder>;
+  createOrderNotification(
+    orderId: string,
+    channel: "telegram",
+    transaction: OrderTransaction
+  ): Promise<void>;
   findOrderById(
     orderId: string,
     transaction: OrderTransaction
@@ -320,6 +326,21 @@ function createMongoOrderStore(): OrderStore {
       return serializeOrder(document);
     },
 
+    async createOrderNotification(orderId, channel, transaction) {
+      await OrderNotificationModel.create(
+        [
+          {
+            orderId,
+            channel,
+            status: "pending",
+            attempts: 0,
+            nextAttemptAt: new Date(),
+          },
+        ],
+        { session: asClientSession(transaction) }
+      );
+    },
+
     async findOrderById(orderId, transaction) {
       if (!mongoose.isValidObjectId(orderId)) return null;
 
@@ -499,6 +520,11 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                 paymentStatus: "unpaid",
                 status: "pending",
               },
+              transaction
+            );
+            await dependencies.store.createOrderNotification(
+              created.id,
+              "telegram",
               transaction
             );
 

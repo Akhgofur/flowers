@@ -99,4 +99,10 @@ export const env = {
   get TELEGRAM_CHAT_ID() {
     return optionalServerValue("TELEGRAM_CHAT_ID", nonEmptyString);
   },
+  get CRON_SECRET() {
+    return requiredServerValue(
+      "CRON_SECRET",
+      z.string().trim().min(32, "must contain at least 32 characters")
+    );
+  },
 };

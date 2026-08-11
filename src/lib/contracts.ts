@@ -11,6 +11,12 @@ export const ORDER_STATUSES = [
   "delivered",
   "cancelled",
 ] as const;
+export const ORDER_NOTIFICATION_STATUSES = [
+  "pending",
+  "processing",
+  "sent",
+  "failed",
+] as const;
 export const PAYMENT_METHODS = [
   "cash_on_delivery",
   "card_on_delivery",
@@ -27,6 +33,7 @@ export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 export type CategoryStatus = (typeof CATEGORY_STATUSES)[number];
 export type HomeSectionStatus = (typeof HOME_SECTION_STATUSES)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
+export type OrderNotificationStatus = (typeof ORDER_NOTIFICATION_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export type Season = (typeof SEASONS)[number];
 export type CurrentSeason = Exclude<Season, "all_year">;

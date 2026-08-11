@@ -6,6 +6,9 @@ const orderService = vi.hoisted(() => ({
 const notifications = vi.hoisted(() => ({
   orderNotificationService: { notifyNewOrder: vi.fn() },
 }));
+const outbox = vi.hoisted(() => ({
+  orderNotificationOutboxService: { deliverForOrder: vi.fn() },
+}));
 
 const rateLimit = vi.hoisted(() => {
   class MockRateLimitExceededError extends Error {
@@ -25,6 +28,7 @@ const rateLimit = vi.hoisted(() => {
 
 vi.mock("@/lib/services/order-service", () => ({ orderService }));
 vi.mock("@/lib/services/order-notification-service", () => notifications);
+vi.mock("@/lib/services/order-notification-outbox-service", () => outbox);
 vi.mock("@/lib/rate-limit", () => rateLimit);
 
 import { POST } from "./route";
@@ -61,6 +65,11 @@ describe("POST /api/orders", () => {
       delivered: 0,
       failed: 0,
     });
+    outbox.orderNotificationOutboxService.deliverForOrder.mockResolvedValue({
+      attempted: 1,
+      sent: 1,
+      failed: 0,
+    });
   });
 
   afterEach(() => {
@@ -95,12 +104,9 @@ describe("POST /api/orders", () => {
       windowMs: 15 * 60 * 1_000,
     });
     expect(orderService.createPendingOrder).toHaveBeenCalledWith(validCheckout);
-    expect(notifications.orderNotificationService.notifyNewOrder).toHaveBeenCalledWith({
-      orderNumber: "NF-20260811-ORDER1234",
-      total: 320_000,
-      paymentMethod: "cash_on_delivery",
-      customer: validCheckout.customer,
-    });
+    expect(outbox.orderNotificationOutboxService.deliverForOrder).toHaveBeenCalledWith(
+      "507f191e810c19729de860ea"
+    );
     expect(response.headers.get("x-ratelimit-remaining")).toBe("4");
   });
 
@@ -111,7 +117,7 @@ describe("POST /api/orders", () => {
       total: 320_000,
       status: "pending",
     });
-    notifications.orderNotificationService.notifyNewOrder.mockRejectedValue(
+    outbox.orderNotificationOutboxService.deliverForOrder.mockRejectedValue(
       new Error("provider unavailable")
     );
     const errorLog = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -121,6 +127,21 @@ describe("POST /api/orders", () => {
     expect(response.status).toBe(201);
     expect(orderService.createPendingOrder).toHaveBeenCalledTimes(1);
     expect(errorLog).toHaveBeenCalledWith("Order notification dispatch failed.");
+  });
+
+  it("returns the unavailable response for an out-of-season product", async () => {
+    orderService.createPendingOrder.mockRejectedValue({
+      code: "PRODUCT_OUT_OF_SEASON",
+      status: 409,
+    });
+
+    const response = await POST(postJson(validCheckout));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: "PRODUCT_OUT_OF_SEASON",
+      error: expect.any(String),
+    });
   });
 
   it("rejects malformed bodies before the order service sees them", async () => {

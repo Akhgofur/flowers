@@ -69,6 +69,7 @@ class InMemoryOrderStore implements OrderStore {
     [tulipId, product(tulipId, "Oq lolalar", 90_000, 2)],
   ]);
   readonly orders = new Map<string, StoredOrder>();
+  readonly notifications: Array<{ orderId: string; channel: "telegram" }> = [];
   readonly reservationOrder: string[] = [];
   readonly reservationLocales: string[] = [];
   readonly reservationSeasons: CurrentSeason[] = [];
@@ -81,6 +82,7 @@ class InMemoryOrderStore implements OrderStore {
       [...this.products].map(([id, value]) => [id, { ...value, images: [...value.images] }])
     );
     const orderSnapshot = new Map(this.orders);
+    const notificationSnapshot = [...this.notifications];
 
     try {
       return await operation({});
@@ -89,6 +91,7 @@ class InMemoryOrderStore implements OrderStore {
       for (const [id, value] of productSnapshot) this.products.set(id, value);
       this.orders.clear();
       for (const [id, value] of orderSnapshot) this.orders.set(id, value);
+      this.notifications.splice(0, this.notifications.length, ...notificationSnapshot);
       throw error;
     }
   }
@@ -144,6 +147,10 @@ class InMemoryOrderStore implements OrderStore {
     const stored: StoredOrder = { ...record, id };
     this.orders.set(id, stored);
     return stored;
+  }
+
+  async createOrderNotification(orderId: string, channel: "telegram"): Promise<void> {
+    this.notifications.push({ orderId, channel });
   }
 
   async findOrderById(orderId: string): Promise<StoredOrder | null> {
@@ -216,6 +223,9 @@ describe("transactional order service", () => {
       ],
     });
     expect(order?.customer.deliveryDate?.toISOString()).toBe("2026-08-12T12:00:00.000Z");
+    expect(store.notifications).toEqual([
+      { orderId: result.orderId, channel: "telegram" },
+    ]);
   });
 
   it("stores the server-selected product name in the checkout locale", async () => {

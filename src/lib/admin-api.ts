@@ -80,6 +80,8 @@ export function adminErrorResponse(error: unknown): NextResponse {
     "ORDER_STATE_CONFLICT",
     "ORDER_NOT_FOUND",
     "PRODUCT_UNAVAILABLE",
+    "PRODUCT_OUT_OF_SEASON",
+    "NOTIFICATION_NOT_RETRYABLE",
   ]);
   if (
     typeof error === "object" &&

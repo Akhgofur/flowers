@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/config";
 import { RateLimitExceededError, rateLimiter } from "@/lib/rate-limit";
-import { orderNotificationService } from "@/lib/services/order-notification-service";
+import { orderNotificationOutboxService } from "@/lib/services/order-notification-outbox-service";
 import { orderService } from "@/lib/services/order-service";
 import { checkoutSchema } from "@/lib/validations";
 import en from "../../../../messages/en.json";
@@ -18,6 +18,7 @@ const CHECKOUT_RATE_LIMIT = {
 
 const PUBLIC_ORDER_ERRORS = new Set([
   "PRODUCT_UNAVAILABLE",
+  "PRODUCT_OUT_OF_SEASON",
   "ORDER_NOT_FOUND",
   "ORDER_STATE_CONFLICT",
   "DUPLICATE_ORDER_ITEM",
@@ -118,12 +119,7 @@ export async function POST(request: Request) {
     // Notification providers are best effort: an already committed order must
     // never be rolled back or reported as failed because messaging is down.
     try {
-      await orderNotificationService.notifyNewOrder({
-        orderNumber: order.orderNumber,
-        total: order.total,
-        paymentMethod: parsed.data.paymentMethod,
-        customer: parsed.data.customer,
-      });
+      await orderNotificationOutboxService.deliverForOrder(order.orderId);
     } catch {
       console.error("Order notification dispatch failed.");
     }
@@ -156,7 +152,8 @@ export async function POST(request: Request) {
           code: safeError.code,
           error: checkoutError(
             locale,
-            safeError.code === "PRODUCT_UNAVAILABLE"
+            safeError.code === "PRODUCT_UNAVAILABLE" ||
+              safeError.code === "PRODUCT_OUT_OF_SEASON"
               ? "errorUnavailable"
               : "errorValidation"
           ),

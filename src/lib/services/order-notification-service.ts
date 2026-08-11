@@ -43,6 +43,13 @@ type NotificationDependencies = {
   logFailure: (channel: "email" | "telegram" | "configuration") => void;
 };
 
+export class TelegramNotificationError extends Error {
+  constructor(readonly code: "CONFIG_MISSING" | "TIMEOUT" | "HTTP_REJECTED") {
+    super("Telegram notification delivery failed.");
+    this.name = "TelegramNotificationError";
+  }
+}
+
 function paymentMethodLabel(paymentMethod: PaymentMethod): string {
   return paymentMethod === "cash_on_delivery" ? "Yetkazilganda naqd" : "Yetkazilganda karta";
 }
@@ -152,6 +159,29 @@ export function createOrderNotificationService(
   };
 
   return {
+    async notifyTelegramOrder(order: NewOrderNotification): Promise<void> {
+      let config: OrderNotificationConfig;
+      try {
+        config = dependencies.getConfig();
+      } catch {
+        throw new TelegramNotificationError("CONFIG_MISSING");
+      }
+      if (!config.telegram) throw new TelegramNotificationError("CONFIG_MISSING");
+
+      try {
+        await dependencies.sendTelegram(
+          config.telegram,
+          formatNewOrderNotification(order)
+        );
+      } catch (error) {
+        const code =
+          error instanceof Error && error.name === "AbortError"
+            ? "TIMEOUT"
+            : "HTTP_REJECTED";
+        throw new TelegramNotificationError(code);
+      }
+    },
+
     async notifyNewOrder(order: NewOrderNotification): Promise<{
       attempted: number;
       delivered: number;
