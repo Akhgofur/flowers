@@ -1,7 +1,6 @@
 import {
   act,
   fireEvent,
-  render,
   screen,
   waitFor,
   within,
@@ -13,6 +12,7 @@ import {
   FAVORITES_STORAGE_KEY,
 } from "../features/cart/cart-storage";
 import App from "./App";
+import { renderWithIntl as render } from "@/test/render-with-intl";
 
 beforeEach(() => {
   localStorage.clear();
@@ -322,7 +322,7 @@ it("applies the sale tab from the sale ribbon", async () => {
   const saleLink = screen.getByRole("link", {
     name: /chegirmalarni ko'rish/i,
   });
-  expect(saleLink).toHaveAttribute("href", "/gullar?sale=true");
+  expect(saleLink).toHaveAttribute("href", "/ru/catalog?sale=true");
 
   await user.click(saleLink);
 
@@ -767,7 +767,7 @@ it("links the cart drawer to the real checkout route", async () => {
   await user.click(screen.getByRole("button", { name: /savatni ochish/i }));
   expect(
     screen.getByRole("link", { name: /buyurtmani rasmiylashtirish/i })
-  ).toHaveAttribute("href", "/buyurtma");
+  ).toHaveAttribute("href", "/ru/checkout");
 });
 
 it("closes the cart drawer with Escape", async () => {

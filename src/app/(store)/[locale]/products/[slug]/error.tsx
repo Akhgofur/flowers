@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 export default function ProductError({ reset }: Readonly<{ error: Error & { digest?: string }; reset: () => void }>) {
   return (
@@ -10,7 +10,7 @@ export default function ProductError({ reset }: Readonly<{ error: Error & { dige
       <p>Bir necha soniyadan keyin qayta urinib ko‘ring.</p>
       <div className="route-shell__actions">
         <button className="primary-button" type="button" onClick={reset}>Qayta urinish</button>
-        <Link className="secondary-button" href="/gullar">Katalogga qaytish</Link>
+        <Link className="secondary-button" href="/catalog">Katalogga qaytish</Link>
       </div>
     </main>
   );

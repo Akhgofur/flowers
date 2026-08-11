@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { formatSum } from "../../shared/format";
 import { applyImageFallback } from "../../shared/image-fallback";
 import { useFocusTrap } from "../../shared/a11y/useFocusTrap";
@@ -95,7 +95,7 @@ export function ProductQuickView({
           <p className="quick-view__description">{product.shortDescription}</p>
           <Link
             className="quick-view__detail-link"
-            href={`/gullar/${product.slug ?? product.id}`}
+            href={`/products/${product.slug ?? product.id}`}
           >
             To‘liq tavsif va buyurtma sahifasi
           </Link>

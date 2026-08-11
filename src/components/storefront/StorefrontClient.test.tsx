@@ -1,8 +1,9 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it } from "vitest";
 import type { CatalogCategory, CatalogProduct } from "@/lib/contracts";
 import { FAVORITES_STORAGE_KEY } from "@/features/cart/cart-storage";
+import { renderWithIntl as render } from "@/test/render-with-intl";
 import { StorefrontClient } from "./StorefrontClient";
 
 const products: CatalogProduct[] = [

@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Link } from "@/i18n/navigation";
 import type { CatalogProduct } from "@/lib/contracts";
 import { addToCart } from "@/features/cart/cart-reducer";
 import {
@@ -61,7 +61,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
       <nav className="product-detail__breadcrumb" aria-label="Yo‘l ko‘rsatkich">
         <Link href="/">Bosh sahifa</Link>
         <span aria-hidden="true">/</span>
-        <Link href="/gullar">Gullar</Link>
+        <Link href="/catalog">Gullar</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{product.name}</span>
       </nav>

@@ -6,7 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { CATEGORIES, HERO_SLIDES, PRODUCTS } from "../data/catalog";
 import { CartDrawer } from "../features/cart/CartDrawer";
 import {
@@ -304,7 +304,7 @@ export default function App({
             <strong>Hafta taklifi</strong>
             <span>Tanlangan buketlarda yoqimli narxlar</span>
             <Link
-              href="/gullar?sale=true"
+              href="/catalog?sale=true"
               onClick={(event) => {
                 event.preventDefault();
                 selectSale();

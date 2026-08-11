@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 export default function StoreNotFound() {
   return (
@@ -6,7 +6,7 @@ export default function StoreNotFound() {
       <p className="eyebrow">Nafis Flowers</p>
       <h1 id="store-not-found-title">Bu gul sahifasi topilmadi</h1>
       <p>Manzil o‘zgargan yoki mahsulot hozir katalogda mavjud emas.</p>
-      <Link className="primary-button" href="/gullar">
+      <Link className="primary-button" href="/catalog">
         Katalogga qaytish
       </Link>
     </main>

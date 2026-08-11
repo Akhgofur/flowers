@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 export type HeaderProps = {
   cartItemCount: number;
@@ -8,8 +8,8 @@ export type HeaderProps = {
 };
 
 const NAVIGATION_LINKS = [
-  { href: "/gullar", label: "Katalog" },
-  { href: "/gullar?sale=true", label: "Chegirmalar" },
+  { href: "/catalog", label: "Katalog" },
+  { href: "/catalog?sale=true", label: "Chegirmalar" },
   { href: "#gift", label: "Sovg'alar" },
   { href: "#about", label: "Biz haqimizda" },
   { href: "#delivery", label: "Yetkazib berish" },
@@ -67,7 +67,7 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
         </nav>
 
         <div className="header-actions">
-          <Link className="icon-link" href="/gullar" aria-label="Gullarni qidirish">
+          <Link className="icon-link" href="/catalog" aria-label="Gullarni qidirish">
             <span aria-hidden="true">⌕</span>
           </Link>
           <a

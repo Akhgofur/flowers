@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "@/i18n/navigation";
 import {
   readCart,
   writeCart,
@@ -164,7 +164,7 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
               <dd>{formatSum(createdOrder.total)}</dd>
             </div>
           </dl>
-          <Link href="/gullar" className="primary-button">
+          <Link href="/catalog" className="primary-button">
             Katalogga qaytish
           </Link>
         </div>
@@ -181,7 +181,7 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
             <span>Nafis</span>
             <small>gullar uyi</small>
           </Link>
-          <Link className="checkout-back-link" href="/gullar">
+          <Link className="checkout-back-link" href="/catalog">
             ← Katalogga qaytish
           </Link>
         </div>
@@ -211,7 +211,7 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
             <span aria-hidden="true">♡</span>
             <h2 id="checkout-empty-title">Savatingiz hozircha bo’sh</h2>
             <p>Avval kayfiyatingizga mos kompozitsiyani tanlang.</p>
-            <Link href="/gullar" className="primary-button">Gullarni ko’rish</Link>
+            <Link href="/catalog" className="primary-button">Gullarni ko’rish</Link>
           </section>
         ) : (
           <form className="checkout-form" onSubmit={submitOrder}>

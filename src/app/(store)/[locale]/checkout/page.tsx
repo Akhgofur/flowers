@@ -6,9 +6,8 @@ import { getPublishedCatalog } from "@/lib/services/catalog-service";
 import { toBootstrapCatalogProduct } from "@/components/storefront/storefront-mappers";
 
 export const metadata: Metadata = {
-  title: "Buyurtmani rasmiylashtirish",
-  description: "Nafis Flowers buyurtmasini yetkazib berish uchun rasmiylashtiring.",
-  alternates: { canonical: "/buyurtma" },
+  title: "Checkout",
+  description: "Complete your Nafis Flowers delivery order.",
   robots: { index: false, follow: false },
 };
 
@@ -31,7 +30,11 @@ async function loadCheckoutProducts(): Promise<{
   }
 }
 
-export default async function CheckoutPage() {
+export default async function CheckoutPage({
+  params: _params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
   const { products, isDemoCatalog } = await loadCheckoutProducts();
   return <CheckoutClient products={products} isDemoCatalog={isDemoCatalog} />;
 }

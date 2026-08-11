@@ -16,7 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 
 type ProductPageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 };
 
 async function loadProduct(slug: string): Promise<CatalogProduct | null> {
@@ -49,7 +49,7 @@ export async function generateMetadata({
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const product = await loadProduct(slug);
 
   if (!product) notFound();
@@ -59,9 +59,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   );
   const breadcrumbJsonLd = serializeJsonLd(
     buildBreadcrumbJsonLd([
-      { name: "Bosh sahifa", path: "/" },
-      { name: "Gullar", path: "/gullar" },
-      { name: product.name, path: `/gullar/${product.slug}` },
+      { name: "Bosh sahifa", path: `/${locale}` },
+      { name: "Gullar", path: `/${locale}/catalog` },
+      { name: product.name, path: `/${locale}/products/${product.slug}` },
     ])
   );
 

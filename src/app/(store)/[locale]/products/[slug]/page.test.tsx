@@ -1,6 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { CatalogProduct } from "@/lib/contracts";
+import { renderWithIntl as render } from "@/test/render-with-intl";
 
 const catalogService = vi.hoisted(() => ({
   getPublishedProductBySlug: vi.fn(),
@@ -44,7 +45,7 @@ describe("product detail server route", () => {
     catalogService.getPublishedProductBySlug.mockResolvedValue(product);
 
     const metadata = await generateMetadata({
-      params: Promise.resolve({ slug: "qirmizi-atirgul-buketi" }),
+      params: Promise.resolve({ locale: "ru", slug: "qirmizi-atirgul-buketi" }),
     });
 
     expect(metadata.alternates?.canonical).toBe(
@@ -58,7 +59,7 @@ describe("product detail server route", () => {
 
     render(
       await ProductPage({
-        params: Promise.resolve({ slug: "qirmizi-atirgul-buketi" }),
+        params: Promise.resolve({ locale: "ru", slug: "qirmizi-atirgul-buketi" }),
       })
     );
 

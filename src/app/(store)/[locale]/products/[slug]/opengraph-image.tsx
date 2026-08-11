@@ -9,7 +9,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 type ProductOpenGraphImageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
 };
 
 type OpenGraphProduct = {
@@ -17,13 +17,13 @@ type OpenGraphProduct = {
   price: number;
 };
 
-function getPublicProductUrl(slug: string): string | null {
+function getPublicProductUrl(locale: string, slug: string): string | null {
   const configuredSiteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (!configuredSiteUrl) return null;
 
   try {
     return new URL(
-      `/api/products/${encodeURIComponent(slug)}`,
+      `/api/products/${encodeURIComponent(slug)}?locale=${encodeURIComponent(locale)}`,
       configuredSiteUrl
     ).toString();
   } catch {
@@ -31,8 +31,8 @@ function getPublicProductUrl(slug: string): string | null {
   }
 }
 
-async function loadOpenGraphProduct(slug: string): Promise<OpenGraphProduct | null> {
-  const productUrl = getPublicProductUrl(slug);
+async function loadOpenGraphProduct(locale: string, slug: string): Promise<OpenGraphProduct | null> {
+  const productUrl = getPublicProductUrl(locale, slug);
   if (!productUrl) return null;
 
   try {
@@ -61,8 +61,8 @@ function formatOpenGraphSum(value: number): string {
 export default async function ProductOpenGraphImage({
   params,
 }: ProductOpenGraphImageProps) {
-  const { slug } = await params;
-  const product = await loadOpenGraphProduct(slug);
+  const { locale, slug } = await params;
+  const product = await loadOpenGraphProduct(locale, slug);
   const title = product?.name ?? "Nafis Flowers";
   const price = product
     ? formatOpenGraphSum(product.price)

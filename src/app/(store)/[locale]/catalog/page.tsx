@@ -3,15 +3,15 @@ import { StorefrontShell } from "@/components/storefront/StorefrontShell";
 import type { PublicCatalogFilters } from "@/lib/contracts";
 
 export const metadata: Metadata = {
-  title: "Gullar katalogi",
+  title: "Flower catalog",
   description:
-    "Toshkent uchun yangi guldastalar, atirgullar, lolalar va florist tanlovlari katalogi.",
-  alternates: { canonical: "/gullar" },
+    "Fresh bouquets, roses, tulips and orchids with delivery across Tashkent.",
 };
 
 export const dynamic = "force-dynamic";
 
 type CatalogPageProps = {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 

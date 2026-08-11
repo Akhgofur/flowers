@@ -1,5 +1,5 @@
 import "server-only";
-import nodemailer from "nodemailer";
+import nodemailer from "nodemailer-runtime";
 import type { PaymentMethod } from "@/lib/contracts";
 import { env } from "@/lib/env";
 import { formatSum } from "@/shared/format";

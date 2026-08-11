@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 import { formatSum } from "../../shared/format";
 import { applyImageFallback } from "../../shared/image-fallback";
@@ -170,7 +170,7 @@ export function CartDrawer({
               </div>
               <Link
                 className="primary-button"
-                href="/buyurtma"
+                href="/checkout"
               >
                 Buyurtmani rasmiylashtirish
               </Link>
