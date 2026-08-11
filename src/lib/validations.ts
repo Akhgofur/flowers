@@ -4,6 +4,7 @@ import {
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PRODUCT_STATUSES,
+  SEASONS,
 } from "@/lib/contracts";
 import { LOCALES } from "@/i18n/config";
 
@@ -21,6 +22,24 @@ const slugSchema = z
 const moneySchema = z.number().int().positive();
 const optionalMoneySchema = moneySchema.optional();
 const nonNegativeIntegerSchema = z.number().int().min(0);
+const seasonsSchema = z
+  .array(z.enum(SEASONS))
+  .min(1)
+  .max(SEASONS.length)
+  .superRefine((seasons, context) => {
+    if (new Set(seasons).size !== seasons.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Product seasons must be unique.",
+      });
+    }
+    if (seasons.includes("all_year") && seasons.length > 1) {
+      context.addIssue({
+        code: "custom",
+        message: "all_year cannot be combined with another season.",
+      });
+    }
+  });
 
 export const productTranslationInputSchema = z
   .object({
@@ -96,6 +115,7 @@ export const productInputSchema = z
     images: z.array(productImageSchema).min(1).max(8),
     flowerTypes: z.array(z.string().trim().min(1).max(48)).min(1).max(12),
     colors: z.array(z.string().trim().min(1).max(48)).min(1).max(12),
+    seasons: seasonsSchema.default(["all_year"]),
     stockQuantity: nonNegativeIntegerSchema.default(0),
     sortOrder: nonNegativeIntegerSchema.default(0),
     isFeatured: z.boolean().default(false),
@@ -144,6 +164,7 @@ export const productPatchInputSchema = z
       .optional(),
     categoryId: objectIdSchema.optional(),
     price: z.number().int().positive().nullable().optional(),
+    seasons: seasonsSchema.optional(),
     stockQuantity: nonNegativeIntegerSchema.optional(),
     sortOrder: nonNegativeIntegerSchema.optional(),
     status: z.enum(PRODUCT_STATUSES).optional(),

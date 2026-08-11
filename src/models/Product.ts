@@ -2,6 +2,7 @@ import mongoose, { type Model, type Types } from "mongoose";
 import type {
   Localized,
   ProductImage,
+  Season,
   ProductStatus,
   ProductTranslation,
 } from "@/lib/contracts";
@@ -18,6 +19,7 @@ export type ProductDocument = {
   images: ProductImage[];
   flowerTypes: string[];
   colors: string[];
+  seasons: Season[];
   stockQuantity: number;
   sortOrder: number;
   isFeatured: boolean;
@@ -148,6 +150,20 @@ const productSchema = new Schema<ProductDocument>(
         message: "A product must have between 1 and 12 colors.",
       },
     },
+    seasons: {
+      type: [String],
+      required: true,
+      enum: ["spring", "summer", "autumn", "winter", "all_year"],
+      default: ["all_year"],
+      validate: {
+        validator: (value: Season[]) =>
+          value.length > 0 &&
+          new Set(value).size === value.length &&
+          !(value.includes("all_year") && value.length > 1),
+        message:
+          "Product seasons must be unique and all_year cannot be combined with another season.",
+      },
+    },
     stockQuantity: {
       type: Number,
       required: true,
@@ -211,6 +227,7 @@ productSchema.pre("validate", function validatePriceRelationship() {
 productSchema.index({ slug: 1 }, { unique: true });
 productSchema.index({ status: 1, categoryId: 1 });
 productSchema.index({ isOnSale: 1, status: 1 });
+productSchema.index({ status: 1, seasons: 1 });
 
 export const ProductModel =
   (models.Product as Model<ProductDocument> | undefined) ??

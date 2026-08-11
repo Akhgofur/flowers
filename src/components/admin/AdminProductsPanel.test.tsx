@@ -36,6 +36,7 @@ const product: AdminProduct = {
   images: [{ url: "https://example.com/rose.jpg", alt: "Rose basket" }],
   flowerTypes: ["rose"],
   colors: ["red"],
+  seasons: ["all_year"],
   stockQuantity: 4,
   sortOrder: 1,
   isFeatured: false,

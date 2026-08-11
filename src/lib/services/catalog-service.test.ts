@@ -33,6 +33,7 @@ const publishedProduct: CatalogProduct = {
   categorySlug: "tulips",
   flowerTypes: ["tulip"],
   colors: ["pink"],
+  seasons: ["all_year"],
   stockQuantity: 12,
   sortOrder: 2,
   isFeatured: false,
@@ -82,6 +83,22 @@ describe("public catalog service", () => {
       "ru",
       "unknown-or-draft"
     );
+  });
+
+  it("keeps published unavailable products visible for detail and inquiry journeys", async () => {
+    const unavailable = {
+      ...publishedProduct,
+      price: undefined,
+      stockQuantity: 0,
+      seasons: ["winter"] as const,
+    };
+    repository.findPublishedCatalogProducts.mockResolvedValue([unavailable]);
+    repository.findPublishedProductBySlug.mockResolvedValue(unavailable);
+
+    await expect(getPublishedCatalog("ru", {})).resolves.toEqual([unavailable]);
+    await expect(
+      getPublishedProductBySlug("ru", unavailable.slug)
+    ).resolves.toEqual(unavailable);
   });
 
   it("returns only published categories from the repository boundary", async () => {

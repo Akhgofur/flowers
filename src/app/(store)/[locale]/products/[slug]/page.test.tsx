@@ -35,6 +35,7 @@ const product: CatalogProduct = {
   categorySlug: "roses",
   flowerTypes: ["rose"],
   colors: ["red"],
+  seasons: ["all_year"],
   stockQuantity: 12,
   sortOrder: 1,
   isFeatured: true,

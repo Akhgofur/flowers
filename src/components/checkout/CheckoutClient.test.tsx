@@ -25,6 +25,7 @@ const products: CatalogProduct[] = [
     categorySlug: "tulips",
     flowerTypes: ["tulip"],
     colors: ["pink"],
+    seasons: ["all_year"],
     stockQuantity: 12,
     sortOrder: 1,
     isFeatured: false,

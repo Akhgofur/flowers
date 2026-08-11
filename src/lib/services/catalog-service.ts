@@ -70,9 +70,7 @@ export async function getPublishedCatalog(
   }
 
   const products = await readPublishedCatalog(locale, normalizedFilters);
-  return products.filter(
-    (product) => product.status === "published" && product.stockQuantity > 0
-  );
+  return products.filter((product) => product.status === "published");
 }
 
 export async function getPublishedProductBySlug(
@@ -83,9 +81,7 @@ export async function getPublishedProductBySlug(
   if (!normalizedSlug) return null;
 
   const product = await readPublishedProduct(locale, normalizedSlug);
-  return product?.status === "published" && product.stockQuantity > 0
-    ? product
-    : null;
+  return product?.status === "published" ? product : null;
 }
 
 export async function getPublishedCategories(locale: Locale): Promise<CatalogCategory[]> {

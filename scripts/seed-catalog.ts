@@ -108,6 +108,7 @@ function toSeedProduct(
     ],
     flowerTypes: [...product.flowerTypes],
     colors: [...product.colors],
+    seasons: ["all_year"],
     stockQuantity: seedStockQuantity,
     sortOrder: index,
     isFeatured: index < 4,

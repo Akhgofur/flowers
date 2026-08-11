@@ -2,11 +2,18 @@ import "server-only";
 import mongoose, { type ClientSession, type Types } from "mongoose";
 import type {
   CheckoutInput,
+  CurrentSeason,
   OrderCreationResult,
   OrderStatus,
   PaymentMethod,
   ProductImage,
+  ProductStatus,
+  Season,
 } from "@/lib/contracts";
+import {
+  getProductAvailability,
+  getTashkentSeason,
+} from "@/lib/product-availability";
 import { dbConnect } from "@/lib/mongodb";
 import { checkoutSchema } from "@/lib/validations";
 import { OrderModel, type OrderDocument } from "@/models/Order";
@@ -26,6 +33,13 @@ export type ReservedProduct = {
   price: number;
   stockQuantity: number;
   images: ProductImage[];
+};
+
+export type ProductPurchaseState = {
+  status: ProductStatus;
+  seasons: Season[];
+  stockQuantity: number;
+  price?: number;
 };
 
 export type StoredOrderItem = {
@@ -71,8 +85,13 @@ export type OrderStore = {
     productId: string,
     quantity: number,
     locale: Locale,
+    currentSeason: CurrentSeason,
     transaction: OrderTransaction
   ): Promise<ReservedProduct | null>;
+  inspectProduct(
+    productId: string,
+    transaction: OrderTransaction
+  ): Promise<ProductPurchaseState | null>;
   getDeliveryFee(transaction: OrderTransaction): Promise<number>;
   createPendingOrder(
     record: PendingOrderRecord,
@@ -108,7 +127,13 @@ type OrderServiceDependencies = {
 
 type ProductRecord = Pick<
   ProductDocument,
-  "slug" | "translations" | "price" | "stockQuantity" | "images"
+  | "slug"
+  | "translations"
+  | "price"
+  | "stockQuantity"
+  | "images"
+  | "status"
+  | "seasons"
 > & {
   _id: Types.ObjectId;
 };
@@ -130,6 +155,17 @@ export class ProductUnavailableError extends OrderServiceError {
   constructor(readonly productId: string) {
     super("Bu mahsulot hozir yetarli miqdorda mavjud emas.", "PRODUCT_UNAVAILABLE", 409);
     this.name = "ProductUnavailableError";
+  }
+}
+
+export class ProductOutOfSeasonError extends OrderServiceError {
+  constructor(readonly productId: string) {
+    super(
+      "Bu mahsulot joriy mavsumda buyurtma uchun mavjud emas.",
+      "PRODUCT_OUT_OF_SEASON",
+      409
+    );
+    this.name = "ProductOutOfSeasonError";
   }
 }
 
@@ -197,13 +233,19 @@ function createMongoOrderStore(): OrderStore {
       return connection.connection.transaction(async (session) => operation(session));
     },
 
-    async reserveProduct(productId, quantity, locale, transaction) {
+    async reserveProduct(productId, quantity, locale, currentSeason, transaction) {
       const document = (await ProductModel.findOneAndUpdate(
         {
           _id: productId,
           status: "published",
-          price: { $exists: true, $ne: null },
+          price: { $gt: 0 },
           stockQuantity: { $gte: quantity },
+          $or: [
+            { seasons: "all_year" },
+            { seasons: currentSeason },
+            { seasons: { $exists: false } },
+            { seasons: { $size: 0 } },
+          ],
         },
         { $inc: { stockQuantity: -quantity } },
         { new: true, session: asClientSession(transaction) }
@@ -235,6 +277,26 @@ function createMongoOrderStore(): OrderStore {
         price: document.price,
         stockQuantity: document.stockQuantity,
         images: document.images.map((image) => ({ ...image })),
+      };
+    },
+
+    async inspectProduct(productId, transaction) {
+      if (!mongoose.isValidObjectId(productId)) return null;
+
+      const document = (await ProductModel.findById(productId)
+        .select({ status: 1, seasons: 1, stockQuantity: 1, price: 1 })
+        .session(asClientSession(transaction))
+        .lean()
+        .exec()) as unknown as ProductRecord | null;
+
+      if (!document) return null;
+
+      return {
+        status: document.status,
+        seasons:
+          document.seasons?.length > 0 ? [...document.seasons] : ["all_year"],
+        stockQuantity: document.stockQuantity,
+        ...(document.price === undefined ? {} : { price: document.price }),
       };
     },
 
@@ -356,6 +418,8 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
   return {
     async createPendingOrder(input: CheckoutInput): Promise<OrderCreationResult> {
       const checkout = normalizeCheckoutInput(input);
+      const requestedAt = now();
+      const currentSeason = getTashkentSeason(requestedAt);
       let lastDuplicateError: unknown;
 
       for (let attempt = 0; attempt < MAX_ORDER_NUMBER_ATTEMPTS; attempt += 1) {
@@ -374,10 +438,24 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                 item.productId,
                 item.quantity,
                 checkout.locale,
+                currentSeason,
                 transaction
               );
 
-              if (!product) throw new ProductUnavailableError(item.productId);
+              if (!product) {
+                const purchaseState = await dependencies.store.inspectProduct(
+                  item.productId,
+                  transaction
+                );
+                if (
+                  purchaseState &&
+                  getProductAvailability(purchaseState, requestedAt).reason ===
+                    "out_of_season"
+                ) {
+                  throw new ProductOutOfSeasonError(item.productId);
+                }
+                throw new ProductUnavailableError(item.productId);
+              }
 
               const image = product.images[0];
               if (!image) {
@@ -400,7 +478,7 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
             const total = ensureMoney(subtotal + deliveryFee, "Order total");
             const created = await dependencies.store.createPendingOrder(
               {
-                number: generateOrderNumber(now()),
+                number: generateOrderNumber(requestedAt),
                 locale: checkout.locale,
                 customer: {
                   fullName: checkout.customer.fullName,

@@ -25,7 +25,6 @@ type PublicCategoryRecord = CategoryDocument & { _id: Types.ObjectId };
 
 const publishedProductFilter: QueryFilter<ProductDocument> = {
   status: "published",
-  stockQuantity: { $gt: 0 },
 };
 
 export function escapeRegex(value: string): string {
@@ -74,6 +73,7 @@ export function toCatalogProduct(
     categorySlug: document.categoryId.slug,
     flowerTypes: [...document.flowerTypes],
     colors: [...document.colors],
+    seasons: document.seasons?.length > 0 ? [...document.seasons] : ["all_year"],
     stockQuantity: document.stockQuantity,
     sortOrder: document.sortOrder,
     isFeatured: document.isFeatured,

@@ -14,11 +14,32 @@ export const PAYMENT_METHODS = [
   "cash_on_delivery",
   "card_on_delivery",
 ] as const;
+export const SEASONS = [
+  "spring",
+  "summer",
+  "autumn",
+  "winter",
+  "all_year",
+] as const;
 
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 export type CategoryStatus = (typeof CATEGORY_STATUSES)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+export type Season = (typeof SEASONS)[number];
+export type CurrentSeason = Exclude<Season, "all_year">;
+export type ProductAvailabilityReason =
+  | "available"
+  | "unpublished"
+  | "out_of_season"
+  | "out_of_stock"
+  | "price_missing";
+
+export type ProductAvailability = {
+  available: boolean;
+  currentSeason: CurrentSeason;
+  reason: ProductAvailabilityReason;
+};
 
 export type ProductImage = {
   url: string;
@@ -67,6 +88,7 @@ export type CatalogProduct = {
   categorySlug: string;
   flowerTypes: string[];
   colors: string[];
+  seasons: Season[];
   stockQuantity: number;
   sortOrder: number;
   isFeatured: boolean;
@@ -150,6 +172,7 @@ export type AdminProduct = {
   images: ProductImage[];
   flowerTypes: string[];
   colors: string[];
+  seasons: Season[];
   stockQuantity: number;
   sortOrder: number;
   isFeatured: boolean;

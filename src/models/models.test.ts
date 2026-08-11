@@ -142,6 +142,23 @@ describe("Mongoose model invariants", () => {
     expect(product.get("isNewArrival")).toBe(false);
   });
 
+  it("defaults missing seasons to all year and rejects ambiguous season sets", async () => {
+    const defaulted = new ProductModel(localizedProductDocument);
+    await expect(defaulted.validate()).resolves.toBeUndefined();
+    expect(defaulted.get("seasons")).toEqual(["all_year"]);
+
+    const ambiguous = new ProductModel({
+      ...localizedProductDocument,
+      seasons: ["all_year", "summer"],
+    });
+    const validationError = await ambiguous.validate().catch((error: unknown) => error);
+
+    expect(validationError).toBeInstanceOf(Error);
+    expect(
+      (validationError as { errors?: Record<string, unknown> }).errors?.seasons
+    ).toBeDefined();
+  });
+
   it("declares the required catalog and singleton indexes", () => {
     const productIndexes = ProductModel.schema.indexes().map(([fields]) => fields);
     const categoryIndexes = CategoryModel.schema.indexes().map(([fields]) => fields);

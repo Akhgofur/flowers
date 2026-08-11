@@ -1,11 +1,20 @@
 import { describe, expect, it } from "vitest";
-import type { CheckoutInput, OrderStatus, PaymentMethod } from "@/lib/contracts";
+import type {
+  CheckoutInput,
+  CurrentSeason,
+  OrderStatus,
+  PaymentMethod,
+  ProductStatus,
+  Season,
+} from "@/lib/contracts";
 import {
   OrderNotFoundError,
+  ProductOutOfSeasonError,
   ProductUnavailableError,
   createOrderService,
   type OrderStore,
   type PendingOrderRecord,
+  type ProductPurchaseState,
   type ReservedProduct,
   type StoredOrder,
 } from "./order-service";
@@ -30,7 +39,11 @@ const checkoutInput: CheckoutInput = {
   ],
 };
 
-type MutableProduct = ReservedProduct & { stockQuantity: number };
+type MutableProduct = ReservedProduct & {
+  status: ProductStatus;
+  seasons: Season[];
+  stockQuantity: number;
+};
 
 function product(
   id: string,
@@ -43,6 +56,8 @@ function product(
     slug: name.toLowerCase().replaceAll(" ", "-"),
     name,
     price,
+    status: "published",
+    seasons: ["all_year"],
     stockQuantity,
     images: [{ url: "https://images.pexels.com/photos/1234567/flower.jpg", alt: name }],
   };
@@ -56,6 +71,7 @@ class InMemoryOrderStore implements OrderStore {
   readonly orders = new Map<string, StoredOrder>();
   readonly reservationOrder: string[] = [];
   readonly reservationLocales: string[] = [];
+  readonly reservationSeasons: CurrentSeason[] = [];
   deliveryFee = 20_000;
   duplicateNumberOnce = false;
   private nextOrderId = 1;
@@ -80,15 +96,37 @@ class InMemoryOrderStore implements OrderStore {
   async reserveProduct(
     productId: string,
     quantity: number,
-    locale: "ru" | "uz" | "en"
+    locale: "ru" | "uz" | "en",
+    currentSeason: CurrentSeason
   ): Promise<ReservedProduct | null> {
     this.reservationOrder.push(productId);
     this.reservationLocales.push(locale);
+    this.reservationSeasons.push(currentSeason);
     const record = this.products.get(productId);
-    if (!record || record.stockQuantity < quantity) return null;
+    if (
+      !record ||
+      record.stockQuantity < quantity ||
+      !Number.isSafeInteger(record.price) ||
+      record.price <= 0 ||
+      (record.seasons[0] !== "all_year" && !record.seasons.includes(currentSeason))
+    ) {
+      return null;
+    }
 
     record.stockQuantity -= quantity;
     return { ...record, images: [...record.images] };
+  }
+
+  async inspectProduct(productId: string): Promise<ProductPurchaseState | null> {
+    const record = this.products.get(productId);
+    if (!record) return null;
+
+    return {
+      status: record.status,
+      seasons: [...record.seasons],
+      stockQuantity: record.stockQuantity,
+      price: record.price,
+    };
   }
 
   async getDeliveryFee(): Promise<number> {
@@ -163,6 +201,7 @@ describe("transactional order service", () => {
     });
     expect(store.reservationOrder).toEqual([redRoseId, tulipId]);
     expect(store.reservationLocales).toEqual(["ru", "ru"]);
+    expect(store.reservationSeasons).toEqual(["summer", "summer"]);
     expect(store.products.get(redRoseId)?.stockQuantity).toBe(2);
     expect(store.products.get(tulipId)?.stockQuantity).toBe(1);
     expect(order).toMatchObject({
@@ -182,8 +221,13 @@ describe("transactional order service", () => {
   it("stores the server-selected product name in the checkout locale", async () => {
     const store = new InMemoryOrderStore();
     const originalReserve = store.reserveProduct.bind(store);
-    store.reserveProduct = async (productId, quantity, locale) => {
-      const reserved = await originalReserve(productId, quantity, locale);
+    store.reserveProduct = async (productId, quantity, locale, currentSeason) => {
+      const reserved = await originalReserve(
+        productId,
+        quantity,
+        locale,
+        currentSeason
+      );
       if (!reserved) return null;
       return {
         ...reserved,
@@ -210,6 +254,41 @@ describe("transactional order service", () => {
     await expect(makeService(store).createPendingOrder(checkoutInput)).rejects.toBeInstanceOf(
       ProductUnavailableError
     );
+
+    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
+    expect(store.orders).toHaveLength(0);
+  });
+
+  it("rejects an out-of-season product without decrementing its stock", async () => {
+    const store = new InMemoryOrderStore();
+    store.products.get(redRoseId)!.seasons = ["winter"];
+
+    const error = await makeService(store)
+      .createPendingOrder({
+        ...checkoutInput,
+        items: [{ productId: redRoseId, quantity: 1 }],
+      })
+      .catch((reason: unknown) => reason);
+
+    expect(error).toBeInstanceOf(ProductOutOfSeasonError);
+    expect(error).toMatchObject({
+      code: "PRODUCT_OUT_OF_SEASON",
+      productId: redRoseId,
+    });
+    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
+    expect(store.orders).toHaveLength(0);
+  });
+
+  it("rejects a product with a non-positive price before decrementing stock", async () => {
+    const store = new InMemoryOrderStore();
+    store.products.get(redRoseId)!.price = 0;
+
+    await expect(
+      makeService(store).createPendingOrder({
+        ...checkoutInput,
+        items: [{ productId: redRoseId, quantity: 1 }],
+      })
+    ).rejects.toBeInstanceOf(ProductUnavailableError);
 
     expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
     expect(store.orders).toHaveLength(0);

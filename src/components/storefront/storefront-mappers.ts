@@ -80,6 +80,7 @@ export function toBootstrapCatalogProduct(
     categorySlug: product.category,
     flowerTypes: [...product.flowerTypes],
     colors: [...product.colors],
+    seasons: ["all_year"],
     stockQuantity: 20,
     sortOrder: index,
     isFeatured: index < 4,

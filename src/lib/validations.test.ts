@@ -136,10 +136,25 @@ describe("commerce validation boundaries", () => {
   });
 
   it("normalizes valid product inputs and rejects unknown order statuses", () => {
-    expect(productInputSchema.parse(validProductInput).slug).toBe(
-      "pushti-lola-buketi"
-    );
+    const product = productInputSchema.parse(validProductInput);
+
+    expect(product.slug).toBe("pushti-lola-buketi");
+    expect(product.seasons).toEqual(["all_year"]);
     expect(() => orderStatusSchema.parse("paid")).toThrow();
+  });
+
+  it("accepts named seasons but rejects empty, duplicate, and mixed all-year seasons", () => {
+    expect(
+      productInputSchema.parse({ ...validProductInput, seasons: ["spring", "summer"] })
+        .seasons
+    ).toEqual(["spring", "summer"]);
+    expect(() => productInputSchema.parse({ ...validProductInput, seasons: [] })).toThrow();
+    expect(() =>
+      productInputSchema.parse({ ...validProductInput, seasons: ["summer", "summer"] })
+    ).toThrow(/unique/i);
+    expect(() =>
+      productInputSchema.parse({ ...validProductInput, seasons: ["all_year", "summer"] })
+    ).toThrow(/all_year/i);
   });
 
   it("accepts an inquiry-only product with no price", () => {
@@ -166,6 +181,9 @@ describe("commerce validation boundaries", () => {
 
   it("accepts a minimal product patch but rejects empty and unknown patches", () => {
     expect(productPatchInputSchema.parse({ price: null })).toEqual({ price: null });
+    expect(productPatchInputSchema.parse({ seasons: ["winter"] })).toEqual({
+      seasons: ["winter"],
+    });
     expect(() => productPatchInputSchema.parse({})).toThrow(/required/i);
     expect(() => productPatchInputSchema.parse({ price: 100_000, images: [] })).toThrow();
   });
