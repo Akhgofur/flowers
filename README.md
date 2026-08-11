@@ -1,17 +1,32 @@
 # Nafis Flowers
 
-Toshkent uchun o‘zbek tilidagi premium gul katalogi. Loyiha **Next.js App Router**, MongoDB, server-rendered SEO sahifalari, guest checkout va bir-adminli boshqaruv panelidan iborat.
+Toshkent uchun uch tilli premium gul katalogi. Loyiha **Next.js App Router**, TypeScript, MongoDB, server-rendered SEO sahifalari, guest checkout va bir-adminli boshqaruv panelidan iborat.
 
-Payme, Click va boshqa online-payment gateway bu versiyaga ataylab kiritilmagan. Buyurtma `pending` holatida yaratiladi, qoldiq atomik zaxiralanadi, operator esa admin paneldan jarayonni boshqaradi.
+Storefront tillari:
+
+- Ruscha — default: `/ru`
+- O‘zbekcha: `/uz`
+- Inglizcha: `/en`
+
+Ichki public pathname’lar barcha tillarda inglizcha qoladi:
+
+- `/{locale}/catalog`
+- `/{locale}/products/{slug}`
+- `/{locale}/checkout`
+
+`/` doimiy ravishda `/ru`ga yo‘naltiriladi. Eski `/gullar`, `/gullar/{slug}` va `/buyurtma` manzillari ham ruscha yangi URL’larga redirect qilinadi.
+
+Payme, Click va boshqa online-payment gateway bu versiyaga ataylab kiritilmagan. Buyurtma `pending` holatida yaratiladi, qoldiq MongoDB transaction ichida atomik zaxiralanadi, operator esa admin paneldan jarayonni boshqaradi. Xaridor faqat yetkazib berilganda naqd yoki karta orqali to‘laydi.
 
 ## Asosiy imkoniyatlar
 
-- Server-rendered bosh sahifa, katalog va mahsulot sahifalari; canonical metadata, JSON-LD, `sitemap.xml`, `robots.txt` va mahsulot Open Graph rasmi.
-- MongoDB authoritative katalogi: public qidiruv/filter, draft/archived mahsulotlarni yashirish va cache revalidation.
-- Mehmon checkout: server narxi, MongoDB transaction ichidagi stock reservation, status transitionlari va bekor qilinganda qoldiqni aynan bir marta qaytarish.
+- Server-rendered bosh sahifa, katalog va mahsulot sahifalari; har bir til uchun canonical, `hreflang`, JSON-LD, `sitemap.xml`, `robots.txt` va Open Graph metadata.
+- MongoDB authoritative katalogi: public qidiruv/filter, draft va archived mahsulotlarni yashirish, cache revalidation.
+- Har bir kategoriya, mahsulot va do‘kon matni uchun majburiy RU/UZ/EN tarjimalari.
+- Mehmon checkout: server narxi, transaction ichidagi stock reservation, status transitionlari va bekor qilinganda qoldiqni aynan bir marta qaytarish.
 - NextAuth Credentials orqali server-side himoyalangan `/admin` paneli: mahsulot, kategoriya, buyurtma va do‘kon sozlamalari.
 - Admin Cloudinary upload: JPG/PNG/WebP, 5 MB gacha, alt matni majburiy; Cloudinary secretlari browserga chiqmaydi.
-- Sozlangan bo‘lsa SMTP va Telegramga yangi buyurtma xabari. Ular best-effort: provider xatosi saqlangan buyurtmani bekor qilmaydi.
+- Sozlangan bo‘lsa SMTP va Telegramga yangi buyurtma xabari. Provider xatosi saqlangan buyurtmani bekor qilmaydi.
 
 ## Lokal ishga tushirish
 
@@ -23,7 +38,7 @@ Copy-Item .env.example .env.local
 `.env.local` ichiga kamida quyidagilarni kiriting:
 
 ```dotenv
-MONGODB_URI=mongodb+srv://...
+MONGODB_URI=mongodb://127.0.0.1:27017/nafis_flowers?replicaSet=rs0
 NEXTAUTH_URL=http://localhost:3000
 NEXTAUTH_SECRET=kamida-32-belgilik-tasodifiy-secret
 ADMIN_EMAIL=admin@example.com
@@ -31,7 +46,9 @@ ADMIN_PASSWORD_HASH=$2b$12$...
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-`ADMIN_PASSWORD_HASH` uchun bcrypt hash yarating (plain-text parolni `.env.local`ga ham yozmang):
+Checkout MongoDB transaction ishlatadi. Shu sabab lokal Mongo ham replica set sifatida ishga tushirilishi kerak; oddiy standalone instance yetarli emas.
+
+`ADMIN_PASSWORD_HASH` uchun bcrypt hash yarating. Plain-text parolni `.env.local`ga ham, Git’ga ham yozmang:
 
 ```powershell
 node -e "import('bcryptjs').then(async ({ hash }) => console.log(await hash(process.argv[1], 12)))" "sizning-kuchli-parolingiz"
@@ -40,20 +57,31 @@ node -e "import('bcryptjs').then(async ({ hash }) => console.log(await hash(proc
 Keyin:
 
 ```powershell
-npm run seed:catalog  # birinchi katalog uchun; idempotent
+npm run seed:catalog
 npm run dev
 ```
 
-Public storefront `http://localhost:3000`, admin login esa `http://localhost:3000/admin/login` manzilida ochiladi. MongoDB sozlanmagan development muhitida vizual katalog demo ma’lumotlari bilan ko‘rinishi mumkin, lekin checkout ataylab yuborilmaydi — u soxta buyurtma yaratmaydi.
+`seed:catalog` `.env.local`ni o‘zi yuklaydi va qayta ishlatilganda duplicate yaratmaydi. U 6 kategoriya, 12 mahsulot va default do‘kon sozlamalarini RU/UZ/EN tarjimalari bilan yaratadi yoki yangilaydi.
+
+Lokal manzillar:
+
+- Ruscha storefront: `http://localhost:3000/ru`
+- O‘zbekcha storefront: `http://localhost:3000/uz`
+- Inglizcha storefront: `http://localhost:3000/en`
+- Admin login: `http://localhost:3000/admin/login`
+
+MongoDB ishlamasa vizual storefront fallback katalog bilan ko‘rinishi mumkin, lekin checkout ataylab buyurtma yubormaydi — soxta order yaratilmaydi.
 
 ## MongoDB va production talabi
 
-`MONGODB_URI` MongoDB Atlas replica set klasteriga ulanishi kerak. Buyurtma va ombor qoldig‘i transactionda ishlagani uchun standalone MongoDB instance production uchun mos emas.
+Production uchun `MONGODB_URI` Vercel serverlaridan ochiq bo‘lgan MongoDB Atlas replica-set klasteriga ulanishi kerak. `127.0.0.1` yoki lokal Docker manzili Vercelda ishlamaydi.
 
-1. Atlas’da database user va minimal kerakli IP/network access yarating.
-2. Ulanish URI’ni faqat deploy secret yoki `.env.local`ga qo‘ying.
-3. Production domain uchun `NEXTAUTH_URL` va `NEXT_PUBLIC_SITE_URL`ni HTTPS canonical domainga almashtiring.
-4. Deploymentda `npm run build` o‘tgandan keyin `npm run start` bilan ishga tushiring.
+1. Atlas’da alohida database user yarating va Network Access’ni Vercelga moslang.
+2. URI’ni faqat Vercel Environment Variables yoki lokal `.env.local`da saqlang.
+3. Production domain ma’lum bo‘lgach `NEXTAUTH_URL` va `NEXT_PUBLIC_SITE_URL`ni aynan shu HTTPS domain bilan yangilang.
+4. Production katalogini `npm run seed:catalog` bilan bir marta seed qiling.
+
+To‘liq deploy ketma-ketligi [Vercel release checklist](./docs/release/vercel-checklist.md)da yozilgan.
 
 ## Ixtiyoriy integratsiyalar
 
@@ -83,22 +111,23 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
 ```
 
-Bu ixtiyoriy qiymatlar bo‘sh bo‘lsa checkout normal ishlashda davom etadi. Notification xabari yuborilmagani order javobini `503` qilmaydi.
+Bu ixtiyoriy qiymatlar bo‘sh bo‘lsa checkout normal ishlashda davom etadi. Notification yuborilmagani order javobini `503` qilmaydi.
 
 ## Tekshiruvlar
 
 ```powershell
 npm run test:run
+npm run test:e2e
 npm run typecheck
 npm run lint
 npm run build
 ```
 
-Testlar schema va API validation, stock reservation/cancellation, status transition, rate limit, SEO, cart/checkout UX, admin auth/API va Cloudinary upload contractlarini qamrab oladi.
+Testlar locale routing, schema va API validation, stock reservation/cancellation, status transition, rate limit, SEO, responsive premium katalog, cart/checkout UX, admin auth/API va Cloudinary upload contractlarini qamrab oladi.
 
 ## Xavfsizlik chegaralari
 
-- `MONGODB_URI`, NextAuth secret, admin parol hash, Cloudinary secret va Telegram tokenlar source controlga kiritilmaydi.
+- `MONGODB_URI`, `NEXTAUTH_SECRET`, admin parol hash, Cloudinary secretlari, SMTP paroli va Telegram tokeni source controlga kiritilmaydi.
 - Admin mutationlari session va same-origin tekshiruvi bilan himoyalangan.
 - Client narxi, jami va inventory ishonchli manba emas; server har safar product snapshot va stockni qayta tekshiradi.
-- Payment status bu versiyada faqat `unpaid`; online payment mavjudligi haqida UI yoki API da’vosi yo‘q.
+- Payment status bu versiyada faqat `unpaid`; Payme/Click yoki boshqa online to‘lov mavjudligi haqida UI va API’da da’vo yo‘q.

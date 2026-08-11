@@ -176,6 +176,7 @@
     "removedFromFavorites": "{name} was removed from favorites.",
     "unknownDelivery": "Confirmed when you order",
     "unknownSize": "Size to be confirmed",
+    "loadingLabel": "Loading product",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
     "quantityLabel": "Quantity"
@@ -282,8 +283,12 @@
   "Errors": {
     "unexpected": "Something went wrong.",
     "retry": "Try again",
+    "temporary": "Temporary issue",
+    "productLoadTitle": "Unable to load this product",
+    "productLoadDescription": "Please try again in a few seconds.",
     "notFoundTitle": "Page not found",
     "notFoundDescription": "The address may have changed or the page is no longer available.",
+    "goCatalog": "Browse flowers",
     "goHome": "Go home",
     "demoCatalog": "The demo catalog is shown — current products and stock appear after MongoDB is connected."
   }

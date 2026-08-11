@@ -176,6 +176,7 @@
     "removedFromFavorites": "{name} sevimlilardan olib tashlandi.",
     "unknownDelivery": "Buyurtma paytida aniqlanadi",
     "unknownSize": "Aniqlashtiriladi",
+    "loadingLabel": "Mahsulot yuklanmoqda",
     "decreaseQuantity": "Miqdorni kamaytirish",
     "increaseQuantity": "Miqdorni oshirish",
     "quantityLabel": "Miqdor"
@@ -282,8 +283,12 @@
   "Errors": {
     "unexpected": "Nimadir noto‘g‘ri ketdi.",
     "retry": "Qayta urinish",
+    "temporary": "Vaqtinchalik xatolik",
+    "productLoadTitle": "Mahsulot ma’lumotini yuklab bo‘lmadi",
+    "productLoadDescription": "Bir necha soniyadan keyin qayta urinib ko‘ring.",
     "notFoundTitle": "Sahifa topilmadi",
     "notFoundDescription": "Manzil o‘zgargan yoki sahifa mavjud bo‘lmasligi mumkin.",
+    "goCatalog": "Katalogga qaytish",
     "goHome": "Bosh sahifaga",
     "demoCatalog": "Demo katalogi ko‘rsatilmoqda — MongoDB ulangach haqiqiy mahsulot va qoldiqlar chiqadi."
   }

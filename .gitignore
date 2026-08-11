@@ -15,5 +15,7 @@ dist/
 coverage/
 playwright-report/
 test-results/
+.playwright-mcp/
+/nafis-*-production-*.png
 *.tsbuildinfo
 *.log

@@ -176,6 +176,7 @@
     "removedFromFavorites": "«{name}» удалён из избранного.",
     "unknownDelivery": "Уточним при заказе",
     "unknownSize": "Размер уточняется",
+    "loadingLabel": "Загрузка товара",
     "decreaseQuantity": "Уменьшить количество",
     "increaseQuantity": "Увеличить количество",
     "quantityLabel": "Количество"
@@ -282,8 +283,12 @@
   "Errors": {
     "unexpected": "Что-то пошло не так.",
     "retry": "Попробовать снова",
+    "temporary": "Временная ошибка",
+    "productLoadTitle": "Не удалось загрузить товар",
+    "productLoadDescription": "Попробуйте снова через несколько секунд.",
     "notFoundTitle": "Страница не найдена",
     "notFoundDescription": "Возможно, адрес изменился или страница больше недоступна.",
+    "goCatalog": "Вернуться в каталог",
     "goHome": "На главную",
     "demoCatalog": "Показан демонстрационный каталог — после подключения MongoDB появятся актуальные товары и остатки."
   }
