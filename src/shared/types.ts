@@ -22,6 +22,7 @@ export type Product = {
   composition: string[];
   deliveryEstimate: string;
   size: string;
+  availability?: ProductAvailability;
 };
 
 export type CartLine = { productId: Product["id"]; quantity: number };
@@ -55,3 +56,4 @@ export type HeroSlide = {
   ctaTarget: "#catalog" | "#sale" | "#gift";
   image: string;
 };
+import type { ProductAvailability } from "@/lib/contracts";

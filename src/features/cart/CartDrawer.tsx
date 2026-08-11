@@ -1,5 +1,5 @@
 import { Link } from "@/i18n/navigation";
-import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { formatSum } from "../../shared/format";
 import { applyImageFallback } from "../../shared/image-fallback";
@@ -61,6 +61,15 @@ export function CartDrawer({
     if (open) shouldRestoreFocusRef.current = true;
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   useFocusTrap({
     active: open,
     containerRef: drawerRef,
@@ -83,7 +92,8 @@ export function CartDrawer({
         ref={drawerRef}
         id="cart-drawer"
         className="cart-drawer"
-        role="complementary"
+        role="dialog"
+        aria-modal="true"
         aria-label={t("title")}
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}

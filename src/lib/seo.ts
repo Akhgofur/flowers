@@ -5,6 +5,7 @@ import {
   type Locale,
 } from "@/i18n/config";
 import type { CatalogProduct } from "@/lib/contracts";
+import { getProductAvailability } from "@/lib/product-availability";
 
 const FALLBACK_SITE_URL = "https://floraluxe.uz";
 
@@ -176,6 +177,7 @@ export function buildProductJsonLd(
   settings: PublicSeoSettings = DEFAULT_PUBLIC_SEO_SETTINGS
 ) {
   const productPath = localizedPublicPath(locale, `/products/${product.slug}`);
+  const availability = getProductAvailability(product, new Date());
 
   return {
     "@context": "https://schema.org",
@@ -198,10 +200,9 @@ export function buildProductJsonLd(
             url: absoluteUrl(productPath),
             priceCurrency: product.currency,
             price: String(product.price),
-            availability:
-              product.stockQuantity > 0
-                ? "https://schema.org/InStock"
-                : "https://schema.org/OutOfStock",
+            availability: availability.available
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
             itemCondition: "https://schema.org/NewCondition",
           },
         }),

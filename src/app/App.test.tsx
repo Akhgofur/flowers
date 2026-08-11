@@ -85,7 +85,7 @@ it("opens the empty cart drawer", async () => {
   await user.click(cartButton);
 
   expect(cartButton).toHaveAttribute("aria-expanded", "true");
-  const drawer = screen.getByRole("complementary", { name: /savat/i });
+  const drawer = screen.getByRole("dialog", { name: /savat/i });
   expect(drawer).toBeVisible();
   expect(within(drawer).getByText(/savatingiz hozircha bo.sh/i)).toBeVisible();
 });
@@ -111,7 +111,7 @@ it("describes the about shortcut without claiming a profile action", () => {
 
   expect(
     screen.getByRole("link", { name: /biz haqimizda bo.limiga o.tish/i })
-  ).toHaveAttribute("href", "#about");
+  ).toHaveAttribute("href", "/uz#about");
   expect(screen.queryByRole("link", { name: /profilni ochish/i })).not.toBeInTheDocument();
 });
 
@@ -454,7 +454,7 @@ it("uses a truthful floral fallback in every image render path", async () => {
     })
   );
   await user.click(screen.getByRole("button", { name: /savatni ochish/i }));
-  const drawer = screen.getByRole("complementary", { name: /savat/i });
+  const drawer = screen.getByRole("dialog", { name: /savat/i });
   assertFallback(
     within(drawer).getByAltText(/qirmizi atirgul buketi gul kompozitsiyasi/i)
   );
@@ -556,7 +556,7 @@ it("contains quick-view focus with Tab and Shift+Tab and restores its trigger", 
   expect(closeButton).toHaveFocus();
   await user.click(cartTrigger);
   expect(dialog).toBeVisible();
-  expect(screen.queryByRole("complementary", { name: /savat/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: /savat/i })).not.toBeInTheDocument();
   closeButton.focus();
 
   await user.tab({ shift: true });
@@ -570,7 +570,7 @@ it("contains quick-view focus with Tab and Shift+Tab and restores its trigger", 
   await user.tab();
   expect(closeButton).toHaveFocus();
   expect(cartTrigger).toHaveAttribute("aria-expanded", "false");
-  expect(screen.queryByRole("complementary", { name: /savat/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: /savat/i })).not.toBeInTheDocument();
 
   await user.keyboard("{Escape}");
   expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
@@ -659,7 +659,7 @@ it("adds a quick-view product to cart and opens the drawer", async () => {
   await user.keyboard("{Escape}");
   expect(viewTrigger).toHaveFocus();
   await user.click(cartButton);
-  expect(screen.getByRole("complementary", { name: /savat/i })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: /savat/i })).toBeVisible();
 });
 
 it("toggles a favorite and persists its product id", async () => {
@@ -716,7 +716,7 @@ it("changes cart quantity with plus and minus and removes the line", async () =>
   );
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
   await user.click(cartButton);
-  const drawer = screen.getByRole("complementary", { name: /savat/i });
+  const drawer = screen.getByRole("dialog", { name: /savat/i });
 
   await user.click(
     within(drawer).getByRole("button", {
@@ -778,7 +778,7 @@ it("closes the empty cart and returns focus to the catalog", async () => {
     await user.click(screen.getByRole("button", { name: /savatni ochish/i }));
     await user.click(screen.getByRole("button", { name: /katalogga qaytish/i }));
 
-    expect(screen.queryByRole("complementary", { name: /savat/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: /savat/i })).not.toBeInTheDocument();
     expect(document.querySelector("#catalog")).toHaveFocus();
     expect(scrollIntoView).toHaveBeenCalledTimes(1);
   } finally {
@@ -814,11 +814,11 @@ it("closes the cart drawer with Escape", async () => {
 
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
   await user.click(cartButton);
-  expect(screen.getByRole("complementary", { name: /savat/i })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: /savat/i })).toBeVisible();
 
   await user.keyboard("{Escape}");
 
-  expect(screen.queryByRole("complementary", { name: /savat/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: /savat/i })).not.toBeInTheDocument();
   expect(cartButton).toHaveFocus();
 });
 
@@ -829,7 +829,7 @@ it("contains cart drawer focus with Tab and Shift+Tab and restores its trigger",
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
   await user.click(cartButton);
 
-  const drawer = screen.getByRole("complementary", { name: /savat/i });
+  const drawer = screen.getByRole("dialog", { name: /savat/i });
   const closeButton = within(drawer).getByRole("button", {
     name: /savatni yopish/i,
   });
@@ -844,7 +844,7 @@ it("contains cart drawer focus with Tab and Shift+Tab and restores its trigger",
   expect(closeButton).toHaveFocus();
 
   await user.keyboard("{Escape}");
-  expect(screen.queryByRole("complementary", { name: /savat/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: /savat/i })).not.toBeInTheDocument();
   expect(cartButton).toHaveFocus();
 });
 
@@ -859,7 +859,7 @@ it("restores the actual cart trigger when activation does not move focus", async
   viewTrigger.focus();
 
   fireEvent.click(cartButton);
-  expect(screen.getByRole("complementary", { name: /savat/i })).toBeVisible();
+  expect(screen.getByRole("dialog", { name: /savat/i })).toBeVisible();
 
   await user.keyboard("{Escape}");
 

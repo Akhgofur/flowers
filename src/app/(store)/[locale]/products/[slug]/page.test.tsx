@@ -13,6 +13,9 @@ vi.mock("next-intl/server", () => ({
     (key: string) => `${namespace}.${key}`
   ),
 }));
+vi.mock("@/components/storefront/LanguageSwitcher", () => ({
+  LanguageSwitcher: () => <span>RU UZ EN</span>,
+}));
 
 import ProductPage, { generateMetadata } from "./page";
 
@@ -80,5 +83,24 @@ describe("product detail server route", () => {
       "ru",
       "qirmizi-atirgul-buketi"
     );
+  });
+
+  it("shows a contact action instead of purchase controls when the product is out of season", async () => {
+    catalogService.getPublishedProductBySlug.mockResolvedValue({
+      ...product,
+      seasons: ["winter"],
+    });
+
+    render(
+      await ProductPage({
+        params: Promise.resolve({ locale: "ru", slug: product.slug }),
+      })
+    );
+
+    expect(screen.getByRole("link", { name: /уточнить наличие/i })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^(tel:|https:\/\/t\.me)/)
+    );
+    expect(screen.queryByRole("button", { name: /добавить в корзину/i })).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-# Nafis Flowers — GitHub va Vercel release checklist
+# Floraluxe — GitHub va Vercel release checklist
 
 ## 1. Preflight
 
@@ -13,7 +13,7 @@
 
 ## 2. GitHub
 
-- [ ] Shaxsiy GitHub akkauntida private `nafis-flowers` repository yaratilgan.
+- [ ] Shaxsiy GitHub akkauntida `flowers` repository yaratilgan.
 - [ ] Default branch `main`.
 - [ ] Lokal `origin` aynan shu repositoryga ulanadi.
 - [ ] Secret va `.env.local` commitga kirmagan.
@@ -27,6 +27,7 @@
 - [ ] URI replica set klasteriga tegishli va database nomi ko‘rsatilgan.
 - [ ] Production katalogi `npm run seed:catalog` bilan seed qilingan.
 - [ ] URI log, screenshot, Git commit yoki frontend bundle’da ko‘rinmaydi.
+- [ ] `npm run migrate:floraluxe -- --dry-run` natijasi tekshirilgan, so‘ng `--apply` bajarilgan.
 
 > Lokal `127.0.0.1`/Docker Mongo URI Vercelda ishlamaydi. Deploy faqat tashqaridan ochiq Atlas URI bilan funksional hisoblanadi.
 
@@ -57,6 +58,7 @@ SMTP_FROM
 ORDER_NOTIFICATION_EMAIL
 TELEGRAM_BOT_TOKEN
 TELEGRAM_CHAT_ID
+CRON_SECRET
 ```
 
 - [ ] Secretlar Vercel Environment Variables orqali kiritilgan.

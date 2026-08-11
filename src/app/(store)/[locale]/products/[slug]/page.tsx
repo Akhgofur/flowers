@@ -10,11 +10,14 @@ import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
 import { getPublishedProductBySlug } from "@/lib/services/catalog-service";
 import { getPublicSiteSettings } from "@/lib/services/public-settings-service";
 import {
+  absoluteUrl,
   buildBreadcrumbJsonLd,
   buildProductJsonLd,
   buildProductMetadata,
   serializeJsonLd,
 } from "@/lib/seo";
+import { getProductAvailability } from "@/lib/product-availability";
+import { StorefrontFrame } from "@/components/storefront/StorefrontFrame";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +76,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const productJsonLd = serializeJsonLd(
     buildProductJsonLd(product, locale, settings)
   );
+  const availability = getProductAvailability(product, new Date());
+  const productUrl = absoluteUrl(`/${locale}/products/${product.slug}`);
   const breadcrumbJsonLd = serializeJsonLd(
     buildBreadcrumbJsonLd([
       { name: tHeader("navHome"), path: `/${locale}` },
@@ -91,7 +96,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: breadcrumbJsonLd }}
       />
-      <ProductDetail key={product.id} product={product} />
+      <StorefrontFrame products={[product]} settings={settings}>
+        <ProductDetail
+          key={product.id}
+          product={product}
+          availability={availability}
+          settings={settings}
+          productUrl={productUrl}
+        />
+      </StorefrontFrame>
     </>
   );
 }

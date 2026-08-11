@@ -1,14 +1,19 @@
 "use client";
 
-import App, { type AppInitialCatalogFilters } from "@/app/App";
+import type { AppInitialCatalogFilters } from "@/app/App";
 import type { CatalogCategory, CatalogProduct, PublicSiteSettings } from "@/lib/contracts";
-import { toClientCategory, toClientProduct } from "./storefront-mappers";
+import type { HomePageCatalogData } from "@/lib/services/home-merchandising-service";
+import { HomePage } from "@/features/home/HomePage";
+import { CatalogPageClient } from "./CatalogPageClient";
+import { StorefrontFrame } from "./StorefrontFrame";
 
 export type StorefrontClientProps = {
   products: readonly CatalogProduct[];
   categories: readonly CatalogCategory[];
   settings?: PublicSiteSettings;
   initialFilters?: AppInitialCatalogFilters;
+  mode?: "home" | "catalog";
+  merchandising?: HomePageCatalogData;
 };
 
 /** Browser-only interaction island. Server props intentionally contain no cart or favorites. */
@@ -17,20 +22,39 @@ export function StorefrontClient({
   categories,
   settings,
   initialFilters,
+  mode = "catalog",
+  merchandising,
 }: StorefrontClientProps) {
   const appKey = [
     initialFilters?.category ?? "",
     initialFilters?.query ?? "",
     initialFilters?.tab ?? "all",
+    initialFilters?.page ?? 1,
   ].join("|");
 
+  const frameProducts = mode === "home" && merchandising
+    ? [
+        ...new Map(
+          [
+            ...merchandising.dynamicSections.flatMap((section) => section.products),
+            ...merchandising.bestSellers,
+            ...merchandising.recommended,
+          ].map((product) => [product.id, product])
+        ).values(),
+      ]
+    : [...products];
+
   return (
-    <App
-      key={appKey}
-      products={products.map(toClientProduct)}
-      categories={categories.map((category) => toClientCategory(category, products))}
-      siteSettings={settings}
-      initialFilters={initialFilters}
-    />
+    <StorefrontFrame key={appKey} products={frameProducts} settings={settings}>
+      {mode === "home" && merchandising ? (
+        <HomePage categories={categories} merchandising={merchandising} settings={settings} />
+      ) : (
+        <CatalogPageClient
+          products={products}
+          categories={categories}
+          initialFilters={initialFilters}
+        />
+      )}
+    </StorefrontFrame>
   );
 }

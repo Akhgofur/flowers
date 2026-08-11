@@ -12,6 +12,7 @@ export type CatalogFiltersProps = {
   onChange: (nextFilters: CatalogFilterState) => void;
   onApply: () => void;
   onReset: () => void;
+  headingId?: string;
 };
 
 const FLOWER_TYPES: readonly FlowerType[] = [
@@ -49,6 +50,7 @@ export function CatalogFilters({
   onChange,
   onApply,
   onReset,
+  headingId = "catalog-filters-title",
 }: CatalogFiltersProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Catalog");
@@ -62,11 +64,11 @@ export function CatalogFilters({
       : color;
 
   return (
-    <aside className="catalog-filters" aria-labelledby="catalog-filters-title">
+    <aside className="catalog-filters" aria-labelledby={headingId}>
       <div className="catalog-filters__heading">
         <div>
           <p className="eyebrow">{t("kicker")}</p>
-          <h3 id="catalog-filters-title">{t("filtersTitle")}</h3>
+          <h3 id={headingId}>{t("filtersTitle")}</h3>
         </div>
       </div>
 

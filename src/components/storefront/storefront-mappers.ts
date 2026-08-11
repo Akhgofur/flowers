@@ -3,6 +3,7 @@ import type { Locale } from "@/i18n/config";
 import type { BootstrapCategory, BootstrapProduct } from "@/data/catalog";
 import { IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
 import type { Category, Product } from "@/shared/types";
+import { getProductAvailability } from "@/lib/product-availability";
 
 const CATEGORY_ICONS: Record<string, Category["icon"]> = {
   roses: "rose",
@@ -32,6 +33,7 @@ export function toClientProduct(product: CatalogProduct): Product {
     composition: [...product.composition],
     deliveryEstimate: product.deliveryEstimate ?? "",
     size: product.size ?? "",
+    availability: getProductAvailability(product, new Date()),
   };
 }
 

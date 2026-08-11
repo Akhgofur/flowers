@@ -4,6 +4,7 @@ import { applyImageFallback } from "../../shared/image-fallback";
 import { FavoriteButton } from "../product/FavoriteButton";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/config";
+import { Link } from "@/i18n/navigation";
 
 export type CatalogGridProps = {
   products: readonly Product[];
@@ -15,6 +16,8 @@ export type CatalogGridProps = {
   favoriteIds: readonly string[];
   onToggleFavorite: (productId: string) => void;
   onReset: () => void;
+  navigationOnly?: boolean;
+  totalCount?: number;
 };
 
 const TABS: readonly CatalogTab[] = ["all", "new", "sale"];
@@ -37,9 +40,12 @@ export function CatalogGrid({
   favoriteIds,
   onToggleFavorite,
   onReset,
+  navigationOnly = false,
+  totalCount = products.length,
 }: CatalogGridProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Catalog");
+  const tProduct = useTranslations("Product");
   const flowerTypeLabel = (flowerType: FlowerType) =>
     KNOWN_FLOWER_TYPES.has(flowerType)
       ? t(`flowerTypes.${flowerType}` as "flowerTypes.rose")
@@ -69,7 +75,7 @@ export function CatalogGrid({
           ))}
         </div>
         <p className="catalog-result-count" aria-live="polite">
-          {t("resultCount", { count: products.length })}
+          {t("resultCount", { count: totalCount })}
         </p>
       </div>
 
@@ -86,6 +92,45 @@ export function CatalogGrid({
         <div className="product-grid">
           {products.map((product) => (
             <article className="product-card" key={product.id}>
+              {navigationOnly ? (
+                <Link
+                  className="product-card__main-link"
+                  href={`/products/${product.slug ?? product.id}`}
+                  aria-label={t("viewProductAria", { name: product.name })}
+                >
+                  <span className="product-card__image">
+                    <img
+                      src={product.image}
+                      alt={t("imageAlt", { name: product.name })}
+                      onError={applyImageFallback}
+                    />
+                    <span className="product-card__badges" aria-hidden="true">
+                      {product.isNew ? <span>{t("newBadge")}</span> : null}
+                      {product.isOnSale ? <span>{t("saleBadge")}</span> : null}
+                    </span>
+                  </span>
+                  <span className="product-card__body">
+                    <span className="product-card__meta">{productMetaLabel(product)}</span>
+                    <strong className="product-card__title">{product.name}</strong>
+                    {product.availability && !product.availability.available ? (
+                      <span
+                        className="product-card__availability"
+                        data-reason={product.availability.reason}
+                      >
+                        {tProduct(`availability.${product.availability.reason}`)}
+                      </span>
+                    ) : null}
+                    <span className="product-card__price">
+                      <strong>
+                        {product.price === undefined
+                          ? t("priceOnRequest")
+                          : formatSum(product.price, locale)}
+                      </strong>
+                      {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
+                    </span>
+                  </span>
+                </Link>
+              ) : <>
               <div className="product-card__image">
                 <img
                   src={product.image}
@@ -138,6 +183,14 @@ export function CatalogGrid({
                   )}
                 </div>
               </div>
+              </>}
+              {navigationOnly ? (
+                <FavoriteButton
+                  product={product}
+                  isFavorite={favoriteIds.includes(product.id)}
+                  onToggle={onToggleFavorite}
+                />
+              ) : null}
             </article>
           ))}
         </div>

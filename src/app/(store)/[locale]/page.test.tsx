@@ -16,6 +16,7 @@ describe("store route shell", () => {
   it("renders the Floraluxe storefront route shell", async () => {
     render(await StorePage({ params: Promise.resolve({ locale: "ru" }) }));
 
-    expect(screen.getByRole("main", { name: /каталог/i })).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveClass("floraluxe-home");
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 });

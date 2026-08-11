@@ -21,8 +21,8 @@ test("catalog cards render as aligned rectangular premium surfaces", async ({
   });
 
   expect(visual.ratio).toBeCloseTo(0.8, 2);
-  expect(visual.topLeftRadius).toBe("20px");
-  expect(visual.topRightRadius).toBe("20px");
+  expect(visual.topLeftRadius).toBe("0px");
+  expect(visual.topRightRadius).toBe("0px");
 
   const firstRowHeights = await cards.evaluateAll((elements) =>
     elements.slice(0, 4).map((element) => element.getBoundingClientRect().height)
@@ -30,7 +30,7 @@ test("catalog cards render as aligned rectangular premium surfaces", async ({
   expect(Math.max(...firstRowHeights) - Math.min(...firstRowHeights)).toBeLessThanOrEqual(2);
 });
 
-test("mobile catalog has no horizontal overflow and keeps card actions tappable", async ({
+test("mobile catalog has no horizontal overflow and keeps navigation tappable", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
@@ -42,12 +42,10 @@ test("mobile catalog has no horizontal overflow and keeps card actions tappable"
   }));
   expect(dimensions.contentWidth).toBeLessThanOrEqual(dimensions.viewportWidth);
 
-  const actionHeights = await page
-    .locator(".product-card:first-child .product-card__actions button")
-    .evaluateAll((buttons) =>
-      buttons.map((button) => button.getBoundingClientRect().height)
-    );
-
-  expect(actionHeights).toHaveLength(2);
-  expect(actionHeights.every((height) => height >= 44)).toBe(true);
+  const firstCard = page.locator(".product-card").first();
+  await expect(firstCard.locator('a[href*="/products/"]')).toBeVisible();
+  const favoriteTarget = await firstCard.getByRole("button").boundingBox();
+  expect(favoriteTarget).not.toBeNull();
+  expect(favoriteTarget!.width).toBeGreaterThanOrEqual(44);
+  expect(favoriteTarget!.height).toBeGreaterThanOrEqual(44);
 });

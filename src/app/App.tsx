@@ -86,7 +86,7 @@ export type AppProps = {
 
 export type AppInitialCatalogFilters = Partial<
   Pick<CatalogFilterState, "query" | "category" | "tab">
->;
+> & { page?: number };
 
 function createInitialFilters(
   initialFilters?: AppInitialCatalogFilters

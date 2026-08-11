@@ -95,6 +95,16 @@
     "description": "Pair an elegant box, a personal card and fresh flowers. Our florist will prepare every detail.",
     "cta": "Choose gift boxes"
   },
+  "Home": {
+    "bestSellers": "Best sellers",
+    "bestSellersDescription": "The bouquets our clients choose most often.",
+    "recommended": "Recommended for you",
+    "recommendedDescription": "A signature edit by Floraluxe florists.",
+    "contactKicker": "PERSONAL SERVICE",
+    "contactTitle": "Let us help you choose the perfect bouquet",
+    "contactDescription": "Tell us about the occasion and a florist will suggest a composition and arrange delivery.",
+    "contactCta": "Contact a florist"
+  },
   "Catalog": {
     "kicker": "FIND YOUR MATCH",
     "title": "Catalog",
@@ -107,7 +117,12 @@
     "sale": "Sale",
     "tabsLabel": "Catalog sections",
     "resultCount": "{count, plural, one {# result} other {# results}}",
+    "paginationLabel": "Catalog pages",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "pageLabel": "Page {page} of {pages}",
     "filtersTitle": "Filters",
+    "closeFilters": "Close filters",
     "searchLabel": "Search products",
     "searchPlaceholder": "For example, peonies",
     "priceRange": "Price range",
@@ -181,7 +196,15 @@
     "loadingLabel": "Loading product",
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
-    "quantityLabel": "Quantity"
+    "quantityLabel": "Quantity",
+    "askAvailability": "Check availability",
+    "availability": {
+      "available": "Available to order",
+      "out_of_season": "This composition is currently out of season",
+      "out_of_stock": "Temporarily out of stock",
+      "price_missing": "Price confirmed by a florist",
+      "unpublished": "Unavailable to order"
+    }
   },
   "Cart": {
     "title": "Your cart",

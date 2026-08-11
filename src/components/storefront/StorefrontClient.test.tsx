@@ -96,4 +96,39 @@ describe("StorefrontClient", () => {
       "true"
     );
   });
+
+  it("navigates from the product card to the locale-aware detail page", () => {
+    render(<StorefrontClient products={products} categories={categories} />, {
+      locale: "uz",
+    });
+
+    expect(
+      screen.getByRole("link", { name: /pushti lola buketini ko.rish/i })
+    ).toHaveAttribute("href", "/uz/products/pushti-lola-buketi");
+    expect(screen.queryByRole("button", { name: /savatga qo.shish/i })).not.toBeInTheDocument();
+  });
+
+  it("paginates a large imported catalog without rendering every card at once", async () => {
+    const user = userEvent.setup();
+    const importedProducts = Array.from({ length: 25 }, (_, index) => ({
+      ...products[0]!,
+      id: `507f1f77bcf86cd79943${String(index).padStart(3, "0")}`,
+      slug: `studio-bouquet-${index + 1}`,
+      name: `Studio bouquet ${index + 1}`,
+      sortOrder: index,
+    }));
+
+    render(
+      <StorefrontClient products={importedProducts} categories={categories} />,
+      { locale: "en" }
+    );
+
+    expect(document.querySelectorAll(".product-card")).toHaveLength(24);
+    await user.click(screen.getByRole("button", { name: /next page/i }));
+    expect(screen.getByRole("link", { name: /studio bouquet 25/i })).toBeVisible();
+    expect(document.querySelectorAll(".product-card")).toHaveLength(1);
+    await waitFor(() => {
+      expect(document.getElementById("catalog-results-title")).toHaveFocus();
+    });
+  });
 });

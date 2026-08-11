@@ -95,6 +95,16 @@
     "description": "Объедините изящную коробку, открытку и свежие цветы — флорист подготовит всё для вас.",
     "cta": "Выбрать подарочные коробки"
   },
+  "Home": {
+    "bestSellers": "Бестселлеры",
+    "bestSellersDescription": "Букеты, которые чаще всего выбирают наши гости.",
+    "recommended": "Рекомендуем",
+    "recommendedDescription": "Авторская подборка флористов Floraluxe.",
+    "contactKicker": "ПЕРСОНАЛЬНЫЙ СЕРВИС",
+    "contactTitle": "Поможем выбрать идеальный букет",
+    "contactDescription": "Расскажите о поводе — флорист предложит композицию и согласует доставку.",
+    "contactCta": "Связаться с флористом"
+  },
   "Catalog": {
     "kicker": "ТОЧНЫЙ ВЫБОР",
     "title": "Каталог",
@@ -107,7 +117,12 @@
     "sale": "Скидки",
     "tabsLabel": "Разделы каталога",
     "resultCount": "{count, plural, one {# результат} few {# результата} many {# результатов} other {# результата}}",
+    "paginationLabel": "Страницы каталога",
+    "previousPage": "Предыдущая страница",
+    "nextPage": "Следующая страница",
+    "pageLabel": "Страница {page} из {pages}",
     "filtersTitle": "Фильтры",
+    "closeFilters": "Закрыть фильтры",
     "searchLabel": "Поиск товара",
     "searchPlaceholder": "Например, пионы",
     "priceRange": "Диапазон цены",
@@ -181,7 +196,15 @@
     "loadingLabel": "Загрузка товара",
     "decreaseQuantity": "Уменьшить количество",
     "increaseQuantity": "Увеличить количество",
-    "quantityLabel": "Количество"
+    "quantityLabel": "Количество",
+    "askAvailability": "Уточнить наличие",
+    "availability": {
+      "available": "Доступно для заказа",
+      "out_of_season": "Сейчас не сезон для этой композиции",
+      "out_of_stock": "Временно нет в наличии",
+      "price_missing": "Стоимость уточнит флорист",
+      "unpublished": "Недоступно для заказа"
+    }
   },
   "Cart": {
     "title": "Корзина",

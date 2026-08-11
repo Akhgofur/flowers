@@ -166,7 +166,12 @@ async function main() {
           status: "published",
         },
       },
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+      {
+        returnDocument: "after",
+        upsert: true,
+        runValidators: true,
+        setDefaultsOnInsert: true,
+      }
     );
     const categories = await CategoryModel.find({ slug: { $in: ["mixed", "roses", "baskets"] } }).lean();
     const categoryIds = new Map(categories.map((category) => [category.slug, category._id]));
@@ -194,6 +199,7 @@ async function main() {
             categoryId: categoryIds.get(categorySlug(group.folder)),
             currency: "UZS",
             images,
+            seasons: ["all_year"],
             stockQuantity: 100,
             sortOrder: 10_000 + number,
             isFeatured: false,
@@ -203,7 +209,12 @@ async function main() {
           },
           $unset: { price: 1, originalPrice: 1 },
         },
-        { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+        {
+          returnDocument: "after",
+          upsert: true,
+          runValidators: true,
+          setDefaultsOnInsert: true,
+        }
       );
       console.log(`[${group.folder}] ${number}/${counters[group.folder]} ${slug}`);
     }

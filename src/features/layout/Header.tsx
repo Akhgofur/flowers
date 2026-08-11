@@ -3,27 +3,29 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/storefront/LanguageSwitcher";
-import type { ProductImage } from "@/lib/contracts";
+import type { ProductImage, PublicSiteSettings } from "@/lib/contracts";
 
 export type HeaderProps = {
   cartItemCount: number;
   isCartOpen: boolean;
   brandLogo?: ProductImage;
+  settings?: PublicSiteSettings;
   onOpenCart: (origin: HTMLElement) => void;
 };
 
 const NAVIGATION_LINKS = [
   { href: "/catalog", label: "navCatalog" },
   { href: "/catalog?sale=true", label: "navSales" },
-  { href: "#gift", label: "navGifts" },
-  { href: "#about", label: "navAbout" },
-  { href: "#delivery", label: "navDelivery" },
-  { href: "#contact", label: "navContacts" },
+  { href: "/catalog?category=boxed", label: "navGifts" },
+  { href: "/#about", label: "navAbout" },
+  { href: "/#delivery", label: "navDelivery" },
+  { href: "/#contact", label: "navContacts" },
 ] as const;
 
-export function Header({ cartItemCount, isCartOpen, brandLogo, onOpenCart }: HeaderProps) {
+export function Header({ cartItemCount, isCartOpen, brandLogo, settings, onOpenCart }: HeaderProps) {
   const t = useTranslations("Header");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCompact, setIsCompact] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const cartStateLabel =
     cartItemCount === 0 ? t("cartEmpty") : t("cartItems", { count: cartItemCount });
@@ -42,19 +44,26 @@ export function Header({ cartItemCount, isCartOpen, brandLogo, onOpenCart }: Hea
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [isMobileMenuOpen]);
 
+  useEffect(() => {
+    const syncHeader = () => setIsCompact(window.scrollY > 32);
+    syncHeader();
+    window.addEventListener("scroll", syncHeader, { passive: true });
+    return () => window.removeEventListener("scroll", syncHeader);
+  }, []);
+
   return (
-    <header className="site-header">
+    <header className={`site-header${isCompact ? " site-header--compact" : ""}`}>
       <div className="utility-bar">
         <div className="shell utility-bar__content">
           <div className="utility-bar__group">
-            <span>{t("location")}</span>
-            <span>{t("schedule")}</span>
+            <span>{settings?.address ?? t("location")}</span>
+            <span>{settings?.workingHours ?? t("schedule")}</span>
             <span>{t("deliveryNotice")}</span>
           </div>
           <div className="utility-bar__group utility-bar__meta">
             <LanguageSwitcher />
-            <span>Instagram</span>
-            <span>Telegram</span>
+            {settings?.instagramUrl ? <a href={settings.instagramUrl}>Instagram</a> : null}
+            {settings?.telegramUrl ? <a href={settings.telegramUrl}>Telegram</a> : null}
           </div>
         </div>
       </div>
@@ -82,13 +91,13 @@ export function Header({ cartItemCount, isCartOpen, brandLogo, onOpenCart }: Hea
           <Link className="icon-link" href="/catalog" aria-label={t("search")}>
             <span aria-hidden="true">⌕</span>
           </Link>
-          <a
+          <Link
             className="icon-link"
-            href="#about"
+            href="/#about"
             aria-label={t("aboutShortcut")}
           >
             <span aria-hidden="true">♙</span>
-          </a>
+          </Link>
           <button
             className="cart-button"
             type="button"

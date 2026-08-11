@@ -1,8 +1,9 @@
 export type PromoBannerProps = {
-  onSelectGiftCategory: () => void;
+  onSelectGiftCategory?: () => void;
+  href?: string;
 };
 
-export function PromoBanner({ onSelectGiftCategory }: PromoBannerProps) {
+export function PromoBanner({ onSelectGiftCategory, href }: PromoBannerProps) {
   const t = useTranslations("Promo");
 
   return (
@@ -17,13 +18,19 @@ export function PromoBanner({ onSelectGiftCategory }: PromoBannerProps) {
           <p className="eyebrow">{t("kicker")}</p>
           <h2>{t("title")}</h2>
           <p>{t("description")}</p>
-          <button className="secondary-button" type="button" onClick={onSelectGiftCategory}>
-            {t("cta")}
-            <span aria-hidden="true">→</span>
-          </button>
+          {href ? (
+            <Link className="secondary-button" href={href}>
+              {t("cta")} <span aria-hidden="true">→</span>
+            </Link>
+          ) : (
+            <button className="secondary-button" type="button" onClick={onSelectGiftCategory}>
+              {t("cta")} <span aria-hidden="true">→</span>
+            </button>
+          )}
         </div>
       </div>
     </section>
   );
 }
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";

@@ -63,6 +63,15 @@ npm run dev
 
 `seed:catalog` `.env.local`ni o‘zi yuklaydi va qayta ishlatilganda duplicate yaratmaydi. U 6 kategoriya, 12 mahsulot va default do‘kon sozlamalarini RU/UZ/EN tarjimalari bilan yaratadi yoki yangilaydi.
 
+Mavjud bazani Floraluxe commerce modeliga xavfsiz o‘tkazish uchun avval dry-run, keyin explicit apply ishlating:
+
+```powershell
+npm run migrate:floraluxe -- --dry-run
+npm run migrate:floraluxe -- --apply
+```
+
+Migration idempotent: mavjud `seasons` qiymatlari va administratorga tegishli custom brend nomi saqlanadi; faqat mavsumi yo‘q mahsulotlar `all_year`ga, legacy `Nafis` nomi esa `Floraluxe`ga o‘tadi.
+
 Lokal manzillar:
 
 - Ruscha storefront: `http://localhost:3000/ru`
@@ -101,7 +110,7 @@ TELEGRAM_CHAT_ID=
 CRON_SECRET=kamida-32-belgilik-tasodifiy-secret
 ```
 
-Buyurtma MongoDB transaction ichida notification outbox yozuvi bilan birga saqlanadi. Checkout commit’dan keyin Telegramga darhol yuborishga urinadi; vaqtinchalik xatoda Vercel Cron `/api/cron/order-notifications` orqali 1, 5, 15, 60 va 240 daqiqalik interval bilan qayta urinadi. Telegram javob bermagani order javobini `503` qilmaydi. Bot real guruhga xabar yuborishi uchun `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` va Vercel’dagi `CRON_SECRET` production environment’da majburiy.
+Buyurtma MongoDB transaction ichida notification outbox yozuvi bilan birga saqlanadi. Checkout commit’dan keyin Telegramga darhol yuborishga urinadi; vaqtinchalik xatoda Vercel Cron `/api/internal/order-notifications/retry` orqali 1, 5, 15, 60 va 240 daqiqalik interval bilan qayta urinadi. Telegram javob bermagani order javobini `503` qilmaydi. Bot real guruhga xabar yuborishi uchun `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` va Vercel’dagi `CRON_SECRET` production environment’da majburiy.
 
 ## Tekshiruvlar
 

@@ -35,6 +35,6 @@ export default async function StorePage({
 }) {
   const { locale: candidate } = await params;
   const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
-  const storefront = await StorefrontShell({ locale });
+  const storefront = await StorefrontShell({ locale, mode: "home" });
   return storefront;
 }

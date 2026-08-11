@@ -21,6 +21,10 @@ import {
 } from "./storefront-mappers";
 import { StorefrontClient } from "./StorefrontClient";
 import { getTranslations } from "next-intl/server";
+import {
+  getHomePageCatalogData,
+  type HomePageCatalogData,
+} from "@/lib/services/home-merchandising-service";
 
 type StorefrontData = {
   products: CatalogProduct[];
@@ -32,6 +36,7 @@ type StorefrontData = {
 export type StorefrontShellProps = {
   locale: Locale;
   filters?: PublicCatalogFilters;
+  mode?: "home" | "catalog";
 };
 
 function toInitialClientFilters(
@@ -41,6 +46,7 @@ function toInitialClientFilters(
     query: filters.query ?? "",
     category: filters.category ?? null,
     tab: filters.sale ? "sale" : "all",
+    page: filters.page ?? 1,
   };
 }
 
@@ -58,12 +64,11 @@ function bootstrapStorefrontData(locale: Locale): StorefrontData {
 }
 
 async function loadStorefrontData(
-  locale: Locale,
-  filters: PublicCatalogFilters
+  locale: Locale
 ): Promise<StorefrontData> {
   try {
     const [products, categories, settings] = await Promise.all([
-      getPublishedCatalog(locale, filters),
+      getPublishedCatalog(locale, { page: 1, limit: 200 }),
       getPublishedCategories(locale),
       getPublicSiteSettings(locale),
     ]);
@@ -80,8 +85,33 @@ async function loadStorefrontData(
 export async function StorefrontShell({
   locale,
   filters = {},
+  mode = "catalog",
 }: StorefrontShellProps) {
-  const data = await loadStorefrontData(locale, filters);
+  let data: StorefrontData;
+  let merchandising: HomePageCatalogData | undefined;
+
+  if (mode === "home") {
+    try {
+      const [categories, settings, homeData] = await Promise.all([
+        getPublishedCategories(locale),
+        getPublicSiteSettings(locale),
+        getHomePageCatalogData(locale),
+      ]);
+      merchandising = homeData;
+      data = { products: [], categories, settings, source: "mongo" };
+    } catch (error) {
+      if (process.env.NODE_ENV === "production") throw error;
+      data = bootstrapStorefrontData(locale);
+      const fallbackProducts = data.products;
+      merchandising = {
+        dynamicSections: [],
+        bestSellers: fallbackProducts.slice(0, 8),
+        recommended: fallbackProducts.slice(0, 12),
+      };
+    }
+  } else {
+    data = await loadStorefrontData(locale);
+  }
   const t = await getTranslations({ locale, namespace: "Errors" });
 
   return (
@@ -96,6 +126,8 @@ export async function StorefrontShell({
         categories={data.categories}
         settings={data.settings}
         initialFilters={toInitialClientFilters(filters)}
+        mode={mode}
+        merchandising={merchandising}
       />
     </>
   );

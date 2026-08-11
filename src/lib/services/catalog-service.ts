@@ -15,7 +15,7 @@ import {
 } from "@/lib/repositories/catalog-repository";
 
 const DEFAULT_LIMIT = 24;
-const MAX_LIMIT = 48;
+const MAX_LIMIT = 200;
 
 export function normalizePublicCatalogFilters(
   filters: PublicCatalogFilters

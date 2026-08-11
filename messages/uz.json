@@ -95,6 +95,16 @@
     "description": "Floraluxe quti, tabriknoma va yangi gullarni bir tanlovda jamlang. Floristimiz uni siz uchun tayyorlaydi.",
     "cta": "Sovg‘a qutilarini tanlash"
   },
+  "Home": {
+    "bestSellers": "Eng ko‘p sotilganlar",
+    "bestSellersDescription": "Mijozlarimiz eng ko‘p tanlaydigan buketlar.",
+    "recommended": "Tavsiya qilamiz",
+    "recommendedDescription": "Floraluxe floristlarining mualliflik tanlovi.",
+    "contactKicker": "SHAXSIY XIZMAT",
+    "contactTitle": "Mukammal buketni tanlashga yordam beramiz",
+    "contactDescription": "Bayram haqida ayting — florist kompozitsiya tavsiya qiladi va yetkazishni kelishadi.",
+    "contactCta": "Florist bilan bog‘lanish"
+  },
   "Catalog": {
     "kicker": "ANIQ TANLOV",
     "title": "Katalog",
@@ -107,7 +117,12 @@
     "sale": "Aksiya",
     "tabsLabel": "Katalog bo‘limlari",
     "resultCount": "{count} ta natija",
+    "paginationLabel": "Katalog sahifalari",
+    "previousPage": "Oldingi sahifa",
+    "nextPage": "Keyingi sahifa",
+    "pageLabel": "{pages} sahifadan {page}-sahifa",
     "filtersTitle": "Filtrlar",
+    "closeFilters": "Filtrlarni yopish",
     "searchLabel": "Mahsulot qidirish",
     "searchPlaceholder": "Masalan, pion",
     "priceRange": "Narx oralig‘i",
@@ -181,7 +196,15 @@
     "loadingLabel": "Mahsulot yuklanmoqda",
     "decreaseQuantity": "Miqdorni kamaytirish",
     "increaseQuantity": "Miqdorni oshirish",
-    "quantityLabel": "Miqdor"
+    "quantityLabel": "Miqdor",
+    "askAvailability": "Mavjudligini so‘rash",
+    "availability": {
+      "available": "Buyurtma uchun mavjud",
+      "out_of_season": "Bu kompozitsiyaning mavsumi hozir emas",
+      "out_of_stock": "Vaqtincha mavjud emas",
+      "price_missing": "Narxni florist aniqlashtiradi",
+      "unpublished": "Buyurtma uchun mavjud emas"
+    }
   },
   "Cart": {
     "title": "Savat",
