@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { CatalogProduct } from "@/lib/contracts";
 import { addToCart } from "@/features/cart/cart-reducer";
@@ -13,12 +14,15 @@ import {
 } from "@/features/cart/cart-storage";
 import { formatSum } from "@/shared/format";
 import { IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
+import type { Locale } from "@/i18n/config";
 
 export type ProductDetailProps = {
   product: CatalogProduct;
 };
 
 export function ProductDetail({ product }: ProductDetailProps) {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("Product");
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -43,25 +47,25 @@ export function ProductDetail({ product }: ProductDetailProps) {
     setIsFavorite(!isFavorite);
     setStatus(
       isFavorite
-        ? `${product.name} sevimlilardan olib tashlandi.`
-        : `${product.name} sevimlilarga qo‘shildi.`
+        ? t("removedFromFavorites", { name: product.name })
+        : t("addedToFavorites", { name: product.name })
     );
   };
 
   const addProductToCart = () => {
     const nextLines = addToCart(readCart(), product.id, quantity);
     writeCart(nextLines);
-    setStatus(`${product.name} savatga qo‘shildi.`);
+    setStatus(t("addedToCart", { name: product.name }));
   };
 
   const imageAlt = product.images[0]?.alt ?? `${product.name} gul kompozitsiyasi`;
 
   return (
     <main className="product-detail shell" aria-labelledby="product-detail-title">
-      <nav className="product-detail__breadcrumb" aria-label="Yo‘l ko‘rsatkich">
-        <Link href="/">Bosh sahifa</Link>
+      <nav className="product-detail__breadcrumb" aria-label={t("catalog")}>
+        <Link href="/">{t("home")}</Link>
         <span aria-hidden="true">/</span>
-        <Link href="/catalog">Gullar</Link>
+        <Link href="/catalog">{t("catalog")}</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
@@ -76,7 +80,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
             sizes="(max-width: 760px) calc(100vw - 48px), 50vw"
             onError={() => setImageSource(IMAGE_FALLBACK_URL)}
           />
-          {product.isOnSale ? <span className="product-detail__badge">Aksiya</span> : null}
+          {product.isOnSale ? <span className="product-detail__badge">{t("saleBadge")}</span> : null}
         </div>
 
         <div className="product-detail__content">
@@ -85,39 +89,39 @@ export function ProductDetail({ product }: ProductDetailProps) {
           <p className="product-detail__description">{product.description}</p>
 
           <div className="product-detail__price">
-            <strong>{formatSum(product.price)}</strong>
-            {product.originalPrice ? <s>{formatSum(product.originalPrice)}</s> : null}
+            <strong>{formatSum(product.price, locale)}</strong>
+            {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
           </div>
 
           <dl className="product-detail__facts">
             <div>
-              <dt>Tarkibi</dt>
+              <dt>{t("composition")}</dt>
               <dd>{product.composition.join(" · ")}</dd>
             </div>
             <div>
-              <dt>Yetkazib berish</dt>
-              <dd>{product.deliveryEstimate ?? "Buyurtma paytida aniqlanadi"}</dd>
+              <dt>{t("delivery")}</dt>
+              <dd>{product.deliveryEstimate ?? t("unknownDelivery")}</dd>
             </div>
             <div>
-              <dt>O‘lchami</dt>
-              <dd>{product.size ?? "Aniqlashtiriladi"}</dd>
+              <dt>{t("size")}</dt>
+              <dd>{product.size ?? t("unknownSize")}</dd>
             </div>
           </dl>
 
           <div className="product-detail__actions">
-            <div className="quantity-control" aria-label="Mahsulot miqdori">
+            <div className="quantity-control" aria-label={t("quantity")}>
               <button
                 type="button"
-                aria-label="Miqdorni kamaytirish"
+                aria-label={t("decreaseQuantity")}
                 disabled={quantity === 1}
                 onClick={() => setQuantity((current) => Math.max(1, current - 1))}
               >
                 <span aria-hidden="true">−</span>
               </button>
-              <span aria-label="Miqdor">{quantity}</span>
+              <span aria-label={t("quantityLabel")}>{quantity}</span>
               <button
                 type="button"
-                aria-label="Miqdorni oshirish"
+                aria-label={t("increaseQuantity")}
                 disabled={quantity === 99}
                 onClick={() => setQuantity((current) => Math.min(99, current + 1))}
               >
@@ -125,7 +129,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               </button>
             </div>
             <button className="primary-button" type="button" onClick={addProductToCart}>
-              Savatga qo‘shish
+              {t("addToCart")}
             </button>
             <button
               className="product-detail__favorite"
@@ -133,7 +137,7 @@ export function ProductDetail({ product }: ProductDetailProps) {
               aria-pressed={isFavorite}
               onClick={toggleFavorite}
             >
-              {isFavorite ? "Sevimlilardan olib tashlash" : "Sevimlilarga qo‘shish"}
+              {isFavorite ? t("removeFavorite") : t("favorite")}
             </button>
           </div>
 

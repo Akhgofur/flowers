@@ -1,5 +1,6 @@
 import mongoose, { type Model, type Types } from "mongoose";
 import type { OrderStatus, PaymentMethod } from "@/lib/contracts";
+import { LOCALES, type Locale } from "@/i18n/config";
 
 export { allowedOrderTransitions } from "@/lib/contracts";
 
@@ -25,6 +26,7 @@ export type OrderItemSnapshot = {
 
 export type OrderDocument = {
   number: string;
+  locale: Locale;
   customer: OrderCustomer;
   items: OrderItemSnapshot[];
   subtotal: number;
@@ -89,6 +91,12 @@ const orderCustomerSchema = new Schema<OrderCustomer>(
 const orderSchema = new Schema<OrderDocument>(
   {
     number: { type: String, required: true, trim: true, maxlength: 64 },
+    locale: {
+      type: String,
+      required: true,
+      enum: LOCALES,
+      default: "ru",
+    },
     customer: { type: orderCustomerSchema, required: true },
     items: {
       type: [orderItemSchema],

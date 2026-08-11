@@ -1,10 +1,14 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CatalogCategory, CatalogProduct } from "@/lib/contracts";
 import { FAVORITES_STORAGE_KEY } from "@/features/cart/cart-storage";
 import { renderWithIntl as render } from "@/test/render-with-intl";
 import { StorefrontClient } from "./StorefrontClient";
+
+vi.mock("@/components/storefront/LanguageSwitcher", () => ({
+  LanguageSwitcher: () => <div aria-label="Til">RU UZ EN</div>,
+}));
 
 const products: CatalogProduct[] = [
   {
@@ -58,11 +62,13 @@ describe("StorefrontClient", () => {
   it("keeps favorites in browser storage without serializing them into server props", async () => {
     const user = userEvent.setup();
 
-    render(<StorefrontClient products={products} categories={categories} />);
+    render(<StorefrontClient products={products} categories={categories} />, {
+      locale: "uz",
+    });
 
     await user.click(
       screen.getByRole("button", {
-        name: /pushti lola buketi ni sevimlilarga qo'shish/i,
+        name: /pushti lola buketi.*sevimlilarga qo.shish/i,
       })
     );
 
@@ -77,7 +83,8 @@ describe("StorefrontClient", () => {
         products={products}
         categories={categories}
         initialFilters={{ category: "tulips", query: "lola", tab: "sale" }}
-      />
+      />,
+      { locale: "uz" }
     );
 
     expect(screen.getByRole("searchbox", { name: /mahsulot qidirish/i })).toHaveValue(

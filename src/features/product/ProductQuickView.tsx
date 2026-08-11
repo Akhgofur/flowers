@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { formatSum } from "../../shared/format";
 import { applyImageFallback } from "../../shared/image-fallback";
 import { useFocusTrap } from "../../shared/a11y/useFocusTrap";
 import type { Product } from "../../shared/types";
 import { FavoriteButton } from "./FavoriteButton";
+import type { Locale } from "@/i18n/config";
 
 export type ProductQuickViewProps = {
   product: Product | null;
@@ -25,6 +27,8 @@ export function ProductQuickView({
   onAdd,
   onToggleFavorite,
 }: ProductQuickViewProps) {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("Product");
   const [quantity, setQuantity] = useState(1);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -59,7 +63,7 @@ export function ProductQuickView({
           ref={closeButtonRef}
           className="overlay-close-button"
           type="button"
-          aria-label="Mahsulot oynasini yopish"
+          aria-label={t("modalClose")}
           onClick={onClose}
         >
           <span aria-hidden="true">×</span>
@@ -68,7 +72,7 @@ export function ProductQuickView({
         <div className="quick-view__visual">
           <img
             src={product.image}
-            alt={`${product.name} gul kompozitsiyasi`}
+            alt={t("imageAlt", { name: product.name, number: 1 })}
             onError={applyImageFallback}
           />
         </div>
@@ -76,7 +80,7 @@ export function ProductQuickView({
         <div className="quick-view__content">
           <div className="quick-view__heading">
             <div>
-              <p className="eyebrow">Nafis kolleksiyasi</p>
+              <p className="eyebrow">{t("collection")}</p>
               <h2>{product.name}</h2>
             </div>
             <FavoriteButton
@@ -87,9 +91,9 @@ export function ProductQuickView({
           </div>
 
           <div className="quick-view__price">
-            <strong>{formatSum(product.price)}</strong>
+            <strong>{formatSum(product.price, locale)}</strong>
             {product.originalPrice ? (
-              <s>{formatSum(product.originalPrice)}</s>
+              <s>{formatSum(product.originalPrice, locale)}</s>
             ) : null}
           </div>
           <p className="quick-view__description">{product.shortDescription}</p>
@@ -97,21 +101,21 @@ export function ProductQuickView({
             className="quick-view__detail-link"
             href={`/products/${product.slug ?? product.id}`}
           >
-            To‘liq tavsif va buyurtma sahifasi
+            {t("detailLink")}
           </Link>
 
           <dl className="quick-view__details">
             <div>
-              <dt>Tarkibi</dt>
+              <dt>{t("composition")}</dt>
               <dd>{product.composition.join(" · ")}</dd>
             </div>
             <div>
-              <dt>Yetkazish</dt>
-              <dd>{product.deliveryEstimate}</dd>
+              <dt>{t("delivery")}</dt>
+              <dd>{product.deliveryEstimate || t("unknownDelivery")}</dd>
             </div>
             <div>
-              <dt>O'lchami</dt>
-              <dd>{product.size}</dd>
+              <dt>{t("size")}</dt>
+              <dd>{product.size || t("unknownSize")}</dd>
             </div>
           </dl>
 
@@ -119,16 +123,16 @@ export function ProductQuickView({
             <div className="quantity-control">
               <button
                 type="button"
-                aria-label="Miqdorni kamaytirish"
+                aria-label={t("decreaseQuantity")}
                 disabled={quantity === 1}
                 onClick={() => setQuantity((current) => Math.max(1, current - 1))}
               >
                 <span aria-hidden="true">−</span>
               </button>
-              <span aria-label="Miqdor">{quantity}</span>
+              <span aria-label={t("quantityLabel")}>{quantity}</span>
               <button
                 type="button"
-                aria-label="Miqdorni oshirish"
+                aria-label={t("increaseQuantity")}
                 disabled={quantity === 99}
                 onClick={() => setQuantity((current) => Math.min(99, current + 1))}
               >
@@ -140,7 +144,7 @@ export function ProductQuickView({
               type="button"
               onClick={() => onAdd(product.id, quantity)}
             >
-              Savatga qo'shish
+              {t("addToCart")}
             </button>
           </div>
         </div>

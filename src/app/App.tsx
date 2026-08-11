@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { CATEGORIES, HERO_SLIDES, PRODUCTS } from "../data/catalog";
 import { CartDrawer } from "../features/cart/CartDrawer";
 import {
@@ -106,6 +107,10 @@ export default function App({
   siteSettings,
   initialFilters,
 }: AppProps) {
+  const tHero = useTranslations("Hero");
+  const tCategories = useTranslations("Categories");
+  const tCatalog = useTranslations("Catalog");
+  const tProduct = useTranslations("Product");
   const appContentRef = useRef<HTMLDivElement>(null);
   const quickViewOriginRef = useRef<HTMLElement | null>(null);
   const cartOriginRef = useRef<HTMLElement | null>(null);
@@ -171,6 +176,35 @@ export default function App({
     [appliedFilters, products]
   );
 
+  const categoryNames = useMemo(
+    () => new Map(categories.map((category) => [category.id, category.title])),
+    [categories]
+  );
+
+  const heroSlides: HeroSlide[] = [
+    {
+      ...HERO_SLIDES[0]!,
+      eyebrow: tHero("slides.summer.eyebrow"),
+      title: tHero("slides.summer.title"),
+      description: tHero("slides.summer.description"),
+      ctaLabel: tHero("slides.summer.cta"),
+    },
+    {
+      ...HERO_SLIDES[1]!,
+      eyebrow: tHero("slides.sale.eyebrow"),
+      title: tHero("slides.sale.title"),
+      description: tHero("slides.sale.description"),
+      ctaLabel: tHero("slides.sale.cta"),
+    },
+    {
+      ...HERO_SLIDES[2]!,
+      eyebrow: tHero("slides.gift.eyebrow"),
+      title: tHero("slides.gift.title"),
+      description: tHero("slides.gift.description"),
+      ctaLabel: tHero("slides.gift.cta"),
+    },
+  ];
+
   const cartItemCount = cartLines.reduce(
     (total, line) => total + line.quantity,
     0
@@ -232,7 +266,7 @@ export default function App({
 
   const addProductToCart = (product: Product) => {
     setCartLines((currentLines) => addToCart(currentLines, product.id));
-    announceAction(`${product.name} savatga qo'shildi.`);
+    announceAction(tProduct("addedToCart", { name: product.name }));
   };
 
   const addQuickViewProduct = (productId: string, quantity: number) => {
@@ -242,7 +276,7 @@ export default function App({
     setCartLines((currentLines) =>
       addToCart(currentLines, productId, quantity)
     );
-    announceAction(`${product.name} savatga qo'shildi.`);
+    announceAction(tProduct("addedToCart", { name: product.name }));
   };
 
   const toggleFavorite = (productId: string) => {
@@ -257,8 +291,8 @@ export default function App({
     );
     announceAction(
       isFavorite
-        ? `${product.name} sevimlilardan olib tashlandi.`
-        : `${product.name} sevimlilarga qo'shildi.`
+        ? tProduct("removedFromFavorites", { name: product.name })
+        : tProduct("addedToFavorites", { name: product.name })
     );
   };
 
@@ -295,14 +329,14 @@ export default function App({
           onOpenCart={toggleCart}
         />
 
-        <main aria-label="Nafis gullar katalogi">
-        <h2 className="visually-hidden">Baxtni gullar bilan yuboring.</h2>
-        <HeroCarousel slides={HERO_SLIDES} onNavigate={handleHeroNavigate} />
+        <main aria-label={tCatalog("title")}>
+        <h2 className="visually-hidden">{tHero("title")}</h2>
+        <HeroCarousel slides={heroSlides} onNavigate={handleHeroNavigate} />
 
         <div id="sale" className="sale-ribbon" tabIndex={-1}>
           <div className="shell sale-ribbon__content">
-            <strong>Hafta taklifi</strong>
-            <span>Tanlangan buketlarda yoqimli narxlar</span>
+            <strong>{tHero("saleRibbonKicker")}</strong>
+            <span>{tHero("saleRibbonCopy")}</span>
             <Link
               href="/catalog?sale=true"
               onClick={(event) => {
@@ -310,7 +344,7 @@ export default function App({
                 selectSale();
               }}
             >
-              Chegirmalarni ko'rish →
+              {tHero("saleRibbonCta")} →
             </Link>
           </div>
         </div>
@@ -323,9 +357,9 @@ export default function App({
 
         <div className="shell selection-status" aria-live="polite">
           {selectedCategoryTitle ? (
-            <p>{selectedCategoryTitle} tanlandi — katalog filtri qo'llanadi.</p>
+            <p>{tCategories("selected", { name: selectedCategoryTitle })}</p>
           ) : (
-            <p>Kategoriyani tanlang — natijalar katalogda ko'rsatiladi.</p>
+            <p>{tCategories("unselected")}</p>
           )}
         </div>
 
@@ -340,13 +374,10 @@ export default function App({
           <div className="shell">
             <div className="catalog-heading">
               <div>
-                <p className="eyebrow">Florist tanlovi</p>
-                <h2 id="catalog-title">Nafis kolleksiyasi</h2>
+                <p className="eyebrow">{tCatalog("showcaseKicker")}</p>
+                <h2 id="catalog-title">{tCatalog("showcaseTitle")}</h2>
               </div>
-              <p>
-                Kayfiyat, gul turi va byudjetga mos kompozitsiyani toping.
-                Har biri buyurtma kuni yangi gullardan tayyorlanadi.
-              </p>
+              <p>{tCatalog("showcaseDescription")}</p>
             </div>
 
             <div className="catalog-layout">
@@ -358,6 +389,7 @@ export default function App({
               />
               <CatalogGrid
                 products={visibleProducts}
+                categoryNames={categoryNames}
                 activeTab={appliedFilters.tab}
                 onTabChange={selectTab}
                 onOpenProduct={openProduct}

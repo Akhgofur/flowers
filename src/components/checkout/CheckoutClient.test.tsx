@@ -64,11 +64,11 @@ describe("CheckoutClient", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<CheckoutClient products={products} />);
+    render(<CheckoutClient products={products} />, { locale: "uz" });
 
     await screen.findByText(/pushti lola buketi/i);
-    await user.type(screen.getByLabelText(/ismingiz/i), "Ali Valiyev");
-    await user.type(screen.getByLabelText(/telefon raqamingiz/i), "+998901234567");
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
     await user.type(
       screen.getByLabelText(/yetkazib berish manzili/i),
       "Toshkent shahri, Chilonzor tumani"
@@ -79,6 +79,7 @@ describe("CheckoutClient", () => {
     const [, request] = fetchMock.mock.calls[0] ?? [];
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/orders");
     expect(JSON.parse(String((request as RequestInit).body))).toEqual({
+      locale: "uz",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",
@@ -103,10 +104,10 @@ describe("CheckoutClient", () => {
       )
     );
 
-    render(<CheckoutClient products={products} />);
+    render(<CheckoutClient products={products} />, { locale: "uz" });
     await screen.findByText(/pushti lola buketi/i);
-    await user.type(screen.getByLabelText(/ismingiz/i), "Ali Valiyev");
-    await user.type(screen.getByLabelText(/telefon raqamingiz/i), "+998901234567");
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
     await user.type(
       screen.getByLabelText(/yetkazib berish manzili/i),
       "Toshkent shahri, Chilonzor tumani"

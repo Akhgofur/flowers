@@ -20,6 +20,7 @@ import {
   toBootstrapCatalogProduct,
 } from "./storefront-mappers";
 import { StorefrontClient } from "./StorefrontClient";
+import { getTranslations } from "next-intl/server";
 
 type StorefrontData = {
   products: CatalogProduct[];
@@ -81,12 +82,13 @@ export async function StorefrontShell({
   filters = {},
 }: StorefrontShellProps) {
   const data = await loadStorefrontData(locale, filters);
+  const t = await getTranslations({ locale, namespace: "Errors" });
 
   return (
     <>
       {data.source === "bootstrap" ? (
         <p className="storefront-data-notice" role="status">
-          Demo katalogi ko‘rsatilmoqda — MongoDB ulangach haqiqiy mahsulot va qoldiqlar chiqadi.
+          {t("demoCatalog")}
         </p>
       ) : null}
       <StorefrontClient

@@ -18,7 +18,11 @@ export function renderWithIntl(
 ) {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <NextIntlClientProvider locale={locale} messages={messages[locale]}>
+      <NextIntlClientProvider
+        locale={locale}
+        messages={messages[locale]}
+        timeZone="Asia/Tashkent"
+      >
         {children}
       </NextIntlClientProvider>
     );

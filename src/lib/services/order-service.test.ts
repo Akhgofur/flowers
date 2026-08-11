@@ -15,6 +15,7 @@ const redRoseId = "507f1f77bcf86cd799439011";
 const tulipId = "507f1f77bcf86cd799439012";
 
 const checkoutInput: CheckoutInput = {
+  locale: "ru",
   customer: {
     fullName: "Ali Valiyev",
     phone: "+998901234567",
@@ -54,6 +55,7 @@ class InMemoryOrderStore implements OrderStore {
   ]);
   readonly orders = new Map<string, StoredOrder>();
   readonly reservationOrder: string[] = [];
+  readonly reservationLocales: string[] = [];
   deliveryFee = 20_000;
   duplicateNumberOnce = false;
   private nextOrderId = 1;
@@ -77,9 +79,11 @@ class InMemoryOrderStore implements OrderStore {
 
   async reserveProduct(
     productId: string,
-    quantity: number
+    quantity: number,
+    locale: "ru" | "uz" | "en"
   ): Promise<ReservedProduct | null> {
     this.reservationOrder.push(productId);
+    this.reservationLocales.push(locale);
     const record = this.products.get(productId);
     if (!record || record.stockQuantity < quantity) return null;
 
@@ -158,6 +162,7 @@ describe("transactional order service", () => {
       status: "pending",
     });
     expect(store.reservationOrder).toEqual([redRoseId, tulipId]);
+    expect(store.reservationLocales).toEqual(["ru", "ru"]);
     expect(store.products.get(redRoseId)?.stockQuantity).toBe(2);
     expect(store.products.get(tulipId)?.stockQuantity).toBe(1);
     expect(order).toMatchObject({
@@ -172,6 +177,30 @@ describe("transactional order service", () => {
       ],
     });
     expect(order?.customer.deliveryDate?.toISOString()).toBe("2026-08-12T12:00:00.000Z");
+  });
+
+  it("stores the server-selected product name in the checkout locale", async () => {
+    const store = new InMemoryOrderStore();
+    const originalReserve = store.reserveProduct.bind(store);
+    store.reserveProduct = async (productId, quantity, locale) => {
+      const reserved = await originalReserve(productId, quantity, locale);
+      if (!reserved) return null;
+      return {
+        ...reserved,
+        name: locale === "en" ? "Scarlet rose bouquet" : "Букет алых роз",
+      };
+    };
+
+    const result = await makeService(store).createPendingOrder({
+      ...checkoutInput,
+      locale: "en",
+      items: [{ productId: redRoseId, quantity: 1 }],
+    });
+
+    expect(store.orders.get(result.orderId)).toMatchObject({
+      locale: "en",
+      items: [{ name: "Scarlet rose bouquet" }],
+    });
   });
 
   it("rolls all reservations back when a later item is unavailable", async () => {

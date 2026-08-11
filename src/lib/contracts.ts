@@ -116,6 +116,7 @@ export type PublicSitemapEntries = {
 };
 
 export type CheckoutInput = {
+  locale: Locale;
   customer: {
     fullName: string;
     phone: string;
@@ -173,6 +174,7 @@ export type AdminCategory = {
 export type AdminOrder = {
   id: string;
   number: string;
+  locale: Locale;
   customer: {
     fullName: string;
     phone: string;

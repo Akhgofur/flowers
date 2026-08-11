@@ -1,4 +1,5 @@
 import type { Product } from "../../shared/types";
+import { useTranslations } from "next-intl";
 
 export type FavoriteButtonProps = {
   product: Product;
@@ -11,15 +12,13 @@ export function FavoriteButton({
   isFavorite,
   onToggle,
 }: FavoriteButtonProps) {
-  const action = isFavorite
-    ? "sevimlilardan olib tashlash"
-    : "sevimlilarga qo'shish";
+  const t = useTranslations("Product");
 
   return (
     <button
       className="favorite-button"
       type="button"
-      aria-label={`${product.name} ni ${action}`}
+      aria-label={`${product.name} — ${isFavorite ? t("removeFavorite") : t("favorite")}`}
       aria-pressed={isFavorite}
       onClick={() => onToggle(product.id)}
     >

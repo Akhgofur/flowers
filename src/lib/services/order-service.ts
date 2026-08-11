@@ -14,6 +14,8 @@ import { ProductModel, type ProductDocument } from "@/models/Product";
 import { SiteSettingsModel } from "@/models/SiteSettings";
 import { createOrderNumber } from "./order-number";
 import { assertAllowedOrderTransition } from "./order-transitions";
+import type { Locale } from "@/i18n/config";
+import { resolveProductTranslation } from "@/lib/locale-content";
 
 export type OrderTransaction = object;
 
@@ -46,6 +48,7 @@ export type StoredOrderCustomer = {
 
 export type PendingOrderRecord = {
   number: string;
+  locale: Locale;
   customer: StoredOrderCustomer;
   items: StoredOrderItem[];
   subtotal: number;
@@ -67,6 +70,7 @@ export type OrderStore = {
   reserveProduct(
     productId: string,
     quantity: number,
+    locale: Locale,
     transaction: OrderTransaction
   ): Promise<ReservedProduct | null>;
   getDeliveryFee(transaction: OrderTransaction): Promise<number>;
@@ -151,6 +155,7 @@ function serializeOrder(document: OrderRecord): StoredOrder {
   return {
     id: document._id.toString(),
     number: document.number,
+    locale: document.locale ?? "ru",
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,
@@ -192,7 +197,7 @@ function createMongoOrderStore(): OrderStore {
       return connection.connection.transaction(async (session) => operation(session));
     },
 
-    async reserveProduct(productId, quantity, transaction) {
+    async reserveProduct(productId, quantity, locale, transaction) {
       const document = (await ProductModel.findOneAndUpdate(
         {
           _id: productId,
@@ -204,7 +209,9 @@ function createMongoOrderStore(): OrderStore {
       )
         .select({
           slug: 1,
+          [`translations.${locale}.name`]: 1,
           "translations.ru.name": 1,
+          name: 1,
           price: 1,
           stockQuantity: 1,
           images: 1,
@@ -214,10 +221,13 @@ function createMongoOrderStore(): OrderStore {
 
       if (!document) return null;
 
+      const translation = resolveProductTranslation(document, locale);
+      if (!translation) return null;
+
       return {
         id: document._id.toString(),
         slug: document.slug,
-        name: document.translations.ru.name,
+        name: translation.name,
         price: document.price,
         stockQuantity: document.stockQuantity,
         images: document.images.map((image) => ({ ...image })),
@@ -359,6 +369,7 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
               const product = await dependencies.store.reserveProduct(
                 item.productId,
                 item.quantity,
+                checkout.locale,
                 transaction
               );
 
@@ -386,6 +397,7 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
             const created = await dependencies.store.createPendingOrder(
               {
                 number: generateOrderNumber(now()),
+                locale: checkout.locale,
                 customer: {
                   fullName: checkout.customer.fullName,
                   phone: checkout.customer.phone,

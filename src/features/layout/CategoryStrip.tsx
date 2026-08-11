@@ -1,5 +1,6 @@
 import type { Category, CategoryId } from "../../shared/types";
 import { applyImageFallback } from "../../shared/image-fallback";
+import { useTranslations } from "next-intl";
 
 export type CategoryStripProps = {
   categories: readonly Category[];
@@ -12,15 +13,17 @@ export function CategoryStrip({
   selectedCategory,
   onSelectCategory,
 }: CategoryStripProps) {
+  const t = useTranslations("Categories");
+
   return (
     <section id="categories" className="categories section" tabIndex={-1}>
       <div className="shell">
         <div className="section-heading">
           <div>
-            <p className="eyebrow">Kayfiyatga mos tanlov</p>
-            <h2>Gulingizni toping</h2>
+            <p className="eyebrow">{t("kicker")}</p>
+            <h2>{t("title")}</h2>
           </div>
-          <p>Har bir kompozitsiya floristlarimiz tomonidan buyurtma kuni yaratiladi.</p>
+          <p>{t("subtitle")}</p>
         </div>
 
         <div className="category-grid">
@@ -37,7 +40,7 @@ export function CategoryStrip({
               </span>
               <span className="category-card__copy">
                 <strong>{category.title}</strong>
-                <small>{category.productCountLabel}</small>
+                <small>{t("productCount", { count: category.productCount })}</small>
               </span>
               <span className="category-card__arrow" aria-hidden="true">↗</span>
             </button>

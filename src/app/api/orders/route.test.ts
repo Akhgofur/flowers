@@ -30,6 +30,7 @@ vi.mock("@/lib/rate-limit", () => rateLimit);
 import { POST } from "./route";
 
 const validCheckout = {
+  locale: "ru",
   customer: {
     fullName: "Ali Valiyev",
     phone: "+998901234567",
@@ -141,7 +142,22 @@ describe("POST /api/orders", () => {
 
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBe("42");
-    await expect(response.json()).resolves.toMatchObject({ error: expect.any(String) });
+    await expect(response.json()).resolves.toEqual({
+      code: "RATE_LIMITED",
+      error: "Слишком много попыток. Повторите позже.",
+    });
     expect(orderService.createPendingOrder).not.toHaveBeenCalled();
+  });
+
+  it("returns stable codes and English copy for invalid English checkout data", async () => {
+    const response = await POST(
+      postJson({ ...validCheckout, locale: "en", items: [] })
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      code: "VALIDATION_ERROR",
+      error: "Check your order details.",
+    });
   });
 });

@@ -55,7 +55,7 @@ export function formatNewOrderNotification(order: NewOrderNotification): string 
 
   return [
     `Yangi buyurtma: ${order.orderNumber}`,
-    `Jami: ${formatSum(order.total)}`,
+    `Jami: ${formatSum(order.total, "uz")}`,
     `To'lov: ${paymentMethodLabel(order.paymentMethod)}`,
     "",
     `Mijoz: ${order.customer.fullName}`,

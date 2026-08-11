@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createTranslator } from "next-intl";
 import en from "../../messages/en.json";
 import ru from "../../messages/ru.json";
 import uz from "../../messages/uz.json";
@@ -7,6 +8,8 @@ const REQUIRED_NAMESPACES = [
   "Metadata",
   "Header",
   "Hero",
+  "Categories",
+  "Promo",
   "Catalog",
   "Product",
   "Cart",
@@ -54,5 +57,13 @@ describe("message catalogs", () => {
       };
       visit(messages);
     }
+  });
+
+  it("uses natural Russian plural forms for catalog result counts", () => {
+    const t = createTranslator({ locale: "ru", messages: ru, namespace: "Catalog" });
+
+    expect(t("resultCount", { count: 1 })).toBe("1 результат");
+    expect(t("resultCount", { count: 2 })).toBe("2 результата");
+    expect(t("resultCount", { count: 5 })).toBe("5 результатов");
   });
 });

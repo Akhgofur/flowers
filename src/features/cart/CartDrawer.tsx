@@ -1,9 +1,11 @@
 import { Link } from "@/i18n/navigation";
 import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatSum } from "../../shared/format";
 import { applyImageFallback } from "../../shared/image-fallback";
 import { useFocusTrap } from "../../shared/a11y/useFocusTrap";
 import type { CartLine, Product } from "../../shared/types";
+import type { Locale } from "@/i18n/config";
 
 export type CartDrawerProps = {
   open: boolean;
@@ -26,6 +28,8 @@ export function CartDrawer({
   onRemove,
   onContinueShopping,
 }: CartDrawerProps) {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("Cart");
   const drawerRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const shouldRestoreFocusRef = useRef(true);
@@ -76,20 +80,20 @@ export function CartDrawer({
         id="cart-drawer"
         className="cart-drawer"
         role="complementary"
-        aria-label="Savat"
+        aria-label={t("title")}
         tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="cart-drawer__header">
           <div>
-            <p className="eyebrow">Sizning tanlovingiz</p>
-            <h2>Savat</h2>
+            <p className="eyebrow">{t("selectionKicker")}</p>
+            <h2>{t("title")}</h2>
           </div>
           <button
             ref={closeButtonRef}
             className="overlay-close-button"
             type="button"
-            aria-label="Savatni yopish"
+            aria-label={t("close")}
             onClick={onClose}
           >
             <span aria-hidden="true">×</span>
@@ -99,14 +103,14 @@ export function CartDrawer({
         {items.length === 0 ? (
           <div className="cart-drawer__empty">
             <span aria-hidden="true">♡</span>
-            <h3>Savatingiz hozircha bo'sh</h3>
-            <p>Yoqtirgan buketingizni tanlang — biz uni mehr bilan tayyorlaymiz.</p>
+            <h3>{t("empty")}</h3>
+            <p>{t("emptyDescription")}</p>
             <button
               className="secondary-button"
               type="button"
               onClick={handleContinueShopping}
             >
-              Katalogga qaytish
+              {t("browseCatalog")}
             </button>
           </div>
         ) : (
@@ -116,7 +120,7 @@ export function CartDrawer({
                 <article className="cart-line" key={product.id}>
                   <img
                     src={product.image}
-                    alt={`${product.name} gul kompozitsiyasi`}
+                    alt={t("itemImageAlt", { name: product.name })}
                     onError={applyImageFallback}
                   />
                   <div className="cart-line__content">
@@ -124,30 +128,30 @@ export function CartDrawer({
                       <h3>{product.name}</h3>
                       <button
                         type="button"
-                        aria-label={`${product.name}ni savatdan olib tashlash`}
+                        aria-label={t("remove", { name: product.name })}
                         onClick={() => onRemove(product.id)}
                       >
-                        Olib tashlash
+                        {t("removeShort")}
                       </button>
                     </div>
-                    <p>{formatSum(product.price)} / dona</p>
+                    <p>{formatSum(product.price, locale)} / {t("each")}</p>
                     <div className="cart-line__footer">
                       <div className="quantity-control quantity-control--compact">
                         <button
                           type="button"
-                          aria-label={`${product.name} miqdorini kamaytirish`}
+                          aria-label={t("decrease", { name: product.name })}
                           onClick={() =>
                             onSetQuantity(product.id, line.quantity - 1)
                           }
                         >
                           <span aria-hidden="true">−</span>
                         </button>
-                        <span aria-label={`${product.name} miqdori`}>
+                        <span aria-label={t("quantityLabel", { name: product.name })}>
                           {line.quantity}
                         </span>
                         <button
                           type="button"
-                          aria-label={`${product.name} miqdorini oshirish`}
+                          aria-label={t("increase", { name: product.name })}
                           disabled={line.quantity === 99}
                           onClick={() =>
                             onSetQuantity(product.id, line.quantity + 1)
@@ -156,7 +160,7 @@ export function CartDrawer({
                           <span aria-hidden="true">+</span>
                         </button>
                       </div>
-                      <strong>{formatSum(product.price * line.quantity)}</strong>
+                      <strong>{formatSum(product.price * line.quantity, locale)}</strong>
                     </div>
                   </div>
                 </article>
@@ -165,14 +169,14 @@ export function CartDrawer({
 
             <footer className="cart-drawer__footer">
               <div className="cart-drawer__total">
-                <span>Jami</span>
-                <strong>{formatSum(total)}</strong>
+                <span>{t("subtotal")}</span>
+                <strong>{formatSum(total, locale)}</strong>
               </div>
               <Link
                 className="primary-button"
                 href="/checkout"
               >
-                Buyurtmani rasmiylashtirish
+                {t("checkout")}
               </Link>
             </footer>
           </>

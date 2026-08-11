@@ -4,6 +4,8 @@ import type {
   ProductColor,
 } from "../../shared/types";
 import { formatSum } from "../../shared/format";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@/i18n/config";
 
 export type CatalogFiltersProps = {
   filters: CatalogFilterState;
@@ -21,14 +23,7 @@ const FLOWER_TYPES: readonly FlowerType[] = [
   "mixed",
 ];
 
-const FLOWER_TYPE_LABELS: Record<FlowerType, string> = {
-  rose: "Atirgul",
-  tulip: "Lola",
-  peony: "Pion",
-  orchid: "Orkide",
-  seasonal: "Mavsumiy gullar",
-  mixed: "Aralash gullar",
-};
+const KNOWN_FLOWER_TYPES = new Set(FLOWER_TYPES);
 
 const PRODUCT_COLORS: readonly ProductColor[] = [
   "red",
@@ -41,16 +36,7 @@ const PRODUCT_COLORS: readonly ProductColor[] = [
   "peach",
 ];
 
-const PRODUCT_COLOR_LABELS: Record<ProductColor, string> = {
-  red: "Qizil",
-  pink: "Pushti",
-  white: "Oq",
-  yellow: "Sariq",
-  purple: "Binafsha",
-  blue: "Moviy",
-  green: "Yashil",
-  peach: "Shaftolirang",
-};
+const KNOWN_PRODUCT_COLORS = new Set(PRODUCT_COLORS);
 
 function toggleItem<T extends string>(items: readonly T[], item: T): T[] {
   return items.includes(item)
@@ -64,22 +50,33 @@ export function CatalogFilters({
   onApply,
   onReset,
 }: CatalogFiltersProps) {
+  const locale = useLocale() as Locale;
+  const t = useTranslations("Catalog");
+  const flowerTypeLabel = (flowerType: FlowerType) =>
+    KNOWN_FLOWER_TYPES.has(flowerType)
+      ? t(`flowerTypes.${flowerType}` as "flowerTypes.rose")
+      : flowerType;
+  const colorLabel = (color: ProductColor) =>
+    KNOWN_PRODUCT_COLORS.has(color)
+      ? t(`colors.${color}` as "colors.red")
+      : color;
+
   return (
     <aside className="catalog-filters" aria-labelledby="catalog-filters-title">
       <div className="catalog-filters__heading">
         <div>
-          <p className="eyebrow">Aniq tanlov</p>
-          <h3 id="catalog-filters-title">Filtrlar</h3>
+          <p className="eyebrow">{t("kicker")}</p>
+          <h3 id="catalog-filters-title">{t("filtersTitle")}</h3>
         </div>
       </div>
 
       <label className="filter-search">
-        <span>Mahsulot qidirish</span>
+        <span>{t("searchLabel")}</span>
         <span className="filter-search__field">
           <input
             type="search"
             value={filters.query}
-            placeholder="Masalan, pion"
+            placeholder={t("searchPlaceholder")}
             onChange={(event) =>
               onChange({ ...filters, query: event.currentTarget.value })
             }
@@ -89,10 +86,10 @@ export function CatalogFilters({
       </label>
 
       <fieldset className="filter-group filter-price">
-        <legend>Narx oralig'i</legend>
+        <legend>{t("priceRange")}</legend>
         <label>
-          <span>Eng past narx</span>
-          <span className="filter-price__value">{formatSum(filters.minPrice)}</span>
+          <span>{t("minimumPrice")}</span>
+          <span className="filter-price__value">{formatSum(filters.minPrice, locale)}</span>
           <input
             type="range"
             min={20000}
@@ -105,8 +102,8 @@ export function CatalogFilters({
           />
         </label>
         <label>
-          <span>Eng yuqori narx</span>
-          <span className="filter-price__value">{formatSum(filters.maxPrice)}</span>
+          <span>{t("maximumPrice")}</span>
+          <span className="filter-price__value">{formatSum(filters.maxPrice, locale)}</span>
           <input
             type="range"
             min={20000}
@@ -121,7 +118,7 @@ export function CatalogFilters({
       </fieldset>
 
       <fieldset className="filter-group">
-        <legend>Gul turi</legend>
+        <legend>{t("flowerType")}</legend>
         <div className="filter-check-list">
           {FLOWER_TYPES.map((flowerType) => (
             <label key={flowerType}>
@@ -135,14 +132,14 @@ export function CatalogFilters({
                   })
                 }
               />
-              <span>{FLOWER_TYPE_LABELS[flowerType]}</span>
+              <span>{flowerTypeLabel(flowerType)}</span>
             </label>
           ))}
         </div>
       </fieldset>
 
       <fieldset className="filter-group">
-        <legend>Rang</legend>
+        <legend>{t("color")}</legend>
         <div className="filter-color-list">
           {PRODUCT_COLORS.map((color) => (
             <label key={color}>
@@ -157,7 +154,7 @@ export function CatalogFilters({
                 }
               />
               <span className={`color-swatch color-swatch--${color}`} aria-hidden="true" />
-              <span>{PRODUCT_COLOR_LABELS[color]}</span>
+              <span>{colorLabel(color)}</span>
             </label>
           ))}
         </div>
@@ -165,10 +162,10 @@ export function CatalogFilters({
 
       <div className="catalog-filters__actions">
         <button className="primary-button" type="button" onClick={onApply}>
-          Filtrni qo'llash
+          {t("applyFilters")}
         </button>
         <button className="filter-reset-button" type="button" onClick={onReset}>
-          Tozalash
+          {t("resetFilters")}
         </button>
       </div>
     </aside>

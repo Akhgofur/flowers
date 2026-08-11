@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { LanguageSwitcher } from "@/components/storefront/LanguageSwitcher";
 
 export type HeaderProps = {
   cartItemCount: number;
@@ -8,19 +10,20 @@ export type HeaderProps = {
 };
 
 const NAVIGATION_LINKS = [
-  { href: "/catalog", label: "Katalog" },
-  { href: "/catalog?sale=true", label: "Chegirmalar" },
-  { href: "#gift", label: "Sovg'alar" },
-  { href: "#about", label: "Biz haqimizda" },
-  { href: "#delivery", label: "Yetkazib berish" },
-  { href: "#contact", label: "Aloqa" },
+  { href: "/catalog", label: "navCatalog" },
+  { href: "/catalog?sale=true", label: "navSales" },
+  { href: "#gift", label: "navGifts" },
+  { href: "#about", label: "navAbout" },
+  { href: "#delivery", label: "navDelivery" },
+  { href: "#contact", label: "navContacts" },
 ] as const;
 
 export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
+  const t = useTranslations("Header");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const cartStateLabel =
-    cartItemCount === 0 ? "savat bo'sh" : `${cartItemCount} ta mahsulot`;
+    cartItemCount === 0 ? t("cartEmpty") : t("cartItems", { count: cartItemCount });
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -41,12 +44,12 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
       <div className="utility-bar">
         <div className="shell utility-bar__content">
           <div className="utility-bar__group">
-            <span>Toshkent</span>
-            <span>Har kuni 08:00–22:00</span>
-            <span>Shahar bo'ylab yetkazib beramiz</span>
+            <span>{t("location")}</span>
+            <span>{t("schedule")}</span>
+            <span>{t("deliveryNotice")}</span>
           </div>
           <div className="utility-bar__group utility-bar__meta">
-            <span>UZ</span>
+            <LanguageSwitcher />
             <span>Instagram</span>
             <span>Telegram</span>
           </div>
@@ -54,26 +57,26 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
       </div>
 
       <div className="shell header-main">
-        <Link className="wordmark" href="/" aria-label="Nafis bosh sahifasi">
+        <Link className="wordmark" href="/" aria-label={t("homeLabel")}>
           <span className="wordmark__bloom" aria-hidden="true">✿</span>
           <span>Nafis</span>
-          <small>gullar uyi</small>
+          <small>{t("brandSubtitle")}</small>
         </Link>
 
-        <nav className="desktop-nav" aria-label="Asosiy navigatsiya">
+        <nav className="desktop-nav" aria-label={t("navigationLabel")}>
           {NAVIGATION_LINKS.map((link) => (
-            <Link key={link.href} href={link.href}>{link.label}</Link>
+            <Link key={link.href} href={link.href}>{t(link.label)}</Link>
           ))}
         </nav>
 
         <div className="header-actions">
-          <Link className="icon-link" href="/catalog" aria-label="Gullarni qidirish">
+          <Link className="icon-link" href="/catalog" aria-label={t("search")}>
             <span aria-hidden="true">⌕</span>
           </Link>
           <a
             className="icon-link"
             href="#about"
-            aria-label="Biz haqimizda bo'limiga o'tish"
+            aria-label={t("aboutShortcut")}
           >
             <span aria-hidden="true">♙</span>
           </a>
@@ -81,12 +84,12 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
             className="cart-button"
             type="button"
             data-has-items={cartItemCount > 0}
-            aria-label={`${isCartOpen ? "Savatni yopish" : "Savatni ochish"}, ${cartStateLabel}`}
+            aria-label={`${isCartOpen ? t("cartClose") : t("cartOpen")}, ${cartStateLabel}`}
             aria-controls="cart-drawer"
             aria-expanded={isCartOpen}
             onClick={(event) => onOpenCart(event.currentTarget)}
           >
-            <span aria-hidden="true">Bag</span>
+            <span aria-hidden="true">{t("cart")}</span>
             {cartItemCount > 0 ? (
               <strong className="cart-count-badge" aria-hidden="true">
                 {cartItemCount}
@@ -98,9 +101,7 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
             className="menu-toggle"
             type="button"
             aria-label={
-              isMobileMenuOpen
-                ? "Mobil menyuni yopish"
-                : "Mobil menyuni ochish"
+              isMobileMenuOpen ? t("menuClose") : t("menuOpen")
             }
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-navigation"
@@ -115,7 +116,7 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
         <nav
           id="mobile-navigation"
           className="mobile-nav"
-          aria-label="Mobil navigatsiya"
+          aria-label={t("mobileNavigationLabel")}
         >
           <div className="shell mobile-nav__links">
             {NAVIGATION_LINKS.map((link) => (
@@ -124,7 +125,7 @@ export function Header({ cartItemCount, isCartOpen, onOpenCart }: HeaderProps) {
                 href={link.href}
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                {link.label}
+                {t(link.label)}
               </Link>
             ))}
           </div>

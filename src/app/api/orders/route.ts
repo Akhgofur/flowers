@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/config";
 import { RateLimitExceededError, rateLimiter } from "@/lib/rate-limit";
 import { orderNotificationService } from "@/lib/services/order-notification-service";
 import { orderService } from "@/lib/services/order-service";
 import { checkoutSchema } from "@/lib/validations";
+import en from "../../../../messages/en.json";
+import ru from "../../../../messages/ru.json";
+import uz from "../../../../messages/uz.json";
 
 export const runtime = "nodejs";
 
@@ -20,20 +24,41 @@ const PUBLIC_ORDER_ERRORS = new Set([
   "INVALID_DELIVERY_DATE",
 ]);
 
+const MESSAGE_CATALOGS = { ru, uz, en } as const;
+type CheckoutErrorKey =
+  | "errorValidation"
+  | "errorRateLimit"
+  | "errorUnavailable"
+  | "errorService";
+
+function checkoutError(locale: Locale, key: CheckoutErrorKey): string {
+  return MESSAGE_CATALOGS[locale].Checkout[key];
+}
+
+function bodyLocale(body: unknown): Locale {
+  if (typeof body !== "object" || body === null || !("locale" in body)) {
+    return DEFAULT_LOCALE;
+  }
+
+  const locale = (body as { locale?: unknown }).locale;
+  return isLocale(locale) ? locale : DEFAULT_LOCALE;
+}
+
 function getRequestSubject(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
   const forwardedAddress = forwardedFor?.split(",")[0]?.trim();
   return forwardedAddress || request.headers.get("x-real-ip")?.trim() || "unknown";
 }
 
-function publicOrderError(error: unknown): { message: string; status: number } | null {
+function publicOrderError(
+  error: unknown
+): { code: string; status: number } | null {
   if (typeof error !== "object" || error === null) return null;
 
-  const candidate = error as { code?: unknown; message?: unknown; status?: unknown };
+  const candidate = error as { code?: unknown; status?: unknown };
   if (
     typeof candidate.code !== "string" ||
     !PUBLIC_ORDER_ERRORS.has(candidate.code) ||
-    typeof candidate.message !== "string" ||
     typeof candidate.status !== "number" ||
     !Number.isInteger(candidate.status) ||
     candidate.status < 400 ||
@@ -42,7 +67,7 @@ function publicOrderError(error: unknown): { message: string; status: number } |
     return null;
   }
 
-  return { message: candidate.message, status: candidate.status };
+  return { code: candidate.code, status: candidate.status };
 }
 
 function rateLimitHeaders(limit: number, remaining: number): HeadersInit {
@@ -53,33 +78,45 @@ function rateLimitHeaders(limit: number, remaining: number): HeadersInit {
 }
 
 export async function POST(request: Request) {
-  try {
-    const decision = await rateLimiter.consume({
-      ...CHECKOUT_RATE_LIMIT,
-      subject: getRequestSubject(request),
-    });
+  let locale: Locale = DEFAULT_LOCALE;
 
+  try {
     let body: unknown;
     try {
       body = await request.json();
     } catch {
       return NextResponse.json(
-        { error: "Buyurtma ma'lumotlari JSON formatida bo'lishi kerak." },
-        { status: 400, headers: rateLimitHeaders(decision.limit, decision.remaining) }
+        {
+          code: "INVALID_JSON",
+          error: checkoutError(locale, "errorValidation"),
+        },
+        { status: 400 }
       );
     }
+
+    locale = bodyLocale(body);
+    const decision = await rateLimiter.consume({
+      ...CHECKOUT_RATE_LIMIT,
+      subject: getRequestSubject(request),
+    });
 
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Buyurtma ma'lumotlarini tekshiring." },
-        { status: 400, headers: rateLimitHeaders(decision.limit, decision.remaining) }
+        {
+          code: "VALIDATION_ERROR",
+          error: checkoutError(locale, "errorValidation"),
+        },
+        {
+          status: 400,
+          headers: rateLimitHeaders(decision.limit, decision.remaining),
+        }
       );
     }
 
     const order = await orderService.createPendingOrder(parsed.data);
-    // Optional provider failures are swallowed inside this best-effort service;
-    // a committed order is never rolled back or rejected because a message failed.
+    // Notification providers are best effort: an already committed order must
+    // never be rolled back or reported as failed because messaging is down.
     try {
       await orderNotificationService.notifyNewOrder({
         orderNumber: order.orderNumber,
@@ -88,32 +125,52 @@ export async function POST(request: Request) {
         customer: parsed.data.customer,
       });
     } catch {
-      // A notification adapter must never turn a committed order into a failed checkout response.
       console.error("Order notification dispatch failed.");
     }
+
     return NextResponse.json(
       { order },
-      { status: 201, headers: rateLimitHeaders(decision.limit, decision.remaining) }
+      {
+        status: 201,
+        headers: rateLimitHeaders(decision.limit, decision.remaining),
+      }
     );
   } catch (error) {
     if (error instanceof RateLimitExceededError) {
       return NextResponse.json(
-        { error: "Juda ko'p urinish bo'ldi. Birozdan keyin qayta urinib ko'ring." },
-        { status: 429, headers: { "Retry-After": String(error.retryAfterSeconds) } }
+        {
+          code: "RATE_LIMITED",
+          error: checkoutError(locale, "errorRateLimit"),
+        },
+        {
+          status: 429,
+          headers: { "Retry-After": String(error.retryAfterSeconds) },
+        }
       );
     }
 
     const safeError = publicOrderError(error);
     if (safeError) {
       return NextResponse.json(
-        { error: safeError.message },
+        {
+          code: safeError.code,
+          error: checkoutError(
+            locale,
+            safeError.code === "PRODUCT_UNAVAILABLE"
+              ? "errorUnavailable"
+              : "errorValidation"
+          ),
+        },
         { status: safeError.status }
       );
     }
 
     console.error("Order creation failed", error);
     return NextResponse.json(
-      { error: "Buyurtmani hozir rasmiylashtirib bo'lmadi. Qayta urinib ko'ring." },
+      {
+        code: "ORDER_SERVICE_UNAVAILABLE",
+        error: checkoutError(locale, "errorService"),
+      },
       { status: 503 }
     );
   }

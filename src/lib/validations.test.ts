@@ -63,6 +63,7 @@ describe("commerce validation boundaries", () => {
   it("rejects a browser-supplied order total and quantity above 99", () => {
     expect(() =>
       checkoutSchema.parse({
+        locale: "ru",
         customer: {
           fullName: "Ali Valiyev",
           phone: "+998901234567",
@@ -97,6 +98,7 @@ describe("commerce validation boundaries", () => {
 
   it("accepts a valid quantity in the inclusive 1 through 99 range", () => {
     const parsed = checkoutSchema.parse({
+      locale: "uz",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",
@@ -117,6 +119,7 @@ describe("commerce validation boundaries", () => {
   it("rejects duplicate product lines so stock cannot be reserved twice ambiguously", () => {
     expect(() =>
       checkoutSchema.parse({
+        locale: "ru",
         customer: {
           fullName: "Ali Valiyev",
           phone: "+998901234567",
@@ -136,6 +139,22 @@ describe("commerce validation boundaries", () => {
       "pushti-lola-buketi"
     );
     expect(() => orderStatusSchema.parse("paid")).toThrow();
+  });
+
+  it("accepts only the three supported checkout locales", () => {
+    const input = {
+      locale: "ru",
+      customer: {
+        fullName: "Ali Valiyev",
+        phone: "+998901234567",
+        address: "Toshkent shahri, Chilonzor tumani",
+      },
+      paymentMethod: "cash_on_delivery",
+      items: [{ productId: "507f1f77bcf86cd799439011", quantity: 1 }],
+    };
+
+    expect(checkoutSchema.parse(input).locale).toBe("ru");
+    expect(() => checkoutSchema.parse({ ...input, locale: "de" })).toThrow();
   });
 
   it("keeps public SEO settings bounded and requires a complete Open Graph image", () => {

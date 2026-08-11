@@ -1,4 +1,4 @@
-import type { Category, HeroSlide, Product } from "../shared/types";
+import type { Category, HeroSlideConfig, Product } from "../shared/types";
 import type {
   CategoryTranslation,
   Localized,
@@ -200,42 +200,42 @@ const BASE_CATEGORIES: Category[] = [
   {
     id: "roses",
     title: "Atirgullar",
-    productCountLabel: "1 ta tanlov",
+    productCount: 1,
     image: "https://images.pexels.com/photos/12366357/pexels-photo-12366357.jpeg?auto=compress&cs=tinysrgb&w=700",
     icon: "rose",
   },
   {
     id: "tulips",
     title: "Lolalar",
-    productCountLabel: "2 ta tanlov",
+    productCount: 2,
     image: "https://images.unsplash.com/photo-1520763185298-1b434c919102?auto=format&fit=crop&w=700&q=85",
     icon: "tulip",
   },
   {
     id: "mixed",
     title: "Aralash buketlar",
-    productCountLabel: "3 ta tanlov",
+    productCount: 3,
     image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=700&q=85",
     icon: "bouquet",
   },
   {
     id: "orchids",
     title: "Orkideler",
-    productCountLabel: "2 ta tanlov",
+    productCount: 2,
     image: "https://images.pexels.com/photos/6725474/pexels-photo-6725474.jpeg?auto=compress&cs=tinysrgb&w=700",
     icon: "orchid",
   },
   {
     id: "boxed",
     title: "Sovg'a qutilari",
-    productCountLabel: "2 ta tanlov",
+    productCount: 2,
     image: "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?auto=format&fit=crop&w=700&q=85",
     icon: "gift",
   },
   {
     id: "wedding",
     title: "To'y gullari",
-    productCountLabel: "2 ta tanlov",
+    productCount: 2,
     image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=700&q=85",
     icon: "wedding",
   },
@@ -522,31 +522,19 @@ export const CATEGORIES: BootstrapCategory[] = BASE_CATEGORIES.map((category) =>
   };
 });
 
-export const HERO_SLIDES: HeroSlide[] = [
+export const HERO_SLIDES: HeroSlideConfig[] = [
   {
     id: "summer-flowers",
-    eyebrow: "Yozning mayin nafasi",
-    title: "Har bir lahzaga gul yarashing",
-    description: "Yangi uzilgan gullar bilan yaqinlaringizga issiq tilak yuboring.",
-    ctaLabel: "Buket tanlash",
     ctaTarget: "#catalog",
     image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1600&q=90",
   },
   {
     id: "special-price",
-    eyebrow: "Hafta taklifi",
-    title: "Sevimli gullaringizga yoqimli narx",
-    description: "Tanlangan kompozitsiyalar uchun maxsus narxlar bilan kayfiyat ulashing.",
-    ctaLabel: "Chegirmalarni ko'rish",
     ctaTarget: "#sale",
     image: "https://images.pexels.com/photos/22604232/pexels-photo-22604232.jpeg?auto=compress&cs=tinysrgb&w=1600",
   },
   {
     id: "gift-moment",
-    eyebrow: "Mehr bilan tanlangan",
-    title: "Sovg'angizni unutilmas qiling",
-    description: "Gullar, tabriknoma va nafis qadoqni bir buyurtmada jamlang.",
-    ctaLabel: "Sovg'a tanlash",
     ctaTarget: "#gift",
     image: "https://images.unsplash.com/photo-1523438885200-e635ba2c371e?auto=format&fit=crop&w=1600&q=90",
   },

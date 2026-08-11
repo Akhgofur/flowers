@@ -12,20 +12,54 @@ import {
   FAVORITES_STORAGE_KEY,
 } from "../features/cart/cart-storage";
 import App from "./App";
-import { renderWithIntl as render } from "@/test/render-with-intl";
+import { renderWithIntl } from "@/test/render-with-intl";
+import type { ReactElement } from "react";
+
+vi.mock("@/components/storefront/LanguageSwitcher", () => ({
+  LanguageSwitcher: () => <div aria-label="Til">RU UZ EN</div>,
+}));
+
+function render(ui: ReactElement) {
+  return renderWithIntl(ui, { locale: "uz" });
+}
 
 beforeEach(() => {
   localStorage.clear();
 });
 
+it.each([
+  ["ru", "Каталог", "Скидки", "Доставка"],
+  ["uz", "Katalog", "Chegirmalar", "Yetkazib berish"],
+  ["en", "Catalog", "Sale", "Delivery"],
+] as const)(
+  "renders %s navigation copy",
+  (locale, catalog, sale, delivery) => {
+    renderWithIntl(<App />, { locale });
+
+    const desktopNavigation = screen.getByRole("navigation", {
+      name: new RegExp(
+        locale === "ru"
+          ? "Основная навигация"
+          : locale === "uz"
+            ? "Asosiy navigatsiya"
+            : "Primary navigation",
+        "i"
+      ),
+    });
+    expect(within(desktopNavigation).getByRole("link", { name: catalog })).toBeVisible();
+    expect(within(desktopNavigation).getByRole("link", { name: sale })).toBeVisible();
+    expect(within(desktopNavigation).getByRole("link", { name: delivery })).toBeVisible();
+  }
+);
+
 it("renders the Nafis catalog shell", () => {
   render(<App />);
 
   expect(
-    screen.getByRole("heading", { name: /baxtni gullar bilan yuboring/i })
+    screen.getByRole("heading", { name: /har bir gul.*bir hissiyot/i })
   ).toBeInTheDocument();
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
-  expect(cartButton).toHaveAccessibleName(/savat bo'sh/i);
+  expect(cartButton).toHaveAccessibleName(/savat bo.sh/i);
   expect(cartButton).not.toHaveTextContent("0");
   expect(cartButton.querySelector(".cart-count-badge")).toBeNull();
 });
@@ -53,7 +87,7 @@ it("opens the empty cart drawer", async () => {
   expect(cartButton).toHaveAttribute("aria-expanded", "true");
   const drawer = screen.getByRole("complementary", { name: /savat/i });
   expect(drawer).toBeVisible();
-  expect(within(drawer).getByText(/savatingiz hozircha bo'sh/i)).toBeVisible();
+  expect(within(drawer).getByText(/savatingiz hozircha bo.sh/i)).toBeVisible();
 });
 
 it("changes the hero slide and opens the mobile navigation", async () => {
@@ -76,7 +110,7 @@ it("describes the about shortcut without claiming a profile action", () => {
   render(<App />);
 
   expect(
-    screen.getByRole("link", { name: /biz haqimizda bo'limiga o'tish/i })
+    screen.getByRole("link", { name: /biz haqimizda bo.limiga o.tish/i })
   ).toHaveAttribute("href", "#about");
   expect(screen.queryByRole("link", { name: /profilni ochish/i })).not.toBeInTheDocument();
 });
@@ -88,7 +122,7 @@ it("wraps the previous hero control from the first slide to the last slide", asy
   await user.click(screen.getByRole("button", { name: /oldingi slayd/i }));
 
   expect(
-    screen.getByRole("heading", { name: /sovg'angizni unutilmas qiling/i })
+    screen.getByRole("heading", { name: /sovg.angizni unutilmas qiling/i })
   ).toBeInTheDocument();
 });
 
@@ -232,20 +266,20 @@ it("selects a category and announces that catalog filtering will apply", async (
   await user.click(tulipCategory);
 
   expect(tulipCategory).toHaveAttribute("aria-pressed", "true");
-  expect(screen.getByText(/lolalar tanlandi.*katalog filtri qo'llanadi/i)).toBeVisible();
+  expect(screen.getByText(/lolalar tanlandi.*katalog filtri qo.llanadi/i)).toBeVisible();
 });
 
 it("selects the boxed category from the gift promotion and announces the selection", async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  await user.click(screen.getByRole("button", { name: /sovg'a qutilarini tanlash/i }));
+  await user.click(screen.getByRole("button", { name: /sovg.a qutilarini tanlash/i }));
 
   expect(
-    screen.getByRole("button", { name: /sovg'a qutilari.*2 ta tanlov/i })
+    screen.getByRole("button", { name: /sovg.a qutilari.*2 ta tanlov/i })
   ).toHaveAttribute("aria-pressed", "true");
   expect(
-    screen.getByText(/sovg'a qutilari tanlandi.*katalog filtri qo'llanadi/i)
+    screen.getByText(/sovg.a qutilari tanlandi.*katalog filtri qo.llanadi/i)
   ).toBeVisible();
 });
 
@@ -257,7 +291,7 @@ it("filters by query and resets the catalog", async () => {
     screen.getByRole("searchbox", { name: /mahsulot qidirish/i }),
     "pion"
   );
-  await user.click(screen.getByRole("button", { name: /filtrni qo'llash/i }));
+  await user.click(screen.getByRole("button", { name: /filtrni qo.llash/i }));
 
   expect(screen.getByText(/pushti pion buketi/i)).toBeVisible();
   expect(screen.queryByText(/qirmizi atirgul buketi/i)).not.toBeInTheDocument();
@@ -281,7 +315,7 @@ it("filters the catalog to boxed products from the promotion", async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  await user.click(screen.getByRole("button", { name: /sovg'a qutilarini tanlash/i }));
+  await user.click(screen.getByRole("button", { name: /sovg.a qutilarini tanlash/i }));
 
   expect(screen.getByText(/atirgullar qutisi/i)).toBeVisible();
   expect(screen.getByText(/yoqut yurak/i)).toBeVisible();
@@ -295,7 +329,7 @@ it("applies the sale tab from the hero promotion and keeps it in the draft filte
   await user.click(screen.getByRole("button", { name: /2-slayd/i }));
   const hero = screen.getByRole("region", { name: /mavsumiy takliflar/i });
   await user.click(
-    within(hero).getByRole("button", { name: /chegirmalarni ko'rish/i })
+    within(hero).getByRole("button", { name: /chegirmalarni ko.rish/i })
   );
 
   const saleTab = screen.getByRole("button", { name: /^aksiya$/i });
@@ -310,7 +344,7 @@ it("applies the sale tab from the hero promotion and keeps it in the draft filte
     screen.getByRole("searchbox", { name: /mahsulot qidirish/i }),
     "orkide"
   );
-  await user.click(screen.getByRole("button", { name: /filtrni qo'llash/i }));
+  await user.click(screen.getByRole("button", { name: /filtrni qo.llash/i }));
   expect(screen.getByText(/sokin oq orkide/i)).toBeVisible();
   expect(screen.queryByText(/binafsha orkide/i)).not.toBeInTheDocument();
 });
@@ -320,9 +354,9 @@ it("applies the sale tab from the sale ribbon", async () => {
   render(<App />);
 
   const saleLink = screen.getByRole("link", {
-    name: /chegirmalarni ko'rish/i,
+    name: /chegirmalarni ko.rish/i,
   });
-  expect(saleLink).toHaveAttribute("href", "/ru/catalog?sale=true");
+  expect(saleLink).toHaveAttribute("href", "/uz/catalog?sale=true");
 
   await user.click(saleLink);
 
@@ -368,7 +402,7 @@ it("adds a product to the cart and announces the action", async () => {
 
   await user.click(
     screen.getByRole("button", {
-      name: /qirmizi atirgul buketi ni savatga qo'shish/i,
+      name: /qirmizi atirgul buketi ni savatga qo.shish/i,
     })
   );
 
@@ -376,7 +410,7 @@ it("adds a product to the cart and announces the action", async () => {
   expect(cartButton).toHaveAccessibleName(/1 ta mahsulot/i);
   expect(cartButton.querySelector(".cart-count-badge")).toHaveTextContent("1");
   expect(screen.getByRole("status")).toHaveTextContent(
-    /qirmizi atirgul buketi.*savatga qo'shildi/i
+    /qirmizi atirgul buketi.*savatga qo.shildi/i
   );
 });
 
@@ -402,17 +436,17 @@ it("uses a truthful floral fallback in every image render path", async () => {
   );
 
   await user.click(
-    screen.getByRole("button", { name: /pushti pion buketini ko'rish/i })
+    screen.getByRole("button", { name: /pushti pion buketini ko.rish/i })
   );
   const dialog = screen.getByRole("dialog", { name: /pushti pion buketi/i });
   assertFallback(
-    within(dialog).getByAltText(/pushti pion buketi gul kompozitsiyasi/i)
+    within(dialog).getByAltText(/pushti pion buketi.*1-rasm/i)
   );
   await user.keyboard("{Escape}");
 
   await user.click(
     screen.getByRole("button", {
-      name: /qirmizi atirgul buketi ni savatga qo'shish/i,
+      name: /qirmizi atirgul buketi ni savatga qo.shish/i,
     })
   );
   await user.click(screen.getByRole("button", { name: /savatni ochish/i }));
@@ -428,13 +462,13 @@ it("refreshes and auto-dismisses repeated cart announcements", () => {
   try {
     render(<App />);
     const addToCart = screen.getByRole("button", {
-      name: /qirmizi atirgul buketi ni savatga qo'shish/i,
+      name: /qirmizi atirgul buketi ni savatga qo.shish/i,
     });
 
     fireEvent.click(addToCart);
     const firstAnnouncement = screen.getByRole("status");
     expect(firstAnnouncement).toHaveTextContent(
-      /qirmizi atirgul buketi.*savatga qo'shildi/i
+      /qirmizi atirgul buketi.*savatga qo.shildi/i
     );
 
     act(() => vi.advanceTimersByTime(2000));
@@ -461,7 +495,7 @@ it("shows an empty state and resets it", async () => {
     screen.getByRole("searchbox", { name: /mahsulot qidirish/i }),
     "mavjud bo'lmagan guldasta"
   );
-  await user.click(screen.getByRole("button", { name: /filtrni qo'llash/i }));
+  await user.click(screen.getByRole("button", { name: /filtrni qo.llash/i }));
 
   const emptyState = screen.getByRole("status");
   expect(emptyState).toHaveTextContent(/mos buket topilmadi/i);
@@ -475,7 +509,7 @@ it("opens the selected product from its view action", async () => {
   render(<App />);
 
   await user.click(
-    screen.getByRole("button", { name: /qirmizi atirgul buketini ko'rish/i })
+    screen.getByRole("button", { name: /qirmizi atirgul buketini ko.rish/i })
   );
 
   expect(
@@ -487,7 +521,7 @@ it("closes product quick-view with Escape", async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  await user.click(screen.getByRole("button", { name: /pushti pion buketini ko'rish/i }));
+  await user.click(screen.getByRole("button", { name: /pushti pion buketini ko.rish/i }));
   expect(screen.getByRole("dialog", { name: /pushti pion buketi/i })).toBeVisible();
 
   await user.keyboard("{Escape}");
@@ -499,7 +533,7 @@ it("contains quick-view focus with Tab and Shift+Tab and restores its trigger", 
   render(<App />);
 
   const viewTrigger = screen.getByRole("button", {
-    name: /pushti pion buketini ko'rish/i,
+    name: /pushti pion buketini ko.rish/i,
   });
   const cartTrigger = screen.getByRole("button", { name: /savatni ochish/i });
   await user.click(viewTrigger);
@@ -509,10 +543,10 @@ it("contains quick-view focus with Tab and Shift+Tab and restores its trigger", 
     name: /mahsulot oynasini yopish/i,
   });
   const addButton = within(dialog).getByRole("button", {
-    name: /^savatga qo'shish$/i,
+    name: /^savatga qo.shish$/i,
   });
   const favoriteButton = within(dialog).getByRole("button", {
-    name: /pushti pion buketi ni sevimlilarga qo'shish/i,
+    name: /pushti pion buketi.*sevimlilarga qo.shish/i,
   });
 
   expect(closeButton).toHaveFocus();
@@ -544,7 +578,7 @@ it("restores the actual quick-view trigger when activation does not move focus",
   render(<App />);
 
   const viewTrigger = screen.getByRole("button", {
-    name: /pushti pion buketini ko'rish/i,
+    name: /pushti pion buketini ko.rish/i,
   });
   const cartTrigger = screen.getByRole("button", { name: /savatni ochish/i });
   cartTrigger.focus();
@@ -586,7 +620,7 @@ it("restores the quick-view origin when inert blurs the background trigger", asy
   try {
     render(<App />);
     const viewTrigger = screen.getByRole("button", {
-      name: /pushti pion buketini ko'rish/i,
+      name: /pushti pion buketini ko.rish/i,
     });
 
     await user.click(viewTrigger);
@@ -612,10 +646,10 @@ it("adds a quick-view product to cart and opens the drawer", async () => {
 
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
   const viewTrigger = screen.getByRole("button", {
-    name: /pushti pion buketini ko'rish/i,
+    name: /pushti pion buketini ko.rish/i,
   });
   await user.click(viewTrigger);
-  await user.click(screen.getByRole("button", { name: /^savatga qo'shish$/i }));
+  await user.click(screen.getByRole("button", { name: /^savatga qo.shish$/i }));
 
   expect(cartButton).toHaveTextContent("1");
   await user.keyboard("{Escape}");
@@ -629,7 +663,7 @@ it("toggles a favorite and persists its product id", async () => {
   render(<App />);
 
   const favoriteButton = screen.getByRole("button", {
-    name: /pushti pion buketi ni sevimlilarga qo'shish/i,
+    name: /pushti pion buketi.*sevimlilarga qo.shish/i,
   });
   expect(favoriteButton).toHaveAttribute("aria-pressed", "false");
 
@@ -637,7 +671,7 @@ it("toggles a favorite and persists its product id", async () => {
 
   expect(favoriteButton).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("status")).toHaveTextContent(
-    /pushti pion buketi sevimlilarga qo'shildi/i
+    /pushti pion buketi sevimlilarga qo.shildi/i
   );
   await waitFor(() => {
     expect(localStorage.getItem(FAVORITES_STORAGE_KEY)).toBe(
@@ -650,7 +684,7 @@ it("keeps quick-view quantity within 1 through 99", async () => {
   const user = userEvent.setup();
   render(<App />);
 
-  await user.click(screen.getByRole("button", { name: /pushti pion buketini ko'rish/i }));
+  await user.click(screen.getByRole("button", { name: /pushti pion buketini ko.rish/i }));
   const dialog = screen.getByRole("dialog", { name: /pushti pion buketi/i });
   const decrease = within(dialog).getByRole("button", { name: /miqdorni kamaytirish/i });
   const increase = within(dialog).getByRole("button", { name: /miqdorni oshirish/i });
@@ -673,7 +707,7 @@ it("changes cart quantity with plus and minus and removes the line", async () =>
 
   await user.click(
     screen.getByRole("button", {
-      name: /qirmizi atirgul buketi ni savatga qo'shish/i,
+      name: /qirmizi atirgul buketi ni savatga qo.shish/i,
     })
   );
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
@@ -703,8 +737,8 @@ it("changes cart quantity with plus and minus and removes the line", async () =>
     })
   );
   expect(cartButton).not.toHaveTextContent("0");
-  expect(cartButton).toHaveAccessibleName(/savat bo'sh/i);
-  expect(within(drawer).getByText(/savatingiz hozircha bo'sh/i)).toBeVisible();
+  expect(cartButton).toHaveAccessibleName(/savat bo.sh/i);
+  expect(within(drawer).getByText(/savatingiz hozircha bo.sh/i)).toBeVisible();
 });
 
 it("hydrates cart and favorite state from valid localStorage data", async () => {
@@ -721,7 +755,7 @@ it("hydrates cart and favorite state from valid localStorage data", async () => 
   });
   expect(
     screen.getByRole("button", {
-      name: /pushti pion buketi ni sevimlilardan olib tashlash/i,
+      name: /pushti pion buketi.*sevimlilardan olib tashlash/i,
     })
   ).toHaveAttribute("aria-pressed", "true");
 });
@@ -761,13 +795,13 @@ it("links the cart drawer to the real checkout route", async () => {
 
   await user.click(
     screen.getByRole("button", {
-      name: /qirmizi atirgul buketi ni savatga qo'shish/i,
+      name: /qirmizi atirgul buketi ni savatga qo.shish/i,
     })
   );
   await user.click(screen.getByRole("button", { name: /savatni ochish/i }));
   expect(
     screen.getByRole("link", { name: /buyurtmani rasmiylashtirish/i })
-  ).toHaveAttribute("href", "/ru/checkout");
+  ).toHaveAttribute("href", "/uz/checkout");
 });
 
 it("closes the cart drawer with Escape", async () => {
@@ -816,7 +850,7 @@ it("restores the actual cart trigger when activation does not move focus", async
 
   const cartButton = screen.getByRole("button", { name: /savatni ochish/i });
   const viewTrigger = screen.getByRole("button", {
-    name: /pushti pion buketini ko'rish/i,
+    name: /pushti pion buketini ko.rish/i,
   });
   viewTrigger.focus();
 

@@ -79,6 +79,7 @@ function toAdminOrder(document: OrderRecord): AdminOrder {
   return {
     id: document._id.toString(),
     number: document.number,
+    locale: document.locale ?? "ru",
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,

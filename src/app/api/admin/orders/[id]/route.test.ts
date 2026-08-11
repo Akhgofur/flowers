@@ -18,6 +18,7 @@ import { PATCH } from "./route";
 const order: StoredOrder = {
   id: "507f1f77bcf86cd799439011",
   number: "NF-20260811-ORDER1234",
+  locale: "ru",
   customer: {
     fullName: "Ali Valiyev",
     phone: "+998901234567",

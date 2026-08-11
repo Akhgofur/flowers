@@ -5,6 +5,7 @@ import {
   PAYMENT_METHODS,
   PRODUCT_STATUSES,
 } from "@/lib/contracts";
+import { LOCALES } from "@/i18n/config";
 
 export const objectIdSchema = z
   .string()
@@ -137,6 +138,7 @@ const phoneSchema = z
 
 export const checkoutSchema = z
   .object({
+    locale: z.enum(LOCALES),
     customer: z
       .object({
         fullName: z.string().trim().min(3).max(120),

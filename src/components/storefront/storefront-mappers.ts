@@ -30,8 +30,8 @@ export function toClientProduct(product: CatalogProduct): Product {
     isOnSale: product.isOnSale,
     shortDescription: product.shortDescription,
     composition: [...product.composition],
-    deliveryEstimate: product.deliveryEstimate ?? "Yetkazib berish aniqlashtiriladi",
-    size: product.size ?? "O‘lchami aniqlashtiriladi",
+    deliveryEstimate: product.deliveryEstimate ?? "",
+    size: product.size ?? "",
   };
 }
 
@@ -46,7 +46,7 @@ export function toClientCategory(
   return {
     id: category.slug,
     title: category.name,
-    productCountLabel: `${productCount} ta tanlov`,
+    productCount,
     image: category.image?.url ?? IMAGE_FALLBACK_URL,
     icon: CATEGORY_ICONS[category.slug] ?? "bouquet",
   };

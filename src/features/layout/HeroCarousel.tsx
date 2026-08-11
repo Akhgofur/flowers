@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { applyImageFallback } from "../../shared/image-fallback";
 import type { HeroSlide } from "../../shared/types";
 
@@ -8,6 +9,7 @@ export type HeroCarouselProps = {
 };
 
 export function HeroCarousel({ slides, onNavigate }: HeroCarouselProps) {
+  const t = useTranslations("Hero");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isAutoPlayPaused, setIsAutoPlayPaused] = useState(false);
 
@@ -38,7 +40,7 @@ export function HeroCarousel({ slides, onNavigate }: HeroCarouselProps) {
   };
 
   return (
-    <section className="hero" aria-roledescription="carousel" aria-label="Mavsumiy takliflar">
+    <section className="hero" aria-roledescription="carousel" aria-label={t("carouselLabel")}>
       <div className="shell hero__layout">
         <div className="hero__content" aria-live="polite">
           <p className="eyebrow">{activeSlide.eyebrow}</p>
@@ -57,18 +59,18 @@ export function HeroCarousel({ slides, onNavigate }: HeroCarouselProps) {
             <button
               className="carousel-arrow"
               type="button"
-              aria-label="Oldingi slayd"
+              aria-label={t("previous")}
               onClick={showPrevious}
             >
               <span aria-hidden="true">←</span>
             </button>
-            <div className="carousel-dots" aria-label="Slayd tanlash">
+            <div className="carousel-dots" aria-label={t("dotsLabel")}>
               {slides.map((slide, index) => (
                 <button
                   key={slide.id}
                   className="carousel-dot"
                   type="button"
-                  aria-label={`${index + 1}-slayd`}
+                  aria-label={t("goToSlide", { number: index + 1 })}
                   aria-current={index === activeIndex ? "true" : undefined}
                   onClick={() => setActiveIndex(index)}
                 />
@@ -77,7 +79,7 @@ export function HeroCarousel({ slides, onNavigate }: HeroCarouselProps) {
             <button
               className="carousel-arrow"
               type="button"
-              aria-label="Keyingi slayd"
+              aria-label={t("next")}
               onClick={showNext}
             >
               <span aria-hidden="true">→</span>
@@ -88,9 +90,7 @@ export function HeroCarousel({ slides, onNavigate }: HeroCarouselProps) {
               onClick={() => setIsAutoPlayPaused((isPaused) => !isPaused)}
             >
               <span aria-hidden="true">{isAutoPlayPaused ? "▶" : "Ⅱ"}</span>
-              {isAutoPlayPaused
-                ? "Karuselni davom ettirish"
-                : "Karuselni pauza qilish"}
+              {isAutoPlayPaused ? t("resume") : t("pause")}
             </button>
           </div>
         </div>
@@ -100,13 +100,13 @@ export function HeroCarousel({ slides, onNavigate }: HeroCarouselProps) {
             <img
               key={activeSlide.id}
               src={activeSlide.image}
-              alt={`${activeSlide.title} gul kompozitsiyasi`}
+              alt={t("imageAlt", { title: activeSlide.title })}
               onError={applyImageFallback}
             />
           </div>
           <p className="hero__note">
             <span aria-hidden="true">✦</span>
-            Bugun terilgan, bugun yetkazilgan
+            {t("freshNote")}
           </p>
         </div>
       </div>

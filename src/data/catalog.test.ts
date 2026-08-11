@@ -73,8 +73,8 @@ it("provides unique products for every visible category", () => {
 });
 
 it("formats Uzbek so'm values", () => {
-  expect(formatSum(535000)).toContain("535");
-  expect(formatSum(535000)).toContain("so'm");
+  expect(formatSum(535000, "uz")).toContain("535");
+  expect(formatSum(535000, "uz")).toContain("so‘m");
 });
 
 it("provides three usable hero slides", () => {

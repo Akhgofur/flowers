@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { formatSum } from "./format";
 
 describe("formatSum", () => {
-  it("uses a deterministic Uzbek so'm format across server and browser runtimes", () => {
-    expect(formatSum(535_000)).toBe("535 000 so'm");
-    expect(formatSum(20_000)).toBe("20 000 so'm");
-    expect(formatSum(-1_000)).toBe("-1 000 so'm");
+  it("formats UZS deterministically for every storefront locale", () => {
+    expect(formatSum(535_000, "ru")).toBe("535 000 сум");
+    expect(formatSum(535_000, "uz")).toBe("535 000 so‘m");
+    expect(formatSum(535_000, "en")).toBe("535,000 UZS");
+    expect(formatSum(-1_000, "ru")).toBe("-1 000 сум");
   });
 });

@@ -538,7 +538,7 @@ export function AdminProductsPanel({
                   <tr key={product.id}>
                     <td><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></td>
                     <td>{categoryNames.get(product.categoryId) ?? "O‘chirilgan kategoriya"}</td>
-                    <td>{formatSum(product.price)}</td>
+                    <td>{formatSum(product.price, "uz")}</td>
                     <td>{product.stockQuantity}</td>
                     <td><span className="admin-status" data-status={product.status}>{product.status}</span></td>
                     <td><div className="admin-row-actions"><button type="button" onClick={() => openEdit(product)}>Tahrirlash</button><button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button></div></td>

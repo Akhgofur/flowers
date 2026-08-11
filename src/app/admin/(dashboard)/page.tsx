@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
         <article>
           <span>03</span>
           <p>Buyurtmalar qiymati</p>
-          <strong>{formatSum(orderValue)}</strong>
+          <strong>{formatSum(orderValue, "uz")}</strong>
           <small>Bekor qilinganlarsiz</small>
         </article>
         <article>
@@ -79,7 +79,7 @@ export default async function AdminDashboardPage() {
                     <span>{order.customer.fullName}</span>
                   </div>
                   <em data-status={order.status}>{order.status}</em>
-                  <b>{formatSum(order.total)}</b>
+                  <b>{formatSum(order.total, "uz")}</b>
                 </article>
               ))}
             </div>

@@ -159,6 +159,7 @@ describe("Mongoose model invariants", () => {
   it("rejects any order status outside the defined lifecycle", async () => {
     const order = new OrderModel({
       number: "NF-20260811-0001",
+      locale: "ru",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",
@@ -187,5 +188,37 @@ describe("Mongoose model invariants", () => {
 
     expect(validationError).toBeInstanceOf(Error);
     expect((validationError as { errors?: Record<string, unknown> }).errors?.status).toBeDefined();
+  });
+
+  it("rejects an unsupported order locale", async () => {
+    const order = new OrderModel({
+      number: "NF-20260811-0002",
+      locale: "de",
+      customer: {
+        fullName: "Ali Valiyev",
+        phone: "+998901234567",
+        address: "Toshkent shahri, Chilonzor tumani",
+      },
+      items: [
+        {
+          productId: new Types.ObjectId(),
+          slug: "pushti-lola-buketi",
+          name: "Pushti lola buketi",
+          imageUrl: "https://images.pexels.com/photos/1234567/tulips.jpg",
+          unitPrice: 150_000,
+          quantity: 1,
+          lineTotal: 150_000,
+        },
+      ],
+      subtotal: 150_000,
+      deliveryFee: 0,
+      total: 150_000,
+      paymentMethod: "cash_on_delivery",
+      paymentStatus: "unpaid",
+      status: "pending",
+    });
+
+    const validationError = await order.validate().catch((error: unknown) => error);
+    expect((validationError as { errors?: Record<string, unknown> }).errors?.locale).toBeDefined();
   });
 });

@@ -39,10 +39,12 @@ export type CatalogFilters = {
 export type Category = {
   id: CategoryId;
   title: string;
-  productCountLabel: string;
+  productCount: number;
   image: string;
   icon: "rose" | "tulip" | "bouquet" | "orchid" | "gift" | "wedding";
 };
+
+export type HeroSlideConfig = Pick<HeroSlide, "id" | "ctaTarget" | "image">;
 
 export type HeroSlide = {
   id: string;
