@@ -17,6 +17,10 @@ import type {
 } from "@/lib/validations";
 import { CategoryModel, type CategoryDocument } from "@/models/Category";
 import { OrderModel, type OrderDocument } from "@/models/Order";
+import {
+  OrderNotificationModel,
+  type OrderNotificationDocument,
+} from "@/models/OrderNotification";
 import { ProductModel, type ProductDocument } from "@/models/Product";
 import { SiteSettingsModel, type SiteSettingsDocument } from "@/models/SiteSettings";
 import { setAndUnsetOptionalFields } from "./update-fields";
@@ -24,6 +28,7 @@ import { setAndUnsetOptionalFields } from "./update-fields";
 type ProductRecord = ProductDocument & { _id: Types.ObjectId };
 type CategoryRecord = CategoryDocument & { _id: Types.ObjectId };
 type OrderRecord = OrderDocument & { _id: Types.ObjectId };
+type NotificationRecord = OrderNotificationDocument & { _id: Types.ObjectId };
 type SettingsRecord = SiteSettingsDocument & { _id: Types.ObjectId };
 
 const DEFAULT_SETTINGS: AdminSiteSettings = {
@@ -81,7 +86,10 @@ function toAdminCategory(document: CategoryRecord): AdminCategory {
   };
 }
 
-function toAdminOrder(document: OrderRecord): AdminOrder {
+function toAdminOrder(
+  document: OrderRecord,
+  notification?: NotificationRecord
+): AdminOrder {
   return {
     id: document._id.toString(),
     number: document.number,
@@ -110,6 +118,20 @@ function toAdminOrder(document: OrderRecord): AdminOrder {
     paymentMethod: document.paymentMethod,
     paymentStatus: "unpaid",
     status: document.status,
+    ...(notification === undefined
+      ? {}
+      : {
+          telegram: {
+            status: notification.status,
+            attempts: notification.attempts,
+            ...(notification.lastErrorCode === undefined
+              ? {}
+              : { lastErrorCode: notification.lastErrorCode }),
+            ...(notification.sentAt === undefined
+              ? {}
+              : { sentAt: notification.sentAt.toISOString() }),
+          },
+        }),
     ...(document.stockReleasedAt === undefined
       ? {}
       : { stockReleasedAt: document.stockReleasedAt.toISOString() }),
@@ -129,6 +151,8 @@ function toAdminSettings(document: SettingsRecord | null): AdminSiteSettings {
 
   return {
     siteName: document.siteName,
+    ...(document.brandLogo === undefined ? {} : { brandLogo: { ...document.brandLogo } }),
+    ...(document.brandMark === undefined ? {} : { brandMark: { ...document.brandMark } }),
     translations,
     ...(document.phone === undefined ? {} : { phone: document.phone }),
     ...(document.email === undefined ? {} : { email: document.email }),
@@ -156,6 +180,8 @@ const PRODUCT_OPTIONAL_FIELDS = [
 ] as const;
 const CATEGORY_OPTIONAL_FIELDS = ["image"] as const;
 const SETTINGS_OPTIONAL_FIELDS = [
+  "brandLogo",
+  "brandMark",
   "phone",
   "email",
   "address",
@@ -306,7 +332,21 @@ export async function findAdminOrders(limit = 100): Promise<AdminOrder[]> {
     .lean()
     .exec()) as unknown as OrderRecord[];
 
-  return documents.map(toAdminOrder);
+  const notifications = documents.length === 0
+    ? []
+    : ((await OrderNotificationModel.find({
+        orderId: { $in: documents.map((document) => document._id) },
+        channel: "telegram",
+      })
+        .lean()
+        .exec()) as unknown as NotificationRecord[]);
+  const notificationByOrder = new Map(
+    notifications.map((notification) => [notification.orderId.toString(), notification])
+  );
+
+  return documents.map((document) =>
+    toAdminOrder(document, notificationByOrder.get(document._id.toString()))
+  );
 }
 
 export async function findAdminSettings(): Promise<AdminSiteSettings> {

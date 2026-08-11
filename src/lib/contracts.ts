@@ -234,6 +234,12 @@ export type AdminOrder = {
   paymentMethod: PaymentMethod;
   paymentStatus: "unpaid";
   status: OrderStatus;
+  telegram?: {
+    status: OrderNotificationStatus;
+    attempts: number;
+    lastErrorCode?: string;
+    sentAt?: string;
+  };
   stockReleasedAt?: string;
   createdAt: string;
   updatedAt: string;
@@ -241,6 +247,8 @@ export type AdminOrder = {
 
 export type AdminSiteSettings = {
   siteName: string;
+  brandLogo?: ProductImage;
+  brandMark?: ProductImage;
   translations: Localized<SiteSettingsTranslation>;
   phone?: string;
   email?: string;
@@ -276,6 +284,8 @@ export type PublicHomeSection = {
 /** Deliberately excludes operational-only values such as delivery fee. */
 export type PublicSiteSettings = {
   siteName: string;
+  brandLogo?: ProductImage;
+  brandMark?: ProductImage;
   siteDescription: string;
   phone?: string;
   email?: string;

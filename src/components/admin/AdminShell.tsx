@@ -10,6 +10,7 @@ type AdminShellProps = {
 const NAVIGATION = [
   { href: "/admin", label: "Umumiy ko‘rinish", symbol: "◌" },
   { href: "/admin/products", label: "Mahsulotlar", symbol: "✦" },
+  { href: "/admin/home-sections", label: "Bosh sahifa", symbol: "▤" },
   { href: "/admin/categories", label: "Kategoriyalar", symbol: "⌘" },
   { href: "/admin/orders", label: "Buyurtmalar", symbol: "↗" },
   { href: "/admin/settings", label: "Sozlamalar", symbol: "◐" },

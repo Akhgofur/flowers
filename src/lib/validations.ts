@@ -313,6 +313,8 @@ const optionalUrlSchema = z.string().trim().url().startsWith("https://").optiona
 export const siteSettingsInputSchema = z
   .object({
     siteName: textSchema.max(100),
+    brandLogo: productImageSchema.optional(),
+    brandMark: productImageSchema.optional(),
     translations: localizedSiteSettingsInputSchema,
     phone: z.string().trim().min(7).max(32).optional(),
     email: z.string().trim().email().max(254).optional(),

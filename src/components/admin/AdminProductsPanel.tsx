@@ -7,7 +7,9 @@ import type {
   AdminProduct,
   ProductStatus,
   ProductTranslation,
+  Season,
 } from "@/lib/contracts";
+import { SEASONS } from "@/lib/contracts";
 import { LOCALES, type Locale } from "@/i18n/config";
 import { formatSum } from "@/shared/format";
 import { AdminLocaleTabs, ADMIN_LOCALE_LABELS } from "./AdminLocaleTabs";
@@ -33,6 +35,7 @@ type ProductDraft = {
   imagePublicId: string;
   flowerTypes: string;
   colors: string;
+  seasons: Season[];
   status: ProductStatus;
   isFeatured: boolean;
   isNew: boolean;
@@ -76,6 +79,7 @@ function emptyDraft(categoryId: string): ProductDraft {
     imagePublicId: "",
     flowerTypes: "",
     colors: "",
+    seasons: ["all_year"],
     status: "draft",
     isFeatured: false,
     isNew: false,
@@ -105,7 +109,7 @@ function productToDraft(product: AdminProduct): ProductDraft {
       en: translationToDraft(product.translations.en),
     },
     categoryId: product.categoryId,
-    price: String(product.price),
+    price: product.price === undefined ? "" : String(product.price),
     originalPrice: product.originalPrice === undefined ? "" : String(product.originalPrice),
     stockQuantity: String(product.stockQuantity),
     sortOrder: String(product.sortOrder),
@@ -114,6 +118,7 @@ function productToDraft(product: AdminProduct): ProductDraft {
     imagePublicId: product.images[0]?.publicId ?? "",
     flowerTypes: product.flowerTypes.join(", "),
     colors: product.colors.join(", "),
+    seasons: [...product.seasons],
     status: product.status,
     isFeatured: product.isFeatured,
     isNew: product.isNew,
@@ -187,6 +192,8 @@ export function AdminProductsPanel({
   const [draft, setDraft] = useState<ProductDraft>(() => emptyDraft(firstCategoryId));
   const [activeLocale, setActiveLocale] = useState<Locale>("ru");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isListEditing, setIsListEditing] = useState(false);
+  const [inlineDrafts, setInlineDrafts] = useState<Record<string, ProductDraft>>({});
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -230,45 +237,96 @@ export function AdminProductsPanel({
     setIsFormOpen(false);
   };
 
-  const openEdit = (product: AdminProduct) => {
-    setDraft(productToDraft(product));
-    setActiveLocale("ru");
-    setEditingId(product.id);
+  const startListEditing = () => {
+    setInlineDrafts(
+      Object.fromEntries(products.map((product) => [product.id, productToDraft(product)]))
+    );
+    setIsListEditing(true);
     setError(null);
     setNotice(null);
-    setIsFormOpen(false);
   };
 
-  const saveInline = async (product: AdminProduct) => {
+  const updateInline = <Key extends keyof ProductDraft>(
+    productId: string,
+    key: Key,
+    value: ProductDraft[Key]
+  ) => {
+    setInlineDrafts((current) => ({
+      ...current,
+      [productId]: { ...current[productId]!, [key]: value },
+    }));
+  };
+
+  const toggleInlineSeason = (
+    productId: string,
+    season: Season,
+    checked: boolean
+  ) => {
+    const current = inlineDrafts[productId]?.seasons ?? ["all_year"];
+    let seasons: Season[];
+    if (checked && season === "all_year") seasons = ["all_year"];
+    else if (checked) seasons = [...current.filter((item) => item !== "all_year"), season];
+    else {
+      seasons = current.filter((item) => item !== season);
+      if (seasons.length === 0) seasons = ["all_year"];
+    }
+    updateInline(productId, "seasons", seasons);
+  };
+
+  const buildInlinePatch = (product: AdminProduct, row: ProductDraft) => {
+    const price = row.price.trim() === "" ? null : integer(row.price, "Narx");
+    const stockQuantity = integer(row.stockQuantity, "Qoldiq");
+    const patch: Record<string, unknown> = {};
+    if (row.translations.ru.name.trim() !== product.translations.ru.name) {
+      patch.translations = { ru: { name: row.translations.ru.name.trim() } };
+    }
+    if (row.categoryId !== product.categoryId) patch.categoryId = row.categoryId;
+    if (price !== (product.price ?? null)) patch.price = price;
+    if (stockQuantity !== product.stockQuantity) patch.stockQuantity = stockQuantity;
+    if (row.status !== product.status) patch.status = row.status;
+    if (row.seasons.join("|") !== product.seasons.join("|")) patch.seasons = row.seasons;
+    return patch;
+  };
+
+  const saveChangedProducts = async () => {
     if (isSaving) return;
     setError(null);
+    setNotice(null);
     try {
-      const price = draft.price.trim() === "" ? null : integer(draft.price, "Narx");
-      const stockQuantity = integer(draft.stockQuantity, "Qoldiq");
-      const patch: Record<string, unknown> = {};
-      if (draft.translations.ru.name.trim() !== product.translations.ru.name) {
-        patch.translations = { ru: { name: draft.translations.ru.name.trim() } };
-      }
-      if (draft.categoryId !== product.categoryId) patch.categoryId = draft.categoryId;
-      if (price !== product.price) patch.price = price;
-      if (stockQuantity !== product.stockQuantity) patch.stockQuantity = stockQuantity;
-      if (draft.status !== product.status) patch.status = draft.status;
-
-      if (Object.keys(patch).length === 0) return closeForm();
-      setIsSaving(true);
-      const response = await fetch(`/api/admin/products/${product.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(patch),
+      const changes = products.flatMap((product) => {
+        const row = inlineDrafts[product.id];
+        if (!row) return [];
+        const patch = buildInlinePatch(product, row);
+        return Object.keys(patch).length === 0 ? [] : [{ product, patch }];
       });
-      const result = await readResponse(response);
-      if (!response.ok || !result.product) throw new Error(result.error ?? "Mahsulot saqlanmadi.");
-      setProducts((current) => current.map((candidate) => candidate.id === result.product?.id ? result.product : candidate));
-      setNotice("Mahsulot yangilandi.");
-      closeForm();
+      if (changes.length === 0) {
+        setIsListEditing(false);
+        setInlineDrafts({});
+        return;
+      }
+      setIsSaving(true);
+      const saved = await Promise.all(
+        changes.map(async ({ product, patch }) => {
+          const response = await fetch(`/api/admin/products/${product.id}`, {
+            method: "PATCH",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(patch),
+          });
+          const result = await readResponse(response);
+          if (!response.ok || !result.product) {
+            throw new Error(result.error ?? `${product.slug} saqlanmadi.`);
+          }
+          return result.product;
+        })
+      );
+      const savedById = new Map(saved.map((product) => [product.id, product]));
+      setProducts((current) => current.map((product) => savedById.get(product.id) ?? product));
+      setNotice(`${saved.length} ta o'zgargan mahsulot saqlandi.`);
+      setIsListEditing(false);
+      setInlineDrafts({});
       router.refresh();
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : "Mahsulot saqlanmadi.");
+      setError(saveError instanceof Error ? saveError.message : "Mahsulotlar saqlanmadi.");
     } finally {
       setIsSaving(false);
     }
@@ -315,6 +373,7 @@ export function AdminProductsPanel({
         ],
         flowerTypes,
         colors,
+        seasons: draft.seasons,
         stockQuantity,
         sortOrder,
         isFeatured: draft.isFeatured,
@@ -501,6 +560,28 @@ export function AdminProductsPanel({
               <input required value={draft.colors} onChange={(event) => update("colors", event.target.value)} placeholder="red, white" />
             </label>
 
+            <fieldset className="admin-season-fieldset admin-form-grid__full">
+              <legend>Mavsumiy mavjudlik</legend>
+              {SEASONS.map((season) => (
+                <label key={season}>
+                  <input
+                    type="checkbox"
+                    checked={draft.seasons.includes(season)}
+                    onChange={(event) => {
+                      const checked = event.target.checked;
+                      const seasons = checked && season === "all_year"
+                        ? ["all_year" as const]
+                        : checked
+                          ? [...draft.seasons.filter((item) => item !== "all_year"), season]
+                          : draft.seasons.filter((item) => item !== season);
+                      update("seasons", seasons.length > 0 ? seasons : ["all_year"]);
+                    }}
+                  />
+                  <span>{season}</span>
+                </label>
+              ))}
+            </fieldset>
+
             <div className="admin-form-grid__full admin-localized-editor">
               <AdminLocaleTabs activeLocale={activeLocale} onChange={setActiveLocale} />
               <p className="admin-locale-hint">
@@ -561,28 +642,55 @@ export function AdminProductsPanel({
             <p className="eyebrow">Jami {products.length} ta</p>
             <h2 id="product-list-title">Katalog ro‘yxati</h2>
           </div>
+          <div className="admin-row-actions">
+            {isListEditing ? (
+              <>
+                <button type="button" onClick={saveChangedProducts} disabled={isSaving}>
+                  {isSaving ? "Saqlanmoqda..." : "O'zgarganlarni saqlash"}
+                </button>
+                <button
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setIsListEditing(false);
+                    setInlineDrafts({});
+                    setError(null);
+                  }}
+                >
+                  Bekor qilish
+                </button>
+              </>
+            ) : (
+              <button type="button" onClick={startListEditing} disabled={products.length === 0}>
+                Ro‘yxatni tahrirlash
+              </button>
+            )}
+          </div>
         </div>
         {products.length === 0 ? (
           <p className="admin-empty-copy">Hali mahsulot yo‘q.</p>
         ) : (
           <div className="admin-table-wrap">
             <table className="admin-table">
-              <thead><tr><th>Mahsulot</th><th>Kategoriya</th><th>Narx</th><th>Qoldiq</th><th>Holat</th><th aria-label="Harakatlar" /></tr></thead>
+              <thead><tr><th>Mahsulot</th><th>Kategoriya</th><th>Narx</th><th>Qoldiq</th><th>Mavsum</th><th>Holat</th><th aria-label="Harakatlar" /></tr></thead>
               <tbody>
-                {products.map((product) => (
-                  <tr key={product.id}>
-                    <td>{editingId === product.id ? <><input aria-label="Mahsulot nomi" value={draft.translations.ru.name} onChange={(event) => updateTranslation("name", event.target.value)} /><select aria-label="Kategoriya" value={draft.categoryId} onChange={(event) => update("categoryId", event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.translations.uz.name}</option>)}</select></> : <><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></>}</td>
-                    <td>{categoryNames.get(product.categoryId) ?? "O‘chirilgan kategoriya"}</td>
+                {products.map((product) => {
+                  const row = inlineDrafts[product.id];
+                  const rowName = product.translations.ru.name;
+                  return <tr key={product.id}>
+                    <td>{isListEditing && row ? <input aria-label={`Mahsulot nomi: ${rowName}`} value={row.translations.ru.name} onChange={(event) => setInlineDrafts((current) => ({ ...current, [product.id]: { ...row, translations: { ...row.translations, ru: { ...row.translations.ru, name: event.target.value } } } }))} /> : <><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></>}</td>
+                    <td>{isListEditing && row ? <select aria-label={`Kategoriya: ${rowName}`} value={row.categoryId} onChange={(event) => updateInline(product.id, "categoryId", event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.translations.uz.name}</option>)}</select> : categoryNames.get(product.categoryId) ?? "O‘chirilgan kategoriya"}</td>
                     <td>
-                      {editingId === product.id ? <input aria-label="Narx" inputMode="numeric" value={draft.price} onChange={(event) => update("price", event.target.value)} /> : product.price === undefined
+                      {isListEditing && row ? <input aria-label={`Narx: ${rowName}`} inputMode="numeric" value={row.price} onChange={(event) => updateInline(product.id, "price", event.target.value)} /> : product.price === undefined
                         ? "Narx so‘rov bo‘yicha"
                         : formatSum(product.price, "uz")}
                     </td>
-                    <td>{editingId === product.id ? <input aria-label="Qoldiq" inputMode="numeric" value={draft.stockQuantity} onChange={(event) => update("stockQuantity", event.target.value)} /> : product.stockQuantity}</td>
-                    <td>{editingId === product.id ? <select aria-label="Holat" value={draft.status} onChange={(event) => update("status", event.target.value as ProductStatus)}><option value="draft">Qoralama</option><option value="published">E’lon qilingan</option><option value="archived">Arxiv</option></select> : <span className="admin-status" data-status={product.status}>{product.status}</span>}</td>
-                    <td><div className="admin-row-actions">{editingId === product.id ? <><button type="button" onClick={() => saveInline(product)} disabled={isSaving}>{isSaving ? "Saqlanmoqda…" : "Saqlash"}</button><button type="button" onClick={closeForm} disabled={isSaving}>Bekor qilish</button></> : <><button type="button" onClick={() => openEdit(product)}>Tahrirlash</button><button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button></>}</div></td>
-                  </tr>
-                ))}
+                    <td>{isListEditing && row ? <input aria-label={`Qoldiq: ${rowName}`} inputMode="numeric" value={row.stockQuantity} onChange={(event) => updateInline(product.id, "stockQuantity", event.target.value)} /> : product.stockQuantity}</td>
+                    <td>{isListEditing && row ? <fieldset className="admin-season-fieldset admin-season-fieldset--compact"><legend className="sr-only">Mavsum: {rowName}</legend>{SEASONS.map((season) => <label key={season}><input type="checkbox" aria-label={`${season[0]!.toUpperCase()}${season.slice(1)}: ${rowName}`} checked={row.seasons.includes(season)} onChange={(event) => toggleInlineSeason(product.id, season, event.target.checked)} /><span>{season}</span></label>)}</fieldset> : product.seasons.join(", ")}</td>
+                    <td>{isListEditing && row ? <select aria-label={`Holat: ${rowName}`} value={row.status} onChange={(event) => updateInline(product.id, "status", event.target.value as ProductStatus)}><option value="draft">Qoralama</option><option value="published">E’lon qilingan</option><option value="archived">Arxiv</option></select> : <span className="admin-status" data-status={product.status}>{product.status}</span>}</td>
+                    <td><div className="admin-row-actions">{isListEditing ? null : <button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button>}</div></td>
+                  </tr>;
+                })}
               </tbody>
             </table>
           </div>

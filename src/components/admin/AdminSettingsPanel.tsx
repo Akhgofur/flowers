@@ -7,6 +7,7 @@ import type {
   SiteSettingsTranslation,
 } from "@/lib/contracts";
 import { AdminLocaleTabs, ADMIN_LOCALE_LABELS } from "./AdminLocaleTabs";
+import { ImageUploader } from "./ImageUploader";
 
 type AdminSettingsPanelProps = { initialSettings: AdminSiteSettings };
 type ApiResponse = { settings?: AdminSiteSettings; error?: string };
@@ -22,6 +23,12 @@ type SettingsDraft = {
   deliveryFee: string;
   instagramUrl: string;
   telegramUrl: string;
+  brandLogoUrl: string;
+  brandLogoAlt: string;
+  brandLogoPublicId: string;
+  brandMarkUrl: string;
+  brandMarkAlt: string;
+  brandMarkPublicId: string;
   seoOgImageUrl: string;
   seoOgImageAlt: string;
 };
@@ -52,6 +59,12 @@ function toDraft(settings: AdminSiteSettings): SettingsDraft {
     deliveryFee: String(settings.deliveryFee),
     instagramUrl: settings.instagramUrl ?? "",
     telegramUrl: settings.telegramUrl ?? "",
+    brandLogoUrl: settings.brandLogo?.url ?? "",
+    brandLogoAlt: settings.brandLogo?.alt ?? "",
+    brandLogoPublicId: settings.brandLogo?.publicId ?? "",
+    brandMarkUrl: settings.brandMark?.url ?? "",
+    brandMarkAlt: settings.brandMark?.alt ?? "",
+    brandMarkPublicId: settings.brandMark?.publicId ?? "",
     seoOgImageUrl: settings.seoOgImage?.url ?? "",
     seoOgImageAlt: settings.seoOgImage?.alt ?? "",
   };
@@ -142,9 +155,31 @@ export function AdminSettingsPanel({ initialSettings }: AdminSettingsPanelProps)
           "SEO Open Graph rasmi uchun URL va tavsifni birga kiriting."
         );
       }
+      for (const [label, url, alt] of [
+        ["Gorizontal logo", draft.brandLogoUrl, draft.brandLogoAlt],
+        ["Ixcham logo", draft.brandMarkUrl, draft.brandMarkAlt],
+      ] as const) {
+        if ((url || alt) && (!url || !alt)) {
+          throw new Error(`${label} uchun URL va tavsifni birga kiriting.`);
+        }
+      }
 
       const payload = {
         siteName: draft.siteName,
+        ...(draft.brandLogoUrl && draft.brandLogoAlt
+          ? { brandLogo: {
+              url: draft.brandLogoUrl,
+              alt: draft.brandLogoAlt,
+              ...(draft.brandLogoPublicId ? { publicId: draft.brandLogoPublicId } : {}),
+            } }
+          : {}),
+        ...(draft.brandMarkUrl && draft.brandMarkAlt
+          ? { brandMark: {
+              url: draft.brandMarkUrl,
+              alt: draft.brandMarkAlt,
+              ...(draft.brandMarkPublicId ? { publicId: draft.brandMarkPublicId } : {}),
+            } }
+          : {}),
         translations: buildTranslations(draft),
         ...(draft.phone ? { phone: draft.phone } : {}),
         ...(draft.email ? { email: draft.email } : {}),
@@ -281,6 +316,49 @@ export function AdminSettingsPanel({ initialSettings }: AdminSettingsPanelProps)
               placeholder="https://t.me/…"
             />
           </label>
+
+          <div className="admin-brand-assets admin-form-grid__full">
+            <div>
+              <p className="eyebrow">Gorizontal logo</p>
+              <label>
+                <span>Gorizontal logo URL</span>
+                <input type="url" value={draft.brandLogoUrl} onChange={(event) => update("brandLogoUrl", event.target.value)} />
+              </label>
+              <label>
+                <span>Gorizontal logo tavsifi</span>
+                <input value={draft.brandLogoAlt} onChange={(event) => update("brandLogoAlt", event.target.value)} />
+              </label>
+              <ImageUploader
+                alt={draft.brandLogoAlt}
+                disabled={isSaving}
+                onUploaded={(image) => {
+                  update("brandLogoUrl", image.url);
+                  update("brandLogoAlt", image.alt);
+                  update("brandLogoPublicId", image.publicId ?? "");
+                }}
+              />
+            </div>
+            <div>
+              <p className="eyebrow">Ixcham logo</p>
+              <label>
+                <span>Ixcham logo URL</span>
+                <input type="url" value={draft.brandMarkUrl} onChange={(event) => update("brandMarkUrl", event.target.value)} />
+              </label>
+              <label>
+                <span>Ixcham logo tavsifi</span>
+                <input value={draft.brandMarkAlt} onChange={(event) => update("brandMarkAlt", event.target.value)} />
+              </label>
+              <ImageUploader
+                alt={draft.brandMarkAlt}
+                disabled={isSaving}
+                onUploaded={(image) => {
+                  update("brandMarkUrl", image.url);
+                  update("brandMarkAlt", image.alt);
+                  update("brandMarkPublicId", image.publicId ?? "");
+                }}
+              />
+            </div>
+          </div>
 
           <div className="admin-form-grid__full admin-localized-editor">
             <AdminLocaleTabs

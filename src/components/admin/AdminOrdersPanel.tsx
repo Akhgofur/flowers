@@ -7,6 +7,7 @@ import { formatSum } from "@/shared/format";
 
 type AdminOrdersPanelProps = { initialOrders: readonly AdminOrder[] };
 type ApiResponse = { order?: { status: OrderStatus }; error?: string };
+type RetryResponse = { attempted?: number; sent?: number; failed?: number; error?: string };
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Kutilmoqda",
@@ -29,11 +30,20 @@ async function readResponse(response: Response): Promise<ApiResponse> {
   }
 }
 
+async function readRetryResponse(response: Response): Promise<RetryResponse> {
+  try {
+    return (await response.json()) as RetryResponse;
+  } catch {
+    return {};
+  }
+}
+
 export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
   const router = useRouter();
   const [orders, setOrders] = useState<AdminOrder[]>(() => [...initialOrders]);
   const [nextStatuses, setNextStatuses] = useState<Record<string, OrderStatus>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [retryingId, setRetryingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -68,6 +78,40 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
     }
   };
 
+  const retryTelegram = async (order: AdminOrder) => {
+    if (retryingId) return;
+    setRetryingId(order.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${order.id}/retry-notification`,
+        { method: "POST" }
+      );
+      const result = await readRetryResponse(response);
+      if (!response.ok) throw new Error(result.error ?? "Telegram xabari yuborilmadi.");
+      const status = result.sent === 1 ? "sent" : "failed";
+      setOrders((current) => current.map((item) =>
+        item.id === order.id
+          ? {
+              ...item,
+              telegram: {
+                status,
+                attempts: (item.telegram?.attempts ?? 0) + (result.attempted ?? 0),
+                ...(status === "failed" ? { lastErrorCode: "HTTP_REJECTED" } : {}),
+              },
+            }
+          : item
+      ));
+      setNotice(status === "sent" ? "Telegram xabari yuborildi." : "Telegram qayta yuborish navbatiga qo'yildi.");
+      router.refresh();
+    } catch (retryError) {
+      setError(retryError instanceof Error ? retryError.message : "Telegram xabari yuborilmadi.");
+    } finally {
+      setRetryingId(null);
+    }
+  };
+
   return (
     <>
       <section className="admin-page-heading"><div><p className="eyebrow">Fulfilment oqimi</p><h1>Buyurtmalar</h1><p>Holat faqat oldinga o‘tadi; bekor qilinganda stok bitta tranzaksiyada qaytariladi.</p></div></section>
@@ -78,7 +122,7 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
         {orders.length === 0 ? <p className="admin-empty-copy">Hali buyurtma yo‘q.</p> : <div className="admin-orders-list">{orders.map((order) => {
           const choices = allowedOrderTransitions[order.status];
           const selected = nextStatuses[order.id] ?? "";
-          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><p>{order.customer.address}</p><ul>{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>{item.quantity}× {item.name}</li>)}</ul></div>{choices.length > 0 ? <footer><label><span>Keyingi holat</span><select value={selected} onChange={(event) => setNextStatuses((current) => ({ ...current, [order.id]: event.target.value as OrderStatus }))}><option value="">Tanlang</option>{choices.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="admin-primary-button" type="button" disabled={!selected || savingId === order.id} onClick={() => saveStatus(order)}>{savingId === order.id ? "Saqlanmoqda…" : "Yangilash"}</button></footer> : <footer><span className="admin-order__terminal">Yakuniy holat</span></footer>}</article>;
+          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><p>{order.customer.address}</p><ul>{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>{item.quantity}× {item.name}</li>)}</ul>{order.telegram ? <div className="admin-notification-status"><div><span>Telegram</span><strong data-status={order.telegram.status}>{order.telegram.status}</strong><small>{order.telegram.attempts} urinish{order.telegram.lastErrorCode ? <> · <code>{order.telegram.lastErrorCode}</code></> : null}</small></div><button type="button" disabled={!(["failed", "pending"] as const).includes(order.telegram.status as "failed" | "pending") || retryingId === order.id} onClick={() => retryTelegram(order)}>{retryingId === order.id ? "Yuborilmoqda..." : "Telegram xabarini qayta yuborish"}</button></div> : <p className="admin-notification-status">Telegram xabari hali yaratilmagan.</p>}</div>{choices.length > 0 ? <footer><label><span>Keyingi holat</span><select value={selected} onChange={(event) => setNextStatuses((current) => ({ ...current, [order.id]: event.target.value as OrderStatus }))}><option value="">Tanlang</option>{choices.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="admin-primary-button" type="button" disabled={!selected || savingId === order.id} onClick={() => saveStatus(order)}>{savingId === order.id ? "Saqlanmoqda…" : "Yangilash"}</button></footer> : <footer><span className="admin-order__terminal">Yakuniy holat</span></footer>}</article>;
         })}</div>}
       </section>
     </>

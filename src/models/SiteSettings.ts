@@ -1,6 +1,7 @@
 import mongoose, { type Model } from "mongoose";
 import type {
   Localized,
+  ProductImage,
   SiteSettingsTranslation,
 } from "@/lib/contracts";
 
@@ -9,6 +10,8 @@ const { model, models, Schema } = mongoose;
 export type SiteSettingsDocument = {
   key: "default";
   siteName: string;
+  brandLogo?: ProductImage;
+  brandMark?: ProductImage;
   translations: Localized<SiteSettingsTranslation>;
   phone?: string;
   email?: string;
@@ -60,6 +63,16 @@ const siteSettingsSchema = new Schema<SiteSettingsDocument>(
       default: "Nafis Flowers",
       trim: true,
       maxlength: 100,
+    },
+    brandLogo: {
+      url: { type: String, trim: true, match: /^https:\/\// },
+      alt: { type: String, trim: true, minlength: 2, maxlength: 180 },
+      publicId: { type: String, trim: true, maxlength: 255 },
+    },
+    brandMark: {
+      url: { type: String, trim: true, match: /^https:\/\// },
+      alt: { type: String, trim: true, minlength: 2, maxlength: 180 },
+      publicId: { type: String, trim: true, maxlength: 255 },
     },
     translations: { type: localizedSiteSettingsSchema, required: true },
     phone: { type: String, trim: true, maxlength: 32 },

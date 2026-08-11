@@ -48,6 +48,8 @@ async function readPublicSiteSettings(locale: Locale): Promise<PublicSiteSetting
 
   return {
     siteName: document.siteName,
+    ...(document.brandLogo === undefined ? {} : { brandLogo: { ...document.brandLogo } }),
+    ...(document.brandMark === undefined ? {} : { brandMark: { ...document.brandMark } }),
     siteDescription: translation.siteDescription,
     ...(document.phone === undefined ? {} : { phone: document.phone }),
     ...(document.email === undefined ? {} : { email: document.email }),

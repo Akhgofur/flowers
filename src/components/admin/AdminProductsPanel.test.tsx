@@ -48,6 +48,73 @@ const product: AdminProduct = {
 };
 
 describe("AdminProductsPanel locale drafts", () => {
+  it("keeps inquiry-only products valid when list editing has no changes", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AdminProductsPanel
+        initialProducts={[{ ...product, price: undefined }]}
+        categories={[category]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /ro.yxatni tahrirlash/i }));
+    expect(screen.getByRole("textbox", { name: /narx/i })).toHaveValue("");
+    await user.click(screen.getByRole("button", { name: /o.zgarganlarni saqlash/i }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    vi.unstubAllGlobals();
+  });
+
+  it("saves only products changed in the list, including seasons", async () => {
+    const user = userEvent.setup();
+    const secondProduct: AdminProduct = {
+      ...product,
+      id: "507f1f77bcf86cd799439013",
+      slug: "white-roses",
+      translations: {
+        ...product.translations,
+        ru: { ...product.translations.ru, name: "White roses" },
+      },
+    };
+    const fetchMock = vi.fn().mockImplementation(async (_url: string, options?: RequestInit) => ({
+      ok: true,
+      json: async () => ({
+        product: {
+          ...product,
+          ...(JSON.parse(String(options?.body)) as Partial<AdminProduct>),
+        },
+      }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <AdminProductsPanel
+        initialProducts={[product, secondProduct]}
+        categories={[category]}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: /ro.yxatni tahrirlash/i }));
+    await user.click(
+      screen.getByRole("checkbox", {
+        name: `Summer: ${product.translations.ru.name}`,
+      })
+    );
+    await user.click(screen.getByRole("button", { name: "O'zgarganlarni saqlash" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/admin/products/${product.id}`,
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ seasons: ["summer"] }),
+      })
+    );
+    vi.unstubAllGlobals();
+  });
+
   it("keeps product names isolated across all three locale tabs", async () => {
     const user = userEvent.setup();
     render(<AdminProductsPanel initialProducts={[]} categories={[category]} />);
@@ -69,7 +136,7 @@ describe("AdminProductsPanel locale drafts", () => {
     const user = userEvent.setup();
     render(<AdminProductsPanel initialProducts={[product]} categories={[category]} />);
 
-    await user.click(screen.getByRole("button", { name: /tahrirlash/i }));
+    await user.click(screen.getByRole("button", { name: /ro.yxatni tahrirlash/i }));
 
     expect(screen.getByRole("textbox", { name: /mahsulot nomi/i })).toHaveValue("Корзина роз");
     expect(screen.queryByRole("heading", { name: /mahsulotni yangilash/i })).not.toBeInTheDocument();
@@ -84,7 +151,7 @@ describe("AdminProductsPanel locale drafts", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<AdminProductsPanel initialProducts={[product]} categories={[category]} />);
 
-    await user.click(screen.getByRole("button", { name: /tahrirlash/i }));
+    await user.click(screen.getByRole("button", { name: /ro.yxatni tahrirlash/i }));
     const name = screen.getByRole("textbox", { name: /mahsulot nomi/i });
     await user.clear(name);
     await user.type(name, "Новая корзина роз");
@@ -107,7 +174,7 @@ describe("AdminProductsPanel locale drafts", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<AdminProductsPanel initialProducts={[product]} categories={[category]} />);
 
-    await user.click(screen.getByRole("button", { name: /tahrirlash/i }));
+    await user.click(screen.getByRole("button", { name: /ro.yxatni tahrirlash/i }));
     const price = screen.getByRole("textbox", { name: /narx/i });
     await user.clear(price);
     await user.type(price, "not-a-number");
