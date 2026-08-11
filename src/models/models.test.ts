@@ -30,7 +30,75 @@ const validProductDocument = {
   status: "published",
 };
 
+const localizedProductDocument = {
+  ...validProductDocument,
+  name: undefined,
+  shortDescription: undefined,
+  description: undefined,
+  composition: undefined,
+  translations: {
+    ru: {
+      name: "Букет алых роз",
+      shortDescription: "Бархатные розы для важных признаний.",
+      description: "Авторский букет из свежих алых роз.",
+      composition: ["25 алых роз", "Эвкалипт"],
+    },
+    uz: {
+      name: "Qirmizi atirgul buketi",
+      shortDescription: "Muhim izhorlar uchun baxmaldek atirgullar.",
+      description: "Yangi qirmizi atirgullardan mualliflik buketi.",
+      composition: ["25 ta qirmizi atirgul", "Evkalipt"],
+    },
+    en: {
+      name: "Scarlet rose bouquet",
+      shortDescription: "Velvet roses for meaningful declarations.",
+      description: "A signature bouquet of fresh scarlet roses.",
+      composition: ["25 scarlet roses", "Eucalyptus"],
+    },
+  },
+};
+
 describe("Mongoose model invariants", () => {
+  it("requires all three localized site settings documents", async () => {
+    const settings = new SiteSettingsModel({
+      key: "default",
+      siteName: "Nafis Flowers",
+      translations: {
+        ru: { siteDescription: "Авторские букеты в Ташкенте." },
+        uz: { siteDescription: "Toshkentdagi mualliflik buketlari." },
+      },
+      deliveryFee: 0,
+    });
+
+    const validationError = await settings.validate().catch((error: unknown) => error);
+    expect(validationError).toBeInstanceOf(Error);
+    expect(
+      (validationError as { errors?: Record<string, unknown> }).errors?.[
+        "translations.en"
+      ]
+    ).toBeDefined();
+  });
+
+  it("requires all three localized product subdocuments", async () => {
+    await expect(new ProductModel(localizedProductDocument).validate()).resolves.toBeUndefined();
+
+    const missingEnglish = new ProductModel({
+      ...localizedProductDocument,
+      translations: {
+        ru: localizedProductDocument.translations.ru,
+        uz: localizedProductDocument.translations.uz,
+      },
+    });
+
+    const validationError = await missingEnglish.validate().catch((error: unknown) => error);
+    expect(validationError).toBeInstanceOf(Error);
+    expect(
+      (validationError as { errors?: Record<string, unknown> }).errors?.[
+        "translations.en"
+      ]
+    ).toBeDefined();
+  });
+
   it("rejects empty image alt text and negative stock before a database write", async () => {
     const product = new ProductModel({
       ...validProductDocument,

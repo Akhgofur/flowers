@@ -104,7 +104,7 @@ type OrderServiceDependencies = {
 
 type ProductRecord = Pick<
   ProductDocument,
-  "slug" | "name" | "price" | "stockQuantity" | "images"
+  "slug" | "translations" | "price" | "stockQuantity" | "images"
 > & {
   _id: Types.ObjectId;
 };
@@ -202,7 +202,13 @@ function createMongoOrderStore(): OrderStore {
         { $inc: { stockQuantity: -quantity } },
         { new: true, session: asClientSession(transaction) }
       )
-        .select({ slug: 1, name: 1, price: 1, stockQuantity: 1, images: 1 })
+        .select({
+          slug: 1,
+          "translations.ru.name": 1,
+          price: 1,
+          stockQuantity: 1,
+          images: 1,
+        })
         .lean()
         .exec()) as unknown as ProductRecord | null;
 
@@ -211,7 +217,7 @@ function createMongoOrderStore(): OrderStore {
       return {
         id: document._id.toString(),
         slug: document.slug,
-        name: document.name,
+        name: document.translations.ru.name,
         price: document.price,
         stockQuantity: document.stockQuantity,
         images: document.images.map((image) => ({ ...image })),

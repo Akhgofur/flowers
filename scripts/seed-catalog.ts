@@ -1,9 +1,11 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import mongoose from "mongoose";
 import { CATEGORIES, PRODUCTS } from "../src/data/catalog";
 import { dbConnect } from "../src/lib/mongodb";
 import { CategoryModel, type CategoryDocument } from "../src/models/Category";
 import { ProductModel, type ProductDocument } from "../src/models/Product";
+import { SiteSettingsModel, type SiteSettingsDocument } from "../src/models/SiteSettings";
 
 export type SeedCategory = Omit<
   CategoryDocument,
@@ -15,6 +17,7 @@ export type SeedProduct = Omit<
 > & {
   categoryId: string;
 };
+export type SeedSiteSettings = Omit<SiteSettingsDocument, "createdAt" | "updatedAt">;
 
 export type CatalogSeedStore = {
   connect: () => Promise<unknown>;
@@ -22,6 +25,7 @@ export type CatalogSeedStore = {
     category: SeedCategory
   ) => Promise<{ id: string; created: boolean }>;
   upsertProduct: (product: SeedProduct) => Promise<{ created: boolean }>;
+  seedSettingsIfMissing: (settings: SeedSiteSettings) => Promise<void>;
 };
 
 export type CatalogSeedSummary = {
@@ -31,16 +35,44 @@ export type CatalogSeedSummary = {
 
 const seedStockQuantity = 20;
 
+const DEFAULT_SEED_SETTINGS: SeedSiteSettings = {
+  key: "default",
+  siteName: "Nafis Flowers",
+  translations: {
+    ru: {
+      siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту.",
+      deliveryPolicy: "Доставка по Ташкенту, время подтверждает оператор.",
+    },
+    uz: {
+      siteDescription: "Toshkent bo‘ylab mualliflik buketlari va ehtiyotkor yetkazib berish.",
+      deliveryPolicy: "Toshkent bo‘ylab yetkazamiz, vaqtni operator tasdiqlaydi.",
+    },
+    en: {
+      siteDescription: "Signature bouquets and thoughtful flower delivery across Tashkent.",
+      deliveryPolicy: "Delivery across Tashkent; timing is confirmed by our operator.",
+    },
+  },
+  phone: "+998 71 200 07 07",
+  email: "salom@nafis.uz",
+  address: "Yunusobod, Toshkent",
+  workingHours: "08:00–22:00",
+  deliveryFee: 0,
+};
+
 function toSeedCategory(index: number): SeedCategory {
   const category = CATEGORIES[index];
   if (!category) throw new Error(`Missing seed category at index ${index}.`);
 
   return {
-    name: category.title,
     slug: category.id,
+    translations: {
+      ru: { ...category.translations.ru },
+      uz: { ...category.translations.uz },
+      en: { ...category.translations.en },
+    },
     image: {
       url: category.image,
-      alt: `${category.title} uchun nafis gul kompozitsiyasi`,
+      alt: category.translations.ru.name,
     },
     order: index,
     status: "published",
@@ -55,13 +87,12 @@ function toSeedProduct(
   if (!product) throw new Error(`Missing seed product at index ${index}.`);
 
   return {
-    name: product.name,
     slug: product.id,
-    shortDescription: product.shortDescription,
-    description: `${product.shortDescription} Tarkibi: ${product.composition.join(
-      ", "
-    )}.`,
-    composition: [...product.composition],
+    translations: {
+      ru: { ...product.translations.ru, composition: [...product.translations.ru.composition] },
+      uz: { ...product.translations.uz, composition: [...product.translations.uz.composition] },
+      en: { ...product.translations.en, composition: [...product.translations.en.composition] },
+    },
     categoryId,
     price: product.price,
     ...(product.originalPrice === undefined
@@ -71,7 +102,7 @@ function toSeedProduct(
     images: [
       {
         url: product.image,
-        alt: `${product.name} gul kompozitsiyasi`,
+        alt: product.translations.ru.name,
       },
     ],
     flowerTypes: [...product.flowerTypes],
@@ -82,14 +113,19 @@ function toSeedProduct(
     isNewArrival: product.isNew,
     isOnSale: product.isOnSale,
     status: "published",
-    deliveryEstimate: product.deliveryEstimate,
-    size: product.size,
   };
 }
 
 function createMongoSeedStore(): CatalogSeedStore {
   return {
     connect: dbConnect,
+    async seedSettingsIfMissing(settings) {
+      await SiteSettingsModel.updateOne(
+        { key: "default" },
+        { $setOnInsert: settings },
+        { upsert: true, setDefaultsOnInsert: true }
+      ).exec();
+    },
     async upsertCategory(category) {
       const existed = await CategoryModel.exists({ slug: category.slug });
       const document = await CategoryModel.findOneAndUpdate(
@@ -128,6 +164,7 @@ export async function seedCatalog(
   store: CatalogSeedStore = createMongoSeedStore()
 ): Promise<CatalogSeedSummary> {
   await store.connect();
+  await store.seedSettingsIfMissing(DEFAULT_SEED_SETTINGS);
 
   const summary: CatalogSeedSummary = {
     categories: { created: 0, updated: 0 },
@@ -159,10 +196,14 @@ export async function seedCatalog(
 }
 
 async function runCli() {
-  const summary = await seedCatalog();
-  console.info(
-    `Catalog seed complete: ${summary.categories.created} categories created, ${summary.categories.updated} updated; ${summary.products.created} products created, ${summary.products.updated} updated.`
-  );
+  try {
+    const summary = await seedCatalog();
+    console.info(
+      `Catalog seed complete: ${summary.categories.created} categories created, ${summary.categories.updated} updated; ${summary.products.created} products created, ${summary.products.updated} updated.`
+    );
+  } finally {
+    await mongoose.disconnect();
+  }
 }
 
 const invokedScript = process.argv[1];

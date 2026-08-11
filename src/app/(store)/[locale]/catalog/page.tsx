@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { StorefrontShell } from "@/components/storefront/StorefrontShell";
 import type { PublicCatalogFilters } from "@/lib/contracts";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
 
 export const metadata: Metadata = {
   title: "Flower catalog",
@@ -41,8 +42,11 @@ function parseCatalogFilters(
   };
 }
 
-export default async function CatalogPage({ searchParams }: CatalogPageProps) {
+export default async function CatalogPage({ params, searchParams }: CatalogPageProps) {
+  const { locale: candidate } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
   return await StorefrontShell({
+    locale,
     filters: parseCatalogFilters(await searchParams),
   });
 }

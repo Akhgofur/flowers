@@ -4,6 +4,8 @@ import { PRODUCTS } from "@/data/catalog";
 import { ProductDetail } from "@/components/storefront/ProductDetail";
 import { toBootstrapCatalogProduct } from "@/components/storefront/storefront-mappers";
 import type { CatalogProduct } from "@/lib/contracts";
+import type { Locale } from "@/i18n/config";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
 import { getPublishedProductBySlug } from "@/lib/services/catalog-service";
 import { getPublicSiteSettings } from "@/lib/services/public-settings-service";
 import {
@@ -19,15 +21,15 @@ type ProductPageProps = {
   params: Promise<{ locale: string; slug: string }>;
 };
 
-async function loadProduct(slug: string): Promise<CatalogProduct | null> {
+async function loadProduct(locale: Locale, slug: string): Promise<CatalogProduct | null> {
   try {
-    return await getPublishedProductBySlug(slug);
+    return await getPublishedProductBySlug(locale, slug);
   } catch (error) {
     if (process.env.NODE_ENV === "production") throw error;
 
     const sourceProduct = PRODUCTS.find((product) => product.id === slug);
     return sourceProduct
-      ? toBootstrapCatalogProduct(sourceProduct, PRODUCTS.indexOf(sourceProduct))
+      ? toBootstrapCatalogProduct(sourceProduct, PRODUCTS.indexOf(sourceProduct), locale)
       : null;
   }
 }
@@ -35,8 +37,9 @@ async function loadProduct(slug: string): Promise<CatalogProduct | null> {
 export async function generateMetadata({
   params,
 }: ProductPageProps): Promise<Metadata> {
-  const { slug } = await params;
-  const product = await loadProduct(slug);
+  const { locale: candidate, slug } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
+  const product = await loadProduct(locale, slug);
 
   if (!product) {
     return {
@@ -45,17 +48,18 @@ export async function generateMetadata({
     };
   }
 
-  return buildProductMetadata(product, await getPublicSiteSettings());
+  return buildProductMetadata(product, await getPublicSiteSettings(locale));
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const { locale, slug } = await params;
-  const product = await loadProduct(slug);
+  const { locale: candidate, slug } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
+  const product = await loadProduct(locale, slug);
 
   if (!product) notFound();
 
   const productJsonLd = serializeJsonLd(
-    buildProductJsonLd(product, await getPublicSiteSettings())
+    buildProductJsonLd(product, await getPublicSiteSettings(locale))
   );
   const breadcrumbJsonLd = serializeJsonLd(
     buildBreadcrumbJsonLd([

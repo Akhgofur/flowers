@@ -29,7 +29,7 @@ export default async function StoreLocaleLayout({
 
   const [messages, settings] = await Promise.all([
     getMessages(),
-    getPublicSiteSettings(),
+    getPublicSiteSettings(locale),
   ]);
   const organizationJsonLd = serializeJsonLd(buildOrganizationJsonLd(settings));
   const websiteJsonLd = serializeJsonLd(buildWebsiteJsonLd(settings));

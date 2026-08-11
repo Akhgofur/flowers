@@ -29,11 +29,13 @@ export function cacheCatalogReader<Arguments extends readonly unknown[], Result>
   }) as AsyncReader<Arguments, Result>;
 }
 
-export function cacheSiteSettingsReader<Result>(reader: () => Promise<Result>): () => Promise<Result> {
+export function cacheSiteSettingsReader<Arguments extends readonly unknown[], Result>(
+  reader: AsyncReader<Arguments, Result>
+): AsyncReader<Arguments, Result> {
   if (process.env.NODE_ENV === "test") return reader;
 
   return unstable_cache(reader, ["public-site-settings"], {
     revalidate: CATALOG_REVALIDATE_SECONDS,
     tags: [SITE_SETTINGS_CACHE_TAG],
-  }) as () => Promise<Result>;
+  }) as AsyncReader<Arguments, Result>;
 }

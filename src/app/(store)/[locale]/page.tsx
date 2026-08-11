@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { StorefrontShell } from "@/components/storefront/StorefrontShell";
+import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
 
 export const metadata: Metadata = {
   title: "Nafis Flowers",
@@ -10,10 +11,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function StorePage({
-  params: _params,
+  params,
 }: {
   params: Promise<{ locale: string }>;
 }) {
-  const storefront = await StorefrontShell({});
+  const { locale: candidate } = await params;
+  const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
+  const storefront = await StorefrontShell({ locale });
   return storefront;
 }

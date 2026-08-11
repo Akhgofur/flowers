@@ -1,21 +1,22 @@
 import mongoose, { type Model } from "mongoose";
+import type {
+  Localized,
+  SiteSettingsTranslation,
+} from "@/lib/contracts";
 
 const { model, models, Schema } = mongoose;
 
 export type SiteSettingsDocument = {
   key: "default";
   siteName: string;
-  siteDescription: string;
+  translations: Localized<SiteSettingsTranslation>;
   phone?: string;
   email?: string;
   address?: string;
   workingHours?: string;
   deliveryFee: number;
-  deliveryPolicy?: string;
   instagramUrl?: string;
   telegramUrl?: string;
-  seoTitle?: string;
-  seoDescription?: string;
   seoOgImage?: {
     url: string;
     alt: string;
@@ -24,6 +25,31 @@ export type SiteSettingsDocument = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+const siteSettingsTranslationSchema = new Schema<SiteSettingsTranslation>(
+  {
+    siteDescription: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 2,
+      maxlength: 300,
+    },
+    deliveryPolicy: { type: String, trim: true, minlength: 2, maxlength: 2_000 },
+    seoTitle: { type: String, trim: true, minlength: 2, maxlength: 70 },
+    seoDescription: { type: String, trim: true, minlength: 2, maxlength: 160 },
+  },
+  { _id: false }
+);
+
+const localizedSiteSettingsSchema = new Schema<Localized<SiteSettingsTranslation>>(
+  {
+    ru: { type: siteSettingsTranslationSchema, required: true },
+    uz: { type: siteSettingsTranslationSchema, required: true },
+    en: { type: siteSettingsTranslationSchema, required: true },
+  },
+  { _id: false }
+);
 
 const siteSettingsSchema = new Schema<SiteSettingsDocument>(
   {
@@ -35,13 +61,7 @@ const siteSettingsSchema = new Schema<SiteSettingsDocument>(
       trim: true,
       maxlength: 100,
     },
-    siteDescription: {
-      type: String,
-      required: true,
-      default: "Toshkent bo‘ylab nafis guldastalar va tezkor yetkazib berish xizmati.",
-      trim: true,
-      maxlength: 300,
-    },
+    translations: { type: localizedSiteSettingsSchema, required: true },
     phone: { type: String, trim: true, maxlength: 32 },
     email: { type: String, trim: true, lowercase: true, maxlength: 254 },
     address: { type: String, trim: true, maxlength: 500 },
@@ -56,11 +76,8 @@ const siteSettingsSchema = new Schema<SiteSettingsDocument>(
         message: "Delivery fee must be a non-negative integer.",
       },
     },
-    deliveryPolicy: { type: String, trim: true, maxlength: 2_000 },
     instagramUrl: { type: String, trim: true, maxlength: 500 },
     telegramUrl: { type: String, trim: true, maxlength: 500 },
-    seoTitle: { type: String, trim: true, maxlength: 70 },
-    seoDescription: { type: String, trim: true, maxlength: 160 },
     seoOgImage: {
       url: { type: String, trim: true, match: /^https:\/\// },
       alt: { type: String, trim: true, minlength: 2, maxlength: 180 },

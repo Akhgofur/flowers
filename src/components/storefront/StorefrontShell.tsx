@@ -1,4 +1,5 @@
 import { CATEGORIES, PRODUCTS } from "@/data/catalog";
+import type { Locale } from "@/i18n/config";
 import type { AppInitialCatalogFilters } from "@/app/App";
 import type {
   CatalogCategory,
@@ -11,7 +12,7 @@ import {
   getPublishedCategories,
 } from "@/lib/services/catalog-service";
 import {
-  DEFAULT_PUBLIC_SITE_SETTINGS,
+  getDefaultPublicSiteSettings,
   getPublicSiteSettings,
 } from "@/lib/services/public-settings-service";
 import {
@@ -28,6 +29,7 @@ type StorefrontData = {
 };
 
 export type StorefrontShellProps = {
+  locale: Locale;
   filters?: PublicCatalogFilters;
 };
 
@@ -41,23 +43,28 @@ function toInitialClientFilters(
   };
 }
 
-function bootstrapStorefrontData(): StorefrontData {
+function bootstrapStorefrontData(locale: Locale): StorefrontData {
   return {
-    products: PRODUCTS.map(toBootstrapCatalogProduct),
-    categories: CATEGORIES.map(toBootstrapCatalogCategory),
-    settings: { ...DEFAULT_PUBLIC_SITE_SETTINGS },
+    products: PRODUCTS.map((product, index) =>
+      toBootstrapCatalogProduct(product, index, locale)
+    ),
+    categories: CATEGORIES.map((category, index) =>
+      toBootstrapCatalogCategory(category, index, locale)
+    ),
+    settings: getDefaultPublicSiteSettings(locale),
     source: "bootstrap",
   };
 }
 
 async function loadStorefrontData(
+  locale: Locale,
   filters: PublicCatalogFilters
 ): Promise<StorefrontData> {
   try {
     const [products, categories, settings] = await Promise.all([
-      getPublishedCatalog(filters),
-      getPublishedCategories(),
-      getPublicSiteSettings(),
+      getPublishedCatalog(locale, filters),
+      getPublishedCategories(locale),
+      getPublicSiteSettings(locale),
     ]);
 
     return { products, categories, settings, source: "mongo" };
@@ -65,14 +72,15 @@ async function loadStorefrontData(
     // Local visual work remains useful before the owner supplies MONGODB_URI.
     // Production never silently presents bootstrap data as live inventory.
     if (process.env.NODE_ENV === "production") throw error;
-    return bootstrapStorefrontData();
+    return bootstrapStorefrontData(locale);
   }
 }
 
 export async function StorefrontShell({
+  locale,
   filters = {},
 }: StorefrontShellProps) {
-  const data = await loadStorefrontData(filters);
+  const data = await loadStorefrontData(locale, filters);
 
   return (
     <>

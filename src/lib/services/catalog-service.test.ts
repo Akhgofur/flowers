@@ -53,26 +53,35 @@ describe("public catalog service", () => {
       { ...publishedProduct, id: "archived", slug: "archived", status: "archived" },
     ]);
 
-    const products = await getPublishedCatalog({
+    const products = await getPublishedCatalog("en", {
       category: undefined,
       sale: false,
       query: "",
     });
 
     expect(products).toEqual([publishedProduct]);
-    expect(repository.findPublishedCatalogProducts).toHaveBeenCalledWith({
-      category: undefined,
-      sale: false,
-      query: undefined,
-      page: 1,
-      limit: 24,
-    });
+    expect(repository.findPublishedCatalogProducts).toHaveBeenCalledWith(
+      "en",
+      {
+        category: undefined,
+        sale: false,
+        query: undefined,
+        page: 1,
+        limit: 24,
+      }
+    );
   });
 
   it("maps an unknown slug to null rather than leaking a draft", async () => {
     repository.findPublishedProductBySlug.mockResolvedValue(null);
 
-    await expect(getPublishedProductBySlug("unknown-or-draft")).resolves.toBeNull();
+    await expect(
+      getPublishedProductBySlug("ru", "unknown-or-draft")
+    ).resolves.toBeNull();
+    expect(repository.findPublishedProductBySlug).toHaveBeenCalledWith(
+      "ru",
+      "unknown-or-draft"
+    );
   });
 
   it("returns only published categories from the repository boundary", async () => {
@@ -80,8 +89,9 @@ describe("public catalog service", () => {
       { id: "1", name: "Lolalar", slug: "tulips", order: 1, status: "published" },
     ]);
 
-    await expect(getPublishedCategories()).resolves.toEqual([
+    await expect(getPublishedCategories("uz")).resolves.toEqual([
       { id: "1", name: "Lolalar", slug: "tulips", order: 1, status: "published" },
     ]);
+    expect(repository.findPublishedCategories).toHaveBeenCalledWith("uz");
   });
 });

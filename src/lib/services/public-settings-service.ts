@@ -1,46 +1,71 @@
 import "server-only";
-import type { PublicSiteSettings } from "@/lib/contracts";
+import type { PublicSiteSettings, SiteSettingsTranslation } from "@/lib/contracts";
+import type { Locale } from "@/i18n/config";
 import { cacheSiteSettingsReader } from "@/lib/cache";
+import { resolveSiteSettingsTranslation } from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
 import { SiteSettingsModel, type SiteSettingsDocument } from "@/models/SiteSettings";
 
-export const DEFAULT_PUBLIC_SITE_SETTINGS: PublicSiteSettings = {
+const DEFAULT_TRANSLATIONS: Record<Locale, SiteSettingsTranslation> = {
+  ru: {
+    siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту.",
+    deliveryPolicy: "Доставка по Ташкенту, время подтверждает оператор.",
+  },
+  uz: {
+    siteDescription: "Toshkent bo‘ylab mualliflik buketlari va ehtiyotkor yetkazib berish.",
+    deliveryPolicy: "Toshkent bo‘ylab yetkazamiz, vaqtni operator tasdiqlaydi.",
+  },
+  en: {
+    siteDescription: "Signature bouquets and thoughtful flower delivery across Tashkent.",
+    deliveryPolicy: "Delivery across Tashkent; timing is confirmed by our operator.",
+  },
+};
+
+const DEFAULT_UNIVERSAL_SETTINGS = {
   siteName: "Nafis Flowers",
-  siteDescription: "Toshkent bo'ylab nafis guldastalar va tezkor yetkazib berish xizmati.",
   phone: "+998 71 200 07 07",
   email: "salom@nafis.uz",
   address: "Yunusobod, Toshkent",
   workingHours: "08:00–22:00",
 };
 
-async function readPublicSiteSettings(): Promise<PublicSiteSettings> {
+export function getDefaultPublicSiteSettings(locale: Locale): PublicSiteSettings {
+  return { ...DEFAULT_UNIVERSAL_SETTINGS, ...DEFAULT_TRANSLATIONS[locale] };
+}
+
+export const DEFAULT_PUBLIC_SITE_SETTINGS = getDefaultPublicSiteSettings("ru");
+
+async function readPublicSiteSettings(locale: Locale): Promise<PublicSiteSettings> {
   await dbConnect();
   const document = (await SiteSettingsModel.findOne({ key: "default" })
     .lean()
     .exec()) as SiteSettingsDocument | null;
 
-  if (!document) return { ...DEFAULT_PUBLIC_SITE_SETTINGS };
+  if (!document) return getDefaultPublicSiteSettings(locale);
+
+  const translation =
+    resolveSiteSettingsTranslation(document, locale) ?? DEFAULT_TRANSLATIONS[locale];
 
   return {
     siteName: document.siteName,
-    siteDescription: document.siteDescription,
+    siteDescription: translation.siteDescription,
     ...(document.phone === undefined ? {} : { phone: document.phone }),
     ...(document.email === undefined ? {} : { email: document.email }),
     ...(document.address === undefined ? {} : { address: document.address }),
     ...(document.workingHours === undefined ? {} : { workingHours: document.workingHours }),
-    ...(document.deliveryPolicy === undefined
+    ...(translation.deliveryPolicy === undefined
       ? {}
-      : { deliveryPolicy: document.deliveryPolicy }),
+      : { deliveryPolicy: translation.deliveryPolicy }),
     ...(document.instagramUrl === undefined
       ? {}
       : { instagramUrl: document.instagramUrl }),
     ...(document.telegramUrl === undefined
       ? {}
       : { telegramUrl: document.telegramUrl }),
-    ...(document.seoTitle === undefined ? {} : { seoTitle: document.seoTitle }),
-    ...(document.seoDescription === undefined
+    ...(translation.seoTitle === undefined ? {} : { seoTitle: translation.seoTitle }),
+    ...(translation.seoDescription === undefined
       ? {}
-      : { seoDescription: document.seoDescription }),
+      : { seoDescription: translation.seoDescription }),
     ...(document.seoOgImage === undefined
       ? {}
       : { seoOgImage: { ...document.seoOgImage } }),
@@ -53,9 +78,9 @@ const readCachedPublicSiteSettings = cacheSiteSettingsReader(readPublicSiteSetti
  * The local visual preview remains usable without user secrets. Production fails
  * closed rather than rendering fallback contacts as live business information.
  */
-export async function getPublicSiteSettings(): Promise<PublicSiteSettings> {
+export async function getPublicSiteSettings(locale: Locale): Promise<PublicSiteSettings> {
   try {
-    return await readCachedPublicSiteSettings();
+    return await readCachedPublicSiteSettings(locale);
   } catch (error) {
     // Next pre-renders framework pages (including /_not-found) during `next build`.
     // Secrets are runtime deployment configuration, so build output uses stable defaults.
@@ -63,6 +88,6 @@ export async function getPublicSiteSettings(): Promise<PublicSiteSettings> {
       process.env.NODE_ENV === "production" &&
       process.env.NEXT_PHASE !== "phase-production-build";
     if (isProductionRuntime) throw error;
-    return { ...DEFAULT_PUBLIC_SITE_SETTINGS };
+    return getDefaultPublicSiteSettings(locale);
   }
 }

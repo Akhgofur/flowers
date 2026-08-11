@@ -5,6 +5,7 @@ import type {
   PublicCatalogFilters,
   PublicSitemapEntries,
 } from "@/lib/contracts";
+import type { Locale } from "@/i18n/config";
 import { cacheCatalogReader } from "@/lib/cache";
 import {
   findPublishedCatalogProducts,
@@ -32,18 +33,18 @@ export function normalizePublicCatalogFilters(
 }
 
 const readPublishedCatalog = cacheCatalogReader(
-  async (filters: NormalizedPublicCatalogFilters) =>
-    findPublishedCatalogProducts(filters),
+  async (locale: Locale, filters: NormalizedPublicCatalogFilters) =>
+    findPublishedCatalogProducts(locale, filters),
   ["published-catalog"]
 );
 
 const readPublishedProduct = cacheCatalogReader(
-  async (slug: string) => findPublishedProductBySlug(slug),
+  async (locale: Locale, slug: string) => findPublishedProductBySlug(locale, slug),
   ["published-product"]
 );
 
 const readPublishedCategories = cacheCatalogReader(
-  async () => findPublishedCategories(),
+  async (locale: Locale) => findPublishedCategories(locale),
   ["published-categories"]
 );
 
@@ -53,6 +54,7 @@ const readPublishedSitemapEntries = cacheCatalogReader(
 );
 
 export async function getPublishedCatalog(
+  locale: Locale,
   filters: PublicCatalogFilters
 ): Promise<CatalogProduct[]> {
   const normalizedFilters = normalizePublicCatalogFilters(filters);
@@ -67,26 +69,27 @@ export async function getPublishedCatalog(
     throw new Error("Invalid public catalog pagination.");
   }
 
-  const products = await readPublishedCatalog(normalizedFilters);
+  const products = await readPublishedCatalog(locale, normalizedFilters);
   return products.filter(
     (product) => product.status === "published" && product.stockQuantity > 0
   );
 }
 
 export async function getPublishedProductBySlug(
+  locale: Locale,
   slug: string
 ): Promise<CatalogProduct | null> {
   const normalizedSlug = slug.trim().toLowerCase();
   if (!normalizedSlug) return null;
 
-  const product = await readPublishedProduct(normalizedSlug);
+  const product = await readPublishedProduct(locale, normalizedSlug);
   return product?.status === "published" && product.stockQuantity > 0
     ? product
     : null;
 }
 
-export async function getPublishedCategories(): Promise<CatalogCategory[]> {
-  const categories = await readPublishedCategories();
+export async function getPublishedCategories(locale: Locale): Promise<CatalogCategory[]> {
+  const categories = await readPublishedCategories(locale);
   return categories.filter((category) => category.status === "published");
 }
 

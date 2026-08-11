@@ -14,6 +14,27 @@ it("provides exactly 12 products", () => {
   expect(PRODUCTS).toHaveLength(12);
 });
 
+it("provides complete Russian, Uzbek and English content for every record", () => {
+  for (const product of PRODUCTS) {
+    expect(Object.keys(product.translations).sort()).toEqual(["en", "ru", "uz"]);
+    for (const translation of Object.values(product.translations)) {
+      expect(translation.name.trim()).not.toBe("");
+      expect(translation.shortDescription.trim()).not.toBe("");
+      expect(translation.description.trim()).not.toBe("");
+      expect(translation.composition.length).toBeGreaterThan(0);
+    }
+  }
+
+  for (const category of CATEGORIES) {
+    expect(Object.keys(category.translations).sort()).toEqual(["en", "ru", "uz"]);
+    expect(
+      Object.values(category.translations).every(
+        (translation) => translation.name.trim().length > 0
+      )
+    ).toBe(true);
+  }
+});
+
 it("provides unique product IDs", () => {
   expect(new Set(PRODUCTS.map((product) => product.id)).size).toBe(12);
 });

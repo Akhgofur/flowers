@@ -1,3 +1,5 @@
+import type { Locale } from "@/i18n/config";
+
 export const PRODUCT_STATUSES = ["draft", "published", "archived"] as const;
 export const CATEGORY_STATUSES = ["published", "hidden"] as const;
 export const ORDER_STATUSES = [
@@ -22,6 +24,33 @@ export type ProductImage = {
   url: string;
   alt: string;
   publicId?: string;
+};
+
+export type Localized<T> = Record<Locale, T>;
+
+export type ProductTranslation = {
+  name: string;
+  shortDescription: string;
+  description: string;
+  composition: string[];
+  deliveryEstimate?: string;
+  size?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+};
+
+export type CategoryTranslation = {
+  name: string;
+  description?: string;
+  seoTitle?: string;
+  seoDescription?: string;
+};
+
+export type SiteSettingsTranslation = {
+  siteDescription: string;
+  deliveryPolicy?: string;
+  seoTitle?: string;
+  seoDescription?: string;
 };
 
 export type CatalogProduct = {
@@ -111,11 +140,8 @@ export type OrderCreationResult = {
 /** Server-only admin DTOs remain JSON-safe for client dashboard islands. */
 export type AdminProduct = {
   id: string;
-  name: string;
   slug: string;
-  shortDescription: string;
-  description: string;
-  composition: string[];
+  translations: Localized<ProductTranslation>;
   categoryId: string;
   price: number;
   originalPrice?: number;
@@ -129,19 +155,14 @@ export type AdminProduct = {
   isNew: boolean;
   isOnSale: boolean;
   status: ProductStatus;
-  deliveryEstimate?: string;
-  size?: string;
-  seoTitle?: string;
-  seoDescription?: string;
   createdAt: string;
   updatedAt: string;
 };
 
 export type AdminCategory = {
   id: string;
-  name: string;
   slug: string;
-  description?: string;
+  translations: Localized<CategoryTranslation>;
   image?: ProductImage;
   order: number;
   status: CategoryStatus;
@@ -181,37 +202,33 @@ export type AdminOrder = {
 
 export type AdminSiteSettings = {
   siteName: string;
-  siteDescription: string;
+  translations: Localized<SiteSettingsTranslation>;
   phone?: string;
   email?: string;
   address?: string;
   workingHours?: string;
   deliveryFee: number;
+  instagramUrl?: string;
+  telegramUrl?: string;
+  seoOgImage?: ProductImage;
+  updatedAt?: string;
+};
+
+/** Deliberately excludes operational-only values such as delivery fee. */
+export type PublicSiteSettings = {
+  siteName: string;
+  siteDescription: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  workingHours?: string;
   deliveryPolicy?: string;
   instagramUrl?: string;
   telegramUrl?: string;
   seoTitle?: string;
   seoDescription?: string;
   seoOgImage?: ProductImage;
-  updatedAt?: string;
 };
-
-/** Deliberately excludes operational-only values such as delivery fee. */
-export type PublicSiteSettings = Pick<
-  AdminSiteSettings,
-  | "siteName"
-  | "siteDescription"
-  | "phone"
-  | "email"
-  | "address"
-  | "workingHours"
-  | "deliveryPolicy"
-  | "instagramUrl"
-  | "telegramUrl"
-  | "seoTitle"
-  | "seoDescription"
-  | "seoOgImage"
->;
 
 export const allowedOrderTransitions: Record<OrderStatus, readonly OrderStatus[]> = {
   pending: ["confirmed", "cancelled"],

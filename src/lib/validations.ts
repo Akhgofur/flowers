@@ -20,6 +20,61 @@ const slugSchema = z
 const moneySchema = z.number().int().positive();
 const nonNegativeIntegerSchema = z.number().int().min(0);
 
+export const productTranslationInputSchema = z
+  .object({
+    name: textSchema.max(140),
+    shortDescription: textSchema.max(280),
+    description: textSchema.max(4_000),
+    composition: z.array(textSchema.max(140)).min(1).max(20),
+    deliveryEstimate: z.string().trim().min(2).max(160).optional(),
+    size: z.string().trim().min(2).max(80).optional(),
+    seoTitle: z.string().trim().min(2).max(70).optional(),
+    seoDescription: z.string().trim().min(2).max(160).optional(),
+  })
+  .strict();
+
+export const categoryTranslationInputSchema = z
+  .object({
+    name: textSchema.max(100),
+    description: z.string().trim().min(2).max(800).optional(),
+    seoTitle: z.string().trim().min(2).max(70).optional(),
+    seoDescription: z.string().trim().min(2).max(160).optional(),
+  })
+  .strict();
+
+const localizedProductInputSchema = z
+  .object({
+    ru: productTranslationInputSchema,
+    uz: productTranslationInputSchema,
+    en: productTranslationInputSchema,
+  })
+  .strict();
+
+const localizedCategoryInputSchema = z
+  .object({
+    ru: categoryTranslationInputSchema,
+    uz: categoryTranslationInputSchema,
+    en: categoryTranslationInputSchema,
+  })
+  .strict();
+
+export const siteSettingsTranslationInputSchema = z
+  .object({
+    siteDescription: textSchema.max(300),
+    deliveryPolicy: z.string().trim().min(2).max(2_000).optional(),
+    seoTitle: z.string().trim().min(2).max(70).optional(),
+    seoDescription: z.string().trim().min(2).max(160).optional(),
+  })
+  .strict();
+
+const localizedSiteSettingsInputSchema = z
+  .object({
+    ru: siteSettingsTranslationInputSchema,
+    uz: siteSettingsTranslationInputSchema,
+    en: siteSettingsTranslationInputSchema,
+  })
+  .strict();
+
 export const productImageSchema = z
   .object({
     url: z.string().trim().url().startsWith("https://"),
@@ -30,11 +85,8 @@ export const productImageSchema = z
 
 export const productInputSchema = z
   .object({
-    name: textSchema.max(140),
     slug: slugSchema,
-    shortDescription: textSchema.max(280),
-    description: textSchema.max(4_000),
-    composition: z.array(textSchema.max(140)).min(1).max(20),
+    translations: localizedProductInputSchema,
     categoryId: objectIdSchema,
     price: moneySchema,
     originalPrice: moneySchema.optional(),
@@ -48,10 +100,6 @@ export const productInputSchema = z
     isNew: z.boolean().default(false),
     isOnSale: z.boolean().default(false),
     status: z.enum(PRODUCT_STATUSES).default("draft"),
-    deliveryEstimate: z.string().trim().min(2).max(160).optional(),
-    size: z.string().trim().min(2).max(80).optional(),
-    seoTitle: z.string().trim().min(2).max(70).optional(),
-    seoDescription: z.string().trim().min(2).max(160).optional(),
   })
   .strict()
   .superRefine((input, context) => {
@@ -74,9 +122,8 @@ export const productInputSchema = z
 
 export const categoryInputSchema = z
   .object({
-    name: textSchema.max(100),
     slug: slugSchema,
-    description: z.string().trim().min(2).max(800).optional(),
+    translations: localizedCategoryInputSchema,
     image: productImageSchema.optional(),
     order: nonNegativeIntegerSchema.default(0),
     status: z.enum(CATEGORY_STATUSES).default("published"),
@@ -135,17 +182,14 @@ const optionalUrlSchema = z.string().trim().url().startsWith("https://").optiona
 export const siteSettingsInputSchema = z
   .object({
     siteName: textSchema.max(100),
-    siteDescription: textSchema.max(300),
+    translations: localizedSiteSettingsInputSchema,
     phone: z.string().trim().min(7).max(32).optional(),
     email: z.string().trim().email().max(254).optional(),
     address: z.string().trim().min(4).max(500).optional(),
     workingHours: z.string().trim().min(2).max(160).optional(),
     deliveryFee: nonNegativeIntegerSchema,
-    deliveryPolicy: z.string().trim().min(2).max(2_000).optional(),
     instagramUrl: optionalUrlSchema,
     telegramUrl: optionalUrlSchema,
-    seoTitle: z.string().trim().min(2).max(70).optional(),
-    seoDescription: z.string().trim().min(2).max(160).optional(),
     seoOgImage: productImageSchema.optional(),
   })
   .strict();

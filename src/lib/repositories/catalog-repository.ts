@@ -7,6 +7,11 @@ import type {
   PublicSitemapEntries,
   ProductImage,
 } from "@/lib/contracts";
+import { LOCALES, type Locale } from "@/i18n/config";
+import {
+  resolveCategoryTranslation,
+  resolveProductTranslation,
+} from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
 import { CategoryModel, type CategoryDocument } from "@/models/Category";
 import { ProductModel, type ProductDocument } from "@/models/Product";
@@ -43,19 +48,23 @@ function serializeImage(image: ProductImage): ProductImage {
 }
 
 export function toCatalogProduct(
-  document: PublicProductRecord
+  document: PublicProductRecord,
+  locale: Locale
 ): CatalogProduct | null {
   if (document.status !== "published" || !isPopulatedCategory(document.categoryId)) {
     return null;
   }
 
+  const translation = resolveProductTranslation(document, locale);
+  if (!translation) return null;
+
   return {
     id: document._id.toString(),
-    name: document.name,
+    name: translation.name,
     slug: document.slug,
-    shortDescription: document.shortDescription,
-    description: document.description,
-    composition: [...document.composition],
+    shortDescription: translation.shortDescription,
+    description: translation.description,
+    composition: [...translation.composition],
     price: document.price,
     ...(document.originalPrice === undefined
       ? {}
@@ -70,26 +79,32 @@ export function toCatalogProduct(
     isFeatured: document.isFeatured,
     isNew: document.isNewArrival,
     isOnSale: document.isOnSale,
-    ...(document.deliveryEstimate === undefined
+    ...(translation.deliveryEstimate === undefined
       ? {}
-      : { deliveryEstimate: document.deliveryEstimate }),
-    ...(document.size === undefined ? {} : { size: document.size }),
+      : { deliveryEstimate: translation.deliveryEstimate }),
+    ...(translation.size === undefined ? {} : { size: translation.size }),
     status: "published",
-    ...(document.seoTitle === undefined ? {} : { seoTitle: document.seoTitle }),
-    ...(document.seoDescription === undefined
+    ...(translation.seoTitle === undefined ? {} : { seoTitle: translation.seoTitle }),
+    ...(translation.seoDescription === undefined
       ? {}
-      : { seoDescription: document.seoDescription }),
+      : { seoDescription: translation.seoDescription }),
   };
 }
 
-function toCatalogCategory(document: PublicCategoryRecord): CatalogCategory {
+function toCatalogCategory(
+  document: PublicCategoryRecord,
+  locale: Locale
+): CatalogCategory | null {
+  const translation = resolveCategoryTranslation(document, locale);
+  if (!translation) return null;
+
   return {
     id: document._id.toString(),
-    name: document.name,
+    name: translation.name,
     slug: document.slug,
-    ...(document.description === undefined
+    ...(translation.description === undefined
       ? {}
-      : { description: document.description }),
+      : { description: translation.description }),
     ...(document.image === undefined ? {} : { image: serializeImage(document.image) }),
     order: document.order,
     status: "published",
@@ -107,12 +122,12 @@ function buildPublishedProductQuery(
 
   if (filters.query) {
     const searchExpression = new RegExp(escapeRegex(filters.query), "i");
-    query.$or = [
-      { name: searchExpression },
-      { shortDescription: searchExpression },
-      { description: searchExpression },
-      { composition: searchExpression },
-    ];
+    query.$or = LOCALES.flatMap((locale) => [
+      { [`translations.${locale}.name`]: searchExpression },
+      { [`translations.${locale}.shortDescription`]: searchExpression },
+      { [`translations.${locale}.description`]: searchExpression },
+      { [`translations.${locale}.composition`]: searchExpression },
+    ]) as QueryFilter<ProductDocument>[];
   }
 
   return query;
@@ -135,6 +150,7 @@ async function resolvePublishedCategoryId(
 }
 
 export async function findPublishedCatalogProducts(
+  locale: Locale,
   filters: NormalizedPublicCatalogFilters
 ): Promise<CatalogProduct[]> {
   await dbConnect();
@@ -150,18 +166,25 @@ export async function findPublishedCatalogProducts(
       match: { status: "published" },
       select: { slug: 1 },
     })
-    .sort({ isFeatured: -1, isOnSale: -1, sortOrder: 1, name: 1, _id: 1 })
+    .sort({
+      isFeatured: -1,
+      isOnSale: -1,
+      sortOrder: 1,
+      [`translations.${locale}.name`]: 1,
+      _id: 1,
+    })
     .skip((filters.page - 1) * filters.limit)
     .limit(filters.limit)
     .lean()
     .exec()) as unknown as PublicProductRecord[];
 
   return documents
-    .map(toCatalogProduct)
+    .map((document) => toCatalogProduct(document, locale))
     .filter((product): product is CatalogProduct => product !== null);
 }
 
 export async function findPublishedProductBySlug(
+  locale: Locale,
   slug: string
 ): Promise<CatalogProduct | null> {
   await dbConnect();
@@ -178,20 +201,21 @@ export async function findPublishedProductBySlug(
     .lean()
     .exec()) as unknown as PublicProductRecord | null;
 
-  return document ? toCatalogProduct(document) : null;
+  return document ? toCatalogProduct(document, locale) : null;
 }
 
-export async function findPublishedCategories(): Promise<CatalogCategory[]> {
+export async function findPublishedCategories(locale: Locale): Promise<CatalogCategory[]> {
   await dbConnect();
 
   const documents = (await CategoryModel.find({ status: "published" })
-    .sort({ order: 1, name: 1, _id: 1 })
+    .sort({ order: 1, [`translations.${locale}.name`]: 1, _id: 1 })
     .lean()
     .exec()) as unknown as PublicCategoryRecord[];
 
   return documents
     .filter((document) => document.status === "published")
-    .map(toCatalogCategory);
+    .map((document) => toCatalogCategory(document, locale))
+    .filter((category): category is CatalogCategory => category !== null);
 }
 
 /** A compact, public-only projection used by sitemap generation. */
@@ -200,7 +224,7 @@ export async function findPublishedSitemapEntries(): Promise<PublicSitemapEntrie
 
   const categoryDocuments = (await CategoryModel.find({ status: "published" })
     .select({ slug: 1, updatedAt: 1 })
-    .sort({ order: 1, name: 1, _id: 1 })
+    .sort({ order: 1, slug: 1, _id: 1 })
     .lean()
     .exec()) as unknown as PublicCategoryRecord[];
 

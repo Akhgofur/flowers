@@ -6,6 +6,7 @@ function createStore(created: boolean): CatalogSeedStore {
 
   return {
     connect: vi.fn().mockResolvedValue(undefined),
+    seedSettingsIfMissing: vi.fn().mockResolvedValue(undefined),
     upsertCategory: vi.fn().mockImplementation(async () => {
       categorySequence += 1;
       return { id: `category-${categorySequence}`, created };
@@ -21,8 +22,28 @@ describe("catalog seed", () => {
     const summary = await seedCatalog(store);
 
     expect(store.connect).toHaveBeenCalledTimes(1);
+    expect(store.seedSettingsIfMissing).toHaveBeenCalledWith(
+      expect.objectContaining({
+        key: "default",
+        translations: expect.objectContaining({
+          ru: expect.objectContaining({ siteDescription: expect.any(String) }),
+          uz: expect.objectContaining({ siteDescription: expect.any(String) }),
+          en: expect.objectContaining({ siteDescription: expect.any(String) }),
+        }),
+      })
+    );
     expect(store.upsertCategory).toHaveBeenCalledTimes(6);
     expect(store.upsertProduct).toHaveBeenCalledTimes(12);
+    expect(store.upsertProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: "scarlet-roses",
+        translations: expect.objectContaining({
+          ru: expect.objectContaining({ name: "Букет алых роз" }),
+          uz: expect.objectContaining({ name: "Qirmizi atirgul buketi" }),
+          en: expect.objectContaining({ name: "Scarlet rose bouquet" }),
+        }),
+      })
+    );
     expect(summary).toEqual({
       categories: { created: 6, updated: 0 },
       products: { created: 12, updated: 0 },

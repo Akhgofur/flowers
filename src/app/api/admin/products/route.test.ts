@@ -18,11 +18,27 @@ import { GET, POST } from "./route";
 
 const product: AdminProduct = {
   id: "507f1f77bcf86cd799439011",
-  name: "Pushti lola buketi",
   slug: "pushti-lola-buketi",
-  shortDescription: "Yangi lolalardan tuzilgan mayin kompozitsiya.",
-  description: "Bayram va yaqin insonlar uchun nafis sovg'a.",
-  composition: ["Lola"],
+  translations: {
+    ru: {
+      name: "Букет розовых тюльпанов",
+      shortDescription: "Нежная композиция из свежих тюльпанов.",
+      description: "Изящный подарок для праздника и близких.",
+      composition: ["Тюльпаны"],
+    },
+    uz: {
+      name: "Pushti lola buketi",
+      shortDescription: "Yangi lolalardan tuzilgan mayin kompozitsiya.",
+      description: "Bayram va yaqin insonlar uchun nafis sovg‘a.",
+      composition: ["Lola"],
+    },
+    en: {
+      name: "Pink tulip bouquet",
+      shortDescription: "A delicate composition of fresh tulips.",
+      description: "An elegant gift for celebrations and loved ones.",
+      composition: ["Tulips"],
+    },
+  },
   categoryId: "507f191e810c19729de860ea",
   price: 150_000,
   currency: "UZS",
@@ -88,7 +104,10 @@ describe("admin products API", () => {
     expect(adminApi.requireAdmin).toHaveBeenCalledTimes(1);
     expect(adminApi.assertSameOrigin).toHaveBeenCalledTimes(1);
     expect(adminService.createAdminProduct).toHaveBeenCalledWith(
-      expect.objectContaining({ name: product.name, categoryId: product.categoryId })
+      expect.objectContaining({
+        translations: product.translations,
+        categoryId: product.categoryId,
+      })
     );
   });
 

@@ -44,12 +44,12 @@ describe("GET /api/products", () => {
     catalogService.getPublishedCatalog.mockResolvedValue([product]);
 
     const response = await GET(
-      new Request("http://localhost/api/products?category=tulips&sale=true&page=2&limit=12")
+      new Request("http://localhost/api/products?locale=en&category=tulips&sale=true&page=2&limit=12")
     );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ products: [product] });
-    expect(catalogService.getPublishedCatalog).toHaveBeenCalledWith({
+    expect(catalogService.getPublishedCatalog).toHaveBeenCalledWith("en", {
       category: "tulips",
       sale: true,
       query: undefined,
@@ -65,6 +65,15 @@ describe("GET /api/products", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({ error: expect.any(String) });
+    expect(catalogService.getPublishedCatalog).not.toHaveBeenCalled();
+  });
+
+  it("rejects unsupported locales before calling the catalog service", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/products?locale=de")
+    );
+
+    expect(response.status).toBe(400);
     expect(catalogService.getPublishedCatalog).not.toHaveBeenCalled();
   });
 });

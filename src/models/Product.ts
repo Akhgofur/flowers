@@ -1,14 +1,16 @@
 import mongoose, { type Model, type Types } from "mongoose";
-import type { ProductImage, ProductStatus } from "@/lib/contracts";
+import type {
+  Localized,
+  ProductImage,
+  ProductStatus,
+  ProductTranslation,
+} from "@/lib/contracts";
 
 const { model, models, Schema } = mongoose;
 
 export type ProductDocument = {
-  name: string;
   slug: string;
-  shortDescription: string;
-  description: string;
-  composition: string[];
+  translations: Localized<ProductTranslation>;
   categoryId: Types.ObjectId;
   price: number;
   originalPrice?: number;
@@ -23,10 +25,6 @@ export type ProductDocument = {
   isNewArrival: boolean;
   isOnSale: boolean;
   status: ProductStatus;
-  deliveryEstimate?: string;
-  size?: string;
-  seoTitle?: string;
-  seoDescription?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -57,16 +55,9 @@ const productImageSchema = new Schema<ProductImage>(
 
 const integerValidator = (value: number) => Number.isInteger(value);
 
-const productSchema = new Schema<ProductDocument>(
+const productTranslationSchema = new Schema<ProductTranslation>(
   {
     name: { type: String, required: true, trim: true, minlength: 2, maxlength: 140 },
-    slug: {
-      type: String,
-      required: true,
-      trim: true,
-      lowercase: true,
-      match: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-    },
     shortDescription: {
       type: String,
       required: true,
@@ -86,9 +77,36 @@ const productSchema = new Schema<ProductDocument>(
       required: true,
       validate: {
         validator: (value: string[]) => value.length > 0 && value.length <= 20,
-        message: "A product must have between 1 and 20 composition entries.",
+        message: "A product translation must have between 1 and 20 composition entries.",
       },
     },
+    deliveryEstimate: { type: String, trim: true, minlength: 2, maxlength: 160 },
+    size: { type: String, trim: true, minlength: 2, maxlength: 80 },
+    seoTitle: { type: String, trim: true, minlength: 2, maxlength: 70 },
+    seoDescription: { type: String, trim: true, minlength: 2, maxlength: 160 },
+  },
+  { _id: false }
+);
+
+const localizedProductSchema = new Schema<Localized<ProductTranslation>>(
+  {
+    ru: { type: productTranslationSchema, required: true },
+    uz: { type: productTranslationSchema, required: true },
+    en: { type: productTranslationSchema, required: true },
+  },
+  { _id: false }
+);
+
+const productSchema = new Schema<ProductDocument>(
+  {
+    slug: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      match: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+    },
+    translations: { type: localizedProductSchema, required: true },
     categoryId: {
       type: Schema.Types.ObjectId,
       ref: "Category",
@@ -161,10 +179,6 @@ const productSchema = new Schema<ProductDocument>(
       enum: ["draft", "published", "archived"],
       default: "draft",
     },
-    deliveryEstimate: { type: String, trim: true, maxlength: 160 },
-    size: { type: String, trim: true, maxlength: 80 },
-    seoTitle: { type: String, trim: true, maxlength: 70 },
-    seoDescription: { type: String, trim: true, maxlength: 160 },
   },
   { timestamps: true, versionKey: false }
 );
@@ -189,7 +203,6 @@ productSchema.pre("validate", function validatePriceRelationship() {
 productSchema.index({ slug: 1 }, { unique: true });
 productSchema.index({ status: 1, categoryId: 1 });
 productSchema.index({ isOnSale: 1, status: 1 });
-productSchema.index({ name: "text", shortDescription: "text", description: "text" });
 
 export const ProductModel =
   (models.Product as Model<ProductDocument> | undefined) ??

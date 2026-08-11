@@ -1,12 +1,16 @@
 import mongoose, { type Model } from "mongoose";
-import type { CategoryStatus, ProductImage } from "@/lib/contracts";
+import type {
+  CategoryStatus,
+  CategoryTranslation,
+  Localized,
+  ProductImage,
+} from "@/lib/contracts";
 
 const { model, models, Schema } = mongoose;
 
 export type CategoryDocument = {
-  name: string;
   slug: string;
-  description?: string;
+  translations: Localized<CategoryTranslation>;
   image?: ProductImage;
   order: number;
   status: CategoryStatus;
@@ -34,9 +38,27 @@ const categoryImageSchema = new Schema<ProductImage>(
   { _id: false }
 );
 
-const categorySchema = new Schema<CategoryDocument>(
+const categoryTranslationSchema = new Schema<CategoryTranslation>(
   {
     name: { type: String, required: true, trim: true, minlength: 2, maxlength: 100 },
+    description: { type: String, trim: true, minlength: 2, maxlength: 800 },
+    seoTitle: { type: String, trim: true, minlength: 2, maxlength: 70 },
+    seoDescription: { type: String, trim: true, minlength: 2, maxlength: 160 },
+  },
+  { _id: false }
+);
+
+const localizedCategorySchema = new Schema<Localized<CategoryTranslation>>(
+  {
+    ru: { type: categoryTranslationSchema, required: true },
+    uz: { type: categoryTranslationSchema, required: true },
+    en: { type: categoryTranslationSchema, required: true },
+  },
+  { _id: false }
+);
+
+const categorySchema = new Schema<CategoryDocument>(
+  {
     slug: {
       type: String,
       required: true,
@@ -44,7 +66,7 @@ const categorySchema = new Schema<CategoryDocument>(
       lowercase: true,
       match: /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
     },
-    description: { type: String, trim: true, maxlength: 800 },
+    translations: { type: localizedCategorySchema, required: true },
     image: { type: categoryImageSchema, required: false },
     order: {
       type: Number,

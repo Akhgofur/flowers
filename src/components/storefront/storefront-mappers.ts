@@ -1,4 +1,6 @@
 import type { CatalogCategory, CatalogProduct } from "@/lib/contracts";
+import type { Locale } from "@/i18n/config";
+import type { BootstrapCategory, BootstrapProduct } from "@/data/catalog";
 import { IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
 import type { Category, Product } from "@/shared/types";
 
@@ -51,18 +53,19 @@ export function toClientCategory(
 }
 
 export function toBootstrapCatalogProduct(
-  product: Product,
-  index: number
+  product: BootstrapProduct,
+  index: number,
+  locale: Locale
 ): CatalogProduct {
+  const translation = product.translations[locale];
+
   return {
     id: product.id,
-    name: product.name,
+    name: translation.name,
     slug: product.slug ?? product.id,
-    shortDescription: product.shortDescription,
-    description: `${product.shortDescription} Tarkibi: ${product.composition.join(
-      ", "
-    )}.`,
-    composition: [...product.composition],
+    shortDescription: translation.shortDescription,
+    description: translation.description,
+    composition: [...translation.composition],
     price: product.price,
     ...(product.originalPrice === undefined
       ? {}
@@ -71,7 +74,7 @@ export function toBootstrapCatalogProduct(
     images: [
       {
         url: product.image,
-        alt: `${product.name} gul kompozitsiyasi`,
+        alt: translation.name,
       },
     ],
     categorySlug: product.category,
@@ -82,25 +85,35 @@ export function toBootstrapCatalogProduct(
     isFeatured: index < 4,
     isNew: product.isNew,
     isOnSale: product.isOnSale,
-    deliveryEstimate: product.deliveryEstimate,
-    size: product.size,
+    ...(translation.deliveryEstimate
+      ? { deliveryEstimate: translation.deliveryEstimate }
+      : {}),
+    ...(translation.size ? { size: translation.size } : {}),
+    ...(translation.seoTitle ? { seoTitle: translation.seoTitle } : {}),
+    ...(translation.seoDescription
+      ? { seoDescription: translation.seoDescription }
+      : {}),
     status: "published",
   };
 }
 
 export function toBootstrapCatalogCategory(
-  category: Category,
-  index: number
+  category: BootstrapCategory,
+  index: number,
+  locale: Locale
 ): CatalogCategory {
+  const translation = category.translations[locale];
+
   return {
     id: category.id,
-    name: category.title,
+    name: translation.name,
     slug: category.id,
     image: {
       url: category.image,
-      alt: `${category.title} uchun gul kompozitsiyasi`,
+      alt: translation.name,
     },
     order: index,
     status: "published",
+    ...(translation.description ? { description: translation.description } : {}),
   };
 }

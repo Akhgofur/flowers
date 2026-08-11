@@ -7,6 +7,7 @@ import type {
   AdminSiteSettings,
 } from "@/lib/contracts";
 import { AdminNotFoundError } from "@/lib/admin-api";
+import { resolveSiteSettingsTranslation } from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
 import type { CategoryInput, ProductInput, SiteSettingsInput } from "@/lib/validations";
 import { CategoryModel, type CategoryDocument } from "@/models/Category";
@@ -22,18 +23,23 @@ type SettingsRecord = SiteSettingsDocument & { _id: Types.ObjectId };
 
 const DEFAULT_SETTINGS: AdminSiteSettings = {
   siteName: "Nafis Flowers",
-  siteDescription: "Toshkent bo'ylab nafis guldastalar va tezkor yetkazib berish xizmati.",
+  translations: {
+    ru: { siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту." },
+    uz: { siteDescription: "Toshkent bo‘ylab mualliflik buketlari va ehtiyotkor yetkazib berish." },
+    en: { siteDescription: "Signature bouquets and thoughtful flower delivery across Tashkent." },
+  },
   deliveryFee: 0,
 };
 
 function toAdminProduct(document: ProductRecord): AdminProduct {
   return {
     id: document._id.toString(),
-    name: document.name,
     slug: document.slug,
-    shortDescription: document.shortDescription,
-    description: document.description,
-    composition: [...document.composition],
+    translations: {
+      ru: { ...document.translations.ru, composition: [...document.translations.ru.composition] },
+      uz: { ...document.translations.uz, composition: [...document.translations.uz.composition] },
+      en: { ...document.translations.en, composition: [...document.translations.en.composition] },
+    },
     categoryId: document.categoryId.toString(),
     price: document.price,
     ...(document.originalPrice === undefined ? {} : { originalPrice: document.originalPrice }),
@@ -47,14 +53,6 @@ function toAdminProduct(document: ProductRecord): AdminProduct {
     isNew: document.isNewArrival,
     isOnSale: document.isOnSale,
     status: document.status,
-    ...(document.deliveryEstimate === undefined
-      ? {}
-      : { deliveryEstimate: document.deliveryEstimate }),
-    ...(document.size === undefined ? {} : { size: document.size }),
-    ...(document.seoTitle === undefined ? {} : { seoTitle: document.seoTitle }),
-    ...(document.seoDescription === undefined
-      ? {}
-      : { seoDescription: document.seoDescription }),
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
   };
@@ -63,9 +61,12 @@ function toAdminProduct(document: ProductRecord): AdminProduct {
 function toAdminCategory(document: CategoryRecord): AdminCategory {
   return {
     id: document._id.toString(),
-    name: document.name,
     slug: document.slug,
-    ...(document.description === undefined ? {} : { description: document.description }),
+    translations: {
+      ru: { ...document.translations.ru },
+      uz: { ...document.translations.uz },
+      en: { ...document.translations.en },
+    },
     ...(document.image === undefined ? {} : { image: { ...document.image } }),
     order: document.order,
     status: document.status,
@@ -113,25 +114,26 @@ function toAdminOrder(document: OrderRecord): AdminOrder {
 function toAdminSettings(document: SettingsRecord | null): AdminSiteSettings {
   if (!document) return { ...DEFAULT_SETTINGS };
 
+  const translations = {
+    ru: resolveSiteSettingsTranslation(document, "ru") ?? DEFAULT_SETTINGS.translations.ru,
+    uz: resolveSiteSettingsTranslation(document, "uz") ?? DEFAULT_SETTINGS.translations.uz,
+    en: resolveSiteSettingsTranslation(document, "en") ?? DEFAULT_SETTINGS.translations.en,
+  };
+
   return {
     siteName: document.siteName,
-    siteDescription: document.siteDescription,
+    translations,
     ...(document.phone === undefined ? {} : { phone: document.phone }),
     ...(document.email === undefined ? {} : { email: document.email }),
     ...(document.address === undefined ? {} : { address: document.address }),
     ...(document.workingHours === undefined ? {} : { workingHours: document.workingHours }),
     deliveryFee: document.deliveryFee,
-    ...(document.deliveryPolicy === undefined
-      ? {}
-      : { deliveryPolicy: document.deliveryPolicy }),
     ...(document.instagramUrl === undefined
       ? {}
       : { instagramUrl: document.instagramUrl }),
     ...(document.telegramUrl === undefined
       ? {}
       : { telegramUrl: document.telegramUrl }),
-    ...(document.seoTitle === undefined ? {} : { seoTitle: document.seoTitle }),
-    ...(document.seoDescription === undefined ? {} : { seoDescription: document.seoDescription }),
     ...(document.seoOgImage === undefined ? {} : { seoOgImage: { ...document.seoOgImage } }),
     updatedAt: document.updatedAt.toISOString(),
   };
@@ -144,22 +146,15 @@ function splitProductInput(input: ProductInput) {
 
 const PRODUCT_OPTIONAL_FIELDS = [
   "originalPrice",
-  "deliveryEstimate",
-  "size",
-  "seoTitle",
-  "seoDescription",
 ] as const;
-const CATEGORY_OPTIONAL_FIELDS = ["description", "image"] as const;
+const CATEGORY_OPTIONAL_FIELDS = ["image"] as const;
 const SETTINGS_OPTIONAL_FIELDS = [
   "phone",
   "email",
   "address",
   "workingHours",
-  "deliveryPolicy",
   "instagramUrl",
   "telegramUrl",
-  "seoTitle",
-  "seoDescription",
   "seoOgImage",
 ] as const;
 
@@ -216,7 +211,7 @@ export async function archiveAdminProduct(id: string): Promise<void> {
 export async function findAdminCategories(): Promise<AdminCategory[]> {
   await dbConnect();
   const documents = (await CategoryModel.find({})
-    .sort({ order: 1, name: 1, _id: 1 })
+    .sort({ order: 1, "translations.ru.name": 1, _id: 1 })
     .lean()
     .exec()) as unknown as CategoryRecord[];
 

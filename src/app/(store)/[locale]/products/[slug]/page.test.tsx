@@ -67,6 +67,7 @@ describe("product detail server route", () => {
       screen.getByRole("heading", { name: /qirmizi atirgul buketi/i })
     ).toBeVisible();
     expect(catalogService.getPublishedProductBySlug).toHaveBeenCalledWith(
+      "ru",
       "qirmizi-atirgul-buketi"
     );
   });

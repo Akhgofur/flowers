@@ -6,12 +6,30 @@ import {
   siteSettingsInputSchema,
 } from "./validations";
 
+const productTranslations = {
+  ru: {
+    name: "Букет алых роз",
+    shortDescription: "Бархатные розы для важных признаний.",
+    description: "Авторский букет из свежих алых роз.",
+    composition: ["25 алых роз", "Эвкалипт"],
+  },
+  uz: {
+    name: "Qirmizi atirgul buketi",
+    shortDescription: "Muhim izhorlar uchun baxmaldek atirgullar.",
+    description: "Yangi qirmizi atirgullardan mualliflik buketi.",
+    composition: ["25 ta qirmizi atirgul", "Evkalipt"],
+  },
+  en: {
+    name: "Scarlet rose bouquet",
+    shortDescription: "Velvet roses for meaningful declarations.",
+    description: "A signature bouquet of fresh scarlet roses.",
+    composition: ["25 scarlet roses", "Eucalyptus"],
+  },
+};
+
 const validProductInput = {
-  name: "Pushti lola buketi",
   slug: "pushti-lola-buketi",
-  shortDescription: "Yangi lolalardan tuzilgan mayin kompozitsiya.",
-  description: "Bayram va yaqin insonlar uchun nafis sovg‘a.",
-  composition: ["Lola", "Yashil barglar"],
+  translations: productTranslations,
   categoryId: "507f1f77bcf86cd799439011",
   price: 150_000,
   images: [
@@ -26,6 +44,22 @@ const validProductInput = {
 };
 
 describe("commerce validation boundaries", () => {
+  it("requires complete Russian, Uzbek and English product content", () => {
+    expect(
+      productInputSchema.parse({
+        ...validProductInput,
+        translations: productTranslations,
+      }).translations.en.name
+    ).toBe("Scarlet rose bouquet");
+
+    expect(() =>
+      productInputSchema.parse({
+        ...validProductInput,
+        translations: { ru: productTranslations.ru, uz: productTranslations.uz },
+      })
+    ).toThrow();
+  });
+
   it("rejects a browser-supplied order total and quantity above 99", () => {
     expect(() =>
       checkoutSchema.parse({
@@ -107,11 +141,25 @@ describe("commerce validation boundaries", () => {
   it("keeps public SEO settings bounded and requires a complete Open Graph image", () => {
     const settings = siteSettingsInputSchema.parse({
       siteName: "Nafis Flowers",
-      siteDescription: "Toshkent bo'ylab nafis guldastalar.",
+      translations: {
+        ru: {
+          siteDescription: "Авторские букеты в Ташкенте.",
+          seoTitle: "Nafis Flowers — доставка цветов",
+          seoDescription: "Свежие букеты и бережная доставка.",
+        },
+        uz: {
+          siteDescription: "Toshkent bo'ylab nafis guldastalar.",
+          seoTitle: "Nafis Flowers — Toshkentda gullar",
+          seoDescription: "Yangi buketlar va tezkor yetkazib berish.",
+        },
+        en: {
+          siteDescription: "Signature bouquets in Tashkent.",
+          seoTitle: "Nafis Flowers — flower delivery",
+          seoDescription: "Fresh bouquets and thoughtful delivery.",
+        },
+      },
       deliveryFee: 25_000,
       workingHours: "08:00–22:00",
-      seoTitle: "Nafis Flowers — Toshkentda gullar",
-      seoDescription: "Yangi buketlar va tezkor yetkazib berish.",
       seoOgImage: {
         url: "https://res.cloudinary.com/nafis/image/upload/og.jpg",
         alt: "Nafis Flowers uchun pushti gullar kompozitsiyasi",
@@ -122,7 +170,11 @@ describe("commerce validation boundaries", () => {
     expect(() =>
       siteSettingsInputSchema.parse({
         siteName: "Nafis Flowers",
-        siteDescription: "Toshkent bo'ylab nafis guldastalar.",
+        translations: {
+          ru: { siteDescription: "Авторские букеты в Ташкенте." },
+          uz: { siteDescription: "Toshkent bo'ylab nafis guldastalar." },
+          en: { siteDescription: "Signature bouquets in Tashkent." },
+        },
         deliveryFee: 0,
         seoOgImage: { url: "https://example.com/og.jpg", alt: "" },
       })
