@@ -110,7 +110,7 @@ TELEGRAM_CHAT_ID=
 CRON_SECRET=kamida-32-belgilik-tasodifiy-secret
 ```
 
-Buyurtma MongoDB transaction ichida notification outbox yozuvi bilan birga saqlanadi. Checkout commit’dan keyin Telegramga darhol yuborishga urinadi; vaqtinchalik xatoda Vercel Cron `/api/internal/order-notifications/retry` orqali 1, 5, 15, 60 va 240 daqiqalik interval bilan qayta urinadi. Telegram javob bermagani order javobini `503` qilmaydi. Bot real guruhga xabar yuborishi uchun `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` va Vercel’dagi `CRON_SECRET` production environment’da majburiy.
+Buyurtma MongoDB transaction ichida notification outbox yozuvi bilan birga saqlanadi. Checkout commit’dan keyin Telegramga darhol yuborishga urinadi; vaqtinchalik xatoda retry yozuvi 1, 5, 15, 60 va 240 daqiqalik backoff bilan saqlanadi. Vercel Hobby production schedule `/api/internal/order-notifications/retry`ni kuniga bir marta ishga tushiradi; tezroq qayta yuborish admin paneldagi manual Retry orqali bajariladi. Telegram javob bermagani order javobini `503` qilmaydi. Bot real guruhga xabar yuborishi uchun `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` va Vercel’dagi `CRON_SECRET` production environment’da majburiy.
 
 ## Tekshiruvlar
 
