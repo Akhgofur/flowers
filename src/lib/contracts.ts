@@ -128,6 +128,7 @@ export type CatalogCategory = {
 export type PublicCatalogFilters = {
   category?: string;
   sale?: boolean;
+  favorites?: boolean;
   query?: string;
   page?: number;
   limit?: number;

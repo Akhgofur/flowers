@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   AdminCategory,
@@ -33,6 +34,7 @@ type ProductDraft = {
   imageUrl: string;
   imageAlt: string;
   imagePublicId: string;
+  additionalImages: AdminProduct["images"];
   flowerTypes: string;
   colors: string;
   seasons: Season[];
@@ -77,6 +79,7 @@ function emptyDraft(categoryId: string): ProductDraft {
     imageUrl: "",
     imageAlt: "",
     imagePublicId: "",
+    additionalImages: [],
     flowerTypes: "",
     colors: "",
     seasons: ["all_year"],
@@ -116,6 +119,7 @@ function productToDraft(product: AdminProduct): ProductDraft {
     imageUrl: product.images[0]?.url ?? "",
     imageAlt: product.images[0]?.alt ?? product.translations.ru.name,
     imagePublicId: product.images[0]?.publicId ?? "",
+    additionalImages: product.images.slice(1),
     flowerTypes: product.flowerTypes.join(", "),
     colors: product.colors.join(", "),
     seasons: [...product.seasons],
@@ -198,6 +202,7 @@ export function AdminProductsPanel({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const editorRef = useRef<HTMLElement>(null);
   const categoryNames = useMemo(
     () =>
       new Map(
@@ -235,6 +240,23 @@ export function AdminProductsPanel({
     setEditingId(null);
     setError(null);
     setIsFormOpen(false);
+  };
+
+  useEffect(() => {
+    if (!isFormOpen) return;
+    editorRef.current?.focus({ preventScroll: true });
+    editorRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, [editingId, isFormOpen]);
+
+  const startFullEditing = (product: AdminProduct) => {
+    setDraft(productToDraft(product));
+    setActiveLocale("ru");
+    setEditingId(product.id);
+    setIsListEditing(false);
+    setInlineDrafts({});
+    setError(null);
+    setNotice(null);
+    setIsFormOpen(true);
   };
 
   const startListEditing = () => {
@@ -340,7 +362,7 @@ export function AdminProductsPanel({
     setError(null);
     setNotice(null);
     try {
-      const price = integer(draft.price, "Narx");
+      const price = draft.price.trim() === "" ? undefined : integer(draft.price, "Narx");
       const stockQuantity = integer(draft.stockQuantity, "Qoldiq");
       const sortOrder = integer(draft.sortOrder, "Tartib");
       const originalPrice = draft.originalPrice
@@ -361,7 +383,7 @@ export function AdminProductsPanel({
         slug: draft.slug,
         translations,
         categoryId: draft.categoryId,
-        price,
+        ...(price === undefined ? {} : { price }),
         ...(originalPrice === undefined ? {} : { originalPrice }),
         currency: "UZS" as const,
         images: [
@@ -370,6 +392,7 @@ export function AdminProductsPanel({
             alt: draft.imageAlt,
             ...(draft.imagePublicId ? { publicId: draft.imagePublicId } : {}),
           },
+          ...draft.additionalImages,
         ],
         flowerTypes,
         colors,
@@ -385,7 +408,7 @@ export function AdminProductsPanel({
         ? `/api/admin/products/${editingId}`
         : "/api/admin/products";
       const response = await fetch(endpoint, {
-        method: editingId ? "PATCH" : "POST",
+        method: editingId ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -477,7 +500,12 @@ export function AdminProductsPanel({
       {error && !isFormOpen ? <p className="admin-form-error" role="alert">{error}</p> : null}
 
       {isFormOpen ? (
-        <section className="admin-card admin-editor" aria-labelledby="product-editor-title">
+        <section
+          ref={editorRef}
+          className="admin-card admin-editor"
+          aria-labelledby="product-editor-title"
+          tabIndex={-1}
+        >
           <div className="admin-card__header">
             <div>
               <p className="eyebrow">{editingId ? "Tahrirlash" : "Yangi yozuv"}</p>
@@ -514,7 +542,7 @@ export function AdminProductsPanel({
             </label>
             <label>
               <span>Narx, so‘m</span>
-              <input required inputMode="numeric" value={draft.price} onChange={(event) => update("price", event.target.value)} />
+              <input inputMode="numeric" value={draft.price} onChange={(event) => update("price", event.target.value)} placeholder="So‘rov bo‘yicha bo‘lsa bo‘sh qoldiring" />
             </label>
             <label>
               <span>Eski narx, so‘m</span>
@@ -677,18 +705,57 @@ export function AdminProductsPanel({
                 {products.map((product) => {
                   const row = inlineDrafts[product.id];
                   const rowName = product.translations.ru.name;
+                  const primaryImage = product.images[0];
                   return <tr key={product.id}>
-                    <td>{isListEditing && row ? <input aria-label={`Mahsulot nomi: ${rowName}`} value={row.translations.ru.name} onChange={(event) => setInlineDrafts((current) => ({ ...current, [product.id]: { ...row, translations: { ...row.translations, ru: { ...row.translations.ru, name: event.target.value } } } }))} /> : <><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></>}</td>
-                    <td>{isListEditing && row ? <select aria-label={`Kategoriya: ${rowName}`} value={row.categoryId} onChange={(event) => updateInline(product.id, "categoryId", event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.translations.uz.name}</option>)}</select> : categoryNames.get(product.categoryId) ?? "O‘chirilgan kategoriya"}</td>
-                    <td>
+                    <td className="admin-product-cell">
+                      <div className="admin-product-summary">
+                        {primaryImage ? (
+                          <span className="admin-product-thumbnail">
+                            <Image
+                              src={primaryImage.url}
+                              alt={primaryImage.alt}
+                              fill
+                              sizes="64px"
+                            />
+                          </span>
+                        ) : (
+                          <span
+                            className="admin-product-thumbnail admin-product-thumbnail--empty"
+                            aria-hidden="true"
+                          >
+                            ✦
+                          </span>
+                        )}
+                        <span className="admin-product-summary__copy">
+                          {isListEditing && row ? <input aria-label={`Mahsulot nomi: ${rowName}`} value={row.translations.ru.name} onChange={(event) => setInlineDrafts((current) => ({ ...current, [product.id]: { ...row, translations: { ...row.translations, ru: { ...row.translations.ru, name: event.target.value } } } }))} /> : <><strong>{product.translations.uz.name}</strong><small>/{product.slug}</small></>}
+                        </span>
+                      </div>
+                    </td>
+                    <td data-label="Kategoriya">{isListEditing && row ? <select aria-label={`Kategoriya: ${rowName}`} value={row.categoryId} onChange={(event) => updateInline(product.id, "categoryId", event.target.value)}>{categories.map((category) => <option key={category.id} value={category.id}>{category.translations.uz.name}</option>)}</select> : categoryNames.get(product.categoryId) ?? "O‘chirilgan kategoriya"}</td>
+                    <td data-label="Narx">
                       {isListEditing && row ? <input aria-label={`Narx: ${rowName}`} inputMode="numeric" value={row.price} onChange={(event) => updateInline(product.id, "price", event.target.value)} /> : product.price === undefined
                         ? "Narx so‘rov bo‘yicha"
                         : formatSum(product.price, "uz")}
                     </td>
-                    <td>{isListEditing && row ? <input aria-label={`Qoldiq: ${rowName}`} inputMode="numeric" value={row.stockQuantity} onChange={(event) => updateInline(product.id, "stockQuantity", event.target.value)} /> : product.stockQuantity}</td>
-                    <td>{isListEditing && row ? <fieldset className="admin-season-fieldset admin-season-fieldset--compact"><legend className="sr-only">Mavsum: {rowName}</legend>{SEASONS.map((season) => <label key={season}><input type="checkbox" aria-label={`${season[0]!.toUpperCase()}${season.slice(1)}: ${rowName}`} checked={row.seasons.includes(season)} onChange={(event) => toggleInlineSeason(product.id, season, event.target.checked)} /><span>{season}</span></label>)}</fieldset> : product.seasons.join(", ")}</td>
-                    <td>{isListEditing && row ? <select aria-label={`Holat: ${rowName}`} value={row.status} onChange={(event) => updateInline(product.id, "status", event.target.value as ProductStatus)}><option value="draft">Qoralama</option><option value="published">E’lon qilingan</option><option value="archived">Arxiv</option></select> : <span className="admin-status" data-status={product.status}>{product.status}</span>}</td>
-                    <td><div className="admin-row-actions">{isListEditing ? null : <button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button>}</div></td>
+                    <td data-label="Qoldiq">{isListEditing && row ? <input aria-label={`Qoldiq: ${rowName}`} inputMode="numeric" value={row.stockQuantity} onChange={(event) => updateInline(product.id, "stockQuantity", event.target.value)} /> : product.stockQuantity}</td>
+                    <td data-label="Mavsum">{isListEditing && row ? <fieldset className="admin-season-fieldset admin-season-fieldset--compact"><legend className="sr-only">Mavsum: {rowName}</legend>{SEASONS.map((season) => <label key={season}><input type="checkbox" aria-label={`${season[0]!.toUpperCase()}${season.slice(1)}: ${rowName}`} checked={row.seasons.includes(season)} onChange={(event) => toggleInlineSeason(product.id, season, event.target.checked)} /><span>{season}</span></label>)}</fieldset> : product.seasons.join(", ")}</td>
+                    <td data-label="Holat">{isListEditing && row ? <select aria-label={`Holat: ${rowName}`} value={row.status} onChange={(event) => updateInline(product.id, "status", event.target.value as ProductStatus)}><option value="draft">Qoralama</option><option value="published">E’lon qilingan</option><option value="archived">Arxiv</option></select> : <span className="admin-status" data-status={product.status}>{product.status}</span>}</td>
+                    <td className="admin-product-actions">
+                      <div className="admin-row-actions">
+                        {isListEditing ? null : (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`To‘liq tahrirlash: ${product.translations.uz.name}`}
+                              onClick={() => startFullEditing(product)}
+                            >
+                              To‘liq tahrirlash
+                            </button>
+                            <button type="button" onClick={() => archive(product)} disabled={product.status === "archived"}>Arxiv</button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>;
                 })}
               </tbody>

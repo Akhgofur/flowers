@@ -30,6 +30,7 @@ export function StorefrontClient({
     initialFilters?.query ?? "",
     initialFilters?.tab ?? "all",
     initialFilters?.page ?? 1,
+    initialFilters?.favoritesOnly ? "favorites" : "catalog",
   ].join("|");
 
   const frameProducts = mode === "home" && merchandising

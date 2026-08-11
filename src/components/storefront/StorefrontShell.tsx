@@ -47,6 +47,7 @@ function toInitialClientFilters(
     category: filters.category ?? null,
     tab: filters.sale ? "sale" : "all",
     page: filters.page ?? 1,
+    favoritesOnly: filters.favorites === true,
   };
 }
 

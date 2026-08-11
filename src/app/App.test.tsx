@@ -106,12 +106,15 @@ it("changes the hero slide and opens the mobile navigation", async () => {
   expect(screen.getByRole("navigation", { name: /mobil navigatsiya/i })).toBeVisible();
 });
 
-it("describes the about shortcut without claiming a profile action", () => {
+it("keeps about in navigation and uses the utility shortcut for favorites", () => {
   render(<App />);
 
   expect(
-    screen.getByRole("link", { name: /biz haqimizda bo.limiga o.tish/i })
+    screen.getByRole("link", { name: /^biz haqimizda$/i })
   ).toHaveAttribute("href", "/uz#about");
+  expect(
+    screen.getAllByRole("link", { name: /sevimlilar/i })[0]
+  ).toHaveAttribute("href", "/uz/catalog?favorites=true");
   expect(screen.queryByRole("link", { name: /profilni ochish/i })).not.toBeInTheDocument();
 });
 

@@ -39,7 +39,7 @@ async function loadCheckoutProducts(locale: Locale): Promise<{
   isDemoCatalog: boolean;
 }> {
   try {
-    const products = await getPublishedCatalog(locale, { limit: 48 });
+    const products = await getPublishedCatalog(locale, { page: 1, limit: 200 });
     return { products, isDemoCatalog: false };
   } catch {
     if (process.env.NODE_ENV === "production") throw new Error("Checkout catalog is unavailable.");

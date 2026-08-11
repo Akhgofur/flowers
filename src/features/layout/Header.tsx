@@ -7,6 +7,7 @@ import type { ProductImage, PublicSiteSettings } from "@/lib/contracts";
 
 export type HeaderProps = {
   cartItemCount: number;
+  favoriteCount: number;
   isCartOpen: boolean;
   brandLogo?: ProductImage;
   settings?: PublicSiteSettings;
@@ -22,7 +23,7 @@ const NAVIGATION_LINKS = [
   { href: "/#contact", label: "navContacts" },
 ] as const;
 
-export function Header({ cartItemCount, isCartOpen, brandLogo, settings, onOpenCart }: HeaderProps) {
+export function Header({ cartItemCount, favoriteCount, isCartOpen, brandLogo, settings, onOpenCart }: HeaderProps) {
   const t = useTranslations("Header");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCompact, setIsCompact] = useState(false);
@@ -93,10 +94,10 @@ export function Header({ cartItemCount, isCartOpen, brandLogo, settings, onOpenC
           </Link>
           <Link
             className="icon-link"
-            href="/#about"
-            aria-label={t("aboutShortcut")}
+            href="/catalog?favorites=true"
+            aria-label={`${t("favorites")}, ${favoriteCount}`}
           >
-            <span aria-hidden="true">♙</span>
+            <span aria-hidden="true">♡</span>
           </Link>
           <button
             className="cart-button"

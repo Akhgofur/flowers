@@ -147,6 +147,7 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
         <div ref={contentRef} aria-hidden={isCartOpen || undefined}>
           <Header
             cartItemCount={cartItemCount}
+            favoriteCount={favoriteIds.length}
             isCartOpen={isCartOpen}
             settings={settings}
             brandLogo={settings?.brandLogo}

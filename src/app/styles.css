@@ -3712,6 +3712,63 @@ img {
   white-space: nowrap;
 }
 
+.admin-editor {
+  scroll-margin-top: 76px;
+  outline: none;
+}
+
+.admin-editor:focus-visible {
+  box-shadow: 0 0 0 2px rgba(201, 147, 72, 0.35), var(--shadow-card);
+}
+
+.admin-product-cell {
+  min-width: 285px;
+}
+
+.admin-product-summary {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: center;
+  gap: 13px;
+}
+
+.admin-product-thumbnail {
+  position: relative;
+  display: grid;
+  width: 64px;
+  height: 76px;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(48, 30, 35, 0.1);
+  border-radius: 2px;
+  background: #f3ece8;
+  color: var(--color-accent-dark);
+}
+
+.admin-product-thumbnail img {
+  object-fit: cover;
+}
+
+.admin-product-thumbnail--empty {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.25rem;
+}
+
+.admin-product-summary__copy {
+  min-width: 0;
+}
+
+.admin-product-summary__copy input {
+  width: 100%;
+}
+
+.admin-product-actions .admin-row-actions {
+  min-width: 132px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .admin-status {
   display: inline-flex;
   min-height: 23px;
@@ -4334,6 +4391,140 @@ img {
 
   .admin-brand-assets {
     grid-template-columns: 1fr;
+  }
+
+  .admin-table-card > .admin-card__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+  }
+
+  .admin-table-card > .admin-card__header > .admin-row-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px;
+  }
+
+  .admin-table-card > .admin-card__header > .admin-row-actions button {
+    min-height: 42px;
+    padding: 0 12px;
+    border: 1px solid rgba(201, 147, 72, 0.32);
+    background: #fbf3e7;
+    text-align: center;
+  }
+
+  .admin-table-wrap {
+    overflow: visible;
+    padding: 0 14px 18px;
+  }
+
+  .admin-table {
+    display: block;
+    min-width: 0;
+  }
+
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .admin-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 14px;
+    padding: 14px;
+    border: 1px solid rgba(48, 30, 35, 0.1);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 9px 24px rgba(70, 47, 53, 0.06);
+  }
+
+  .admin-table tbody td {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: 5px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(48, 30, 35, 0.07);
+  }
+
+  .admin-table tbody td[data-label]::before {
+    content: attr(data-label);
+    color: var(--color-muted);
+    font-size: 0.56rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .admin-table .admin-product-cell,
+  .admin-table td[data-label="Mavsum"],
+  .admin-table .admin-product-actions {
+    grid-column: 1 / -1;
+  }
+
+  .admin-table .admin-product-cell {
+    min-width: 0;
+    padding-top: 0;
+  }
+
+  .admin-product-summary {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .admin-product-thumbnail {
+    width: 76px;
+    height: 90px;
+  }
+
+  .admin-table td strong,
+  .admin-table td small {
+    max-width: 100%;
+  }
+
+  .admin-table td strong {
+    font-size: 0.92rem;
+    white-space: normal;
+  }
+
+  .admin-table input,
+  .admin-table select {
+    width: 100%;
+  }
+
+  .admin-product-actions {
+    padding-bottom: 0 !important;
+    border-bottom: 0 !important;
+  }
+
+  .admin-product-actions .admin-row-actions {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .admin-product-actions .admin-row-actions button {
+    min-height: 44px;
+  }
+
+  .admin-product-actions .admin-row-actions button:first-child {
+    padding: 0 14px;
+    border: 1px solid rgba(201, 147, 72, 0.42);
+    background: #fbf3e7;
+    text-align: center;
+  }
+
+  .admin-product-actions .admin-row-actions button:last-child {
+    padding: 0 8px;
   }
 
   .admin-selected-products article > span {

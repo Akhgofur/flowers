@@ -176,6 +176,7 @@ function splitProductInput(input: ProductInput) {
 }
 
 const PRODUCT_OPTIONAL_FIELDS = [
+  "price",
   "originalPrice",
 ] as const;
 const CATEGORY_OPTIONAL_FIELDS = ["image"] as const;

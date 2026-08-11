@@ -1,9 +1,9 @@
 import type { Locale } from "@/i18n/config";
 
-const NUMBER_LOCALES: Record<Locale, string> = {
-  ru: "ru-RU",
-  uz: "uz-UZ",
-  en: "en-US",
+const GROUPING_SEPARATORS: Record<Locale, string> = {
+  ru: "\u00a0",
+  uz: "\u00a0",
+  en: ",",
 };
 
 const CURRENCY_LABELS: Record<Locale, string> = {
@@ -13,7 +13,12 @@ const CURRENCY_LABELS: Record<Locale, string> = {
 };
 
 export function formatSum(value: number, locale: Locale): string {
-  return `${new Intl.NumberFormat(NUMBER_LOCALES[locale], {
-    maximumFractionDigits: 0,
-  }).format(value)} ${CURRENCY_LABELS[locale]}`;
+  const rounded = Math.round(value);
+  const sign = rounded < 0 ? "-" : "";
+  const grouped = String(Math.abs(rounded)).replace(
+    /\B(?=(\d{3})+(?!\d))/g,
+    GROUPING_SEPARATORS[locale]
+  );
+
+  return `${sign}${grouped} ${CURRENCY_LABELS[locale]}`;
 }

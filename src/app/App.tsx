@@ -86,7 +86,7 @@ export type AppProps = {
 
 export type AppInitialCatalogFilters = Partial<
   Pick<CatalogFilterState, "query" | "category" | "tab">
-> & { page?: number };
+> & { page?: number; favoritesOnly?: boolean };
 
 function createInitialFilters(
   initialFilters?: AppInitialCatalogFilters
@@ -325,6 +325,7 @@ export default function App({
       >
         <Header
           cartItemCount={cartItemCount}
+          favoriteCount={favoriteIds.length}
           isCartOpen={isCartOpen}
           brandLogo={siteSettings?.brandLogo}
           onOpenCart={toggleCart}

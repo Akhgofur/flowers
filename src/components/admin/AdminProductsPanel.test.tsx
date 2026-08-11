@@ -48,6 +48,61 @@ const product: AdminProduct = {
 };
 
 describe("AdminProductsPanel locale drafts", () => {
+  it("renders the primary product image beside its identity in the list", () => {
+    render(<AdminProductsPanel initialProducts={[product]} categories={[category]} />);
+
+    expect(screen.getByRole("img", { name: "Rose basket" })).toHaveAttribute(
+      "src",
+      expect.stringContaining("rose.jpg")
+    );
+  });
+
+  it("opens the create form as a complete prefilled editor without losing gallery images", async () => {
+    const user = userEvent.setup();
+    const galleryProduct: AdminProduct = {
+      ...product,
+      price: undefined,
+      images: [
+        product.images[0]!,
+        { url: "https://example.com/rose-detail.jpg", alt: "Rose basket detail" },
+      ],
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ product: galleryProduct }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(<AdminProductsPanel initialProducts={[galleryProduct]} categories={[category]} />);
+
+    await user.click(
+      screen.getByRole("button", { name: /to.liq tahrirlash: atirgul savati/i })
+    );
+
+    const editor = screen.getByRole("region", { name: /mahsulotni yangilash/i });
+    await waitFor(() => expect(editor).toHaveFocus());
+    expect(screen.getByLabelText("Slug")).toHaveValue("rose-basket");
+    expect(screen.getByLabelText("Rasm URL")).toHaveValue(
+      "https://example.com/rose.jpg"
+    );
+    expect(screen.getByLabelText(/^Narx/)).toHaveValue("");
+
+    await user.click(screen.getByRole("button", { name: "Saqlash" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(fetchMock).toHaveBeenCalledWith(
+      `/api/admin/products/${galleryProduct.id}`,
+      expect.objectContaining({ method: "PUT" })
+    );
+    expect(JSON.parse(String(request.body))).toEqual(
+      expect.objectContaining({
+        images: galleryProduct.images,
+      })
+    );
+    expect(JSON.parse(String(request.body))).not.toHaveProperty("price");
+    vi.unstubAllGlobals();
+  });
+
   it("keeps inquiry-only products valid when list editing has no changes", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn();

@@ -23,6 +23,20 @@ describe("StorefrontFrame", () => {
     expect(screen.getByRole("contentinfo")).toBeVisible();
   });
 
+  it("exposes the same working favorites destination on desktop and mobile", () => {
+    render(
+      <StorefrontFrame products={[]}>
+        <main><h1>Route content</h1></main>
+      </StorefrontFrame>,
+      { locale: "en" }
+    );
+
+    const favoritesLinks = screen.getAllByRole("link", { name: /favorites/i });
+    expect(favoritesLinks).toHaveLength(2);
+    expect(favoritesLinks[0]).toHaveAttribute("href", "/en/catalog?favorites=true");
+    expect(favoritesLinks[1]).toHaveAttribute("href", "/en/catalog?favorites=true");
+  });
+
   it("opens the cart as a modal dialog above the mobile chrome", async () => {
     const user = userEvent.setup();
     render(

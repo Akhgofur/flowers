@@ -39,6 +39,32 @@ const products: CatalogProduct[] = [
     deliveryEstimate: "Bugun 2 soatda",
     size: "45 sm",
   },
+  {
+    id: "507f1f77bcf86cd799439012",
+    name: "Oq atirgul buketi",
+    slug: "oq-atirgul-buketi",
+    shortDescription: "Oppoq atirgullardan tuzilgan buket.",
+    description: "Nafis va sokin kayfiyat uchun oq atirgullar.",
+    composition: ["Atirgul"],
+    price: 220_000,
+    currency: "UZS",
+    images: [
+      {
+        url: "https://images.pexels.com/photos/1234568/roses.jpg",
+        alt: "Oq atirgullardan tayyorlangan buket",
+      },
+    ],
+    categorySlug: "roses",
+    flowerTypes: ["rose"],
+    colors: ["white"],
+    seasons: ["all_year"],
+    stockQuantity: 8,
+    sortOrder: 2,
+    isFeatured: false,
+    isNew: false,
+    isOnSale: false,
+    status: "published",
+  },
 ];
 
 const categories: CatalogCategory[] = [
@@ -76,6 +102,29 @@ describe("StorefrontClient", () => {
     await waitFor(() => {
       expect(localStorage.getItem(FAVORITES_STORAGE_KEY)).toContain(products[0]?.id);
     });
+  });
+
+  it("opens the favorites catalog with only products saved by this browser", async () => {
+    localStorage.setItem(
+      FAVORITES_STORAGE_KEY,
+      JSON.stringify([products[0]?.id])
+    );
+
+    render(
+      <StorefrontClient
+        products={products}
+        categories={categories}
+        initialFilters={{ favoritesOnly: true }}
+      />,
+      { locale: "uz" }
+    );
+
+    expect(
+      await screen.findByRole("link", { name: /pushti lola buketini ko.rish/i })
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("link", { name: /oq atirgul buketini ko.rish/i })
+    ).not.toBeInTheDocument();
   });
 
   it("honors catalog state supplied by the server route", () => {

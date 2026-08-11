@@ -51,10 +51,18 @@ export function CatalogPageClient({
   );
   const [draftFilters, setDraftFilters] = useState(() => createFilters(initialFilters));
   const [appliedFilters, setAppliedFilters] = useState(() => createFilters(initialFilters));
+  const [favoritesOnly, setFavoritesOnly] = useState(
+    () => initialFilters?.favoritesOnly === true
+  );
   const [page, setPage] = useState(() => initialFilters?.page ?? 1);
   const filteredProducts = useMemo(
-    () => applyCatalogFilters(clientProducts, appliedFilters),
-    [appliedFilters, clientProducts]
+    () => {
+      const filtered = applyCatalogFilters(clientProducts, appliedFilters);
+      return favoritesOnly
+        ? filtered.filter((product) => favoriteIds.includes(product.id))
+        : filtered;
+    },
+    [appliedFilters, clientProducts, favoriteIds, favoritesOnly]
   );
   const pageCount = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -72,6 +80,7 @@ export function CatalogPageClient({
     if (filters.query.trim()) params.set("q", filters.query.trim());
     if (filters.category) params.set("category", filters.category);
     if (filters.tab === "sale") params.set("sale", "true");
+    if (favoritesOnly) params.set("favorites", "true");
     if (nextPage > 1) params.set("page", String(nextPage));
     const query = params.toString();
     window.history.pushState(null, "", `/${locale}/catalog${query ? `?${query}` : ""}`);
@@ -125,6 +134,7 @@ export function CatalogPageClient({
         category: params.get("category"),
         tab: params.get("sale") === "true" ? "sale" : "all",
       });
+      setFavoritesOnly(params.get("favorites") === "true");
       const restoredPage = Number(params.get("page") ?? "1");
       setDraftFilters(restored);
       setAppliedFilters(restored);

@@ -48,12 +48,14 @@ function parseCatalogFilters(
   const category = firstValue(searchParams.category)?.trim();
   const query = firstValue(searchParams.q)?.trim();
   const sale = firstValue(searchParams.sale);
+  const favorites = firstValue(searchParams.favorites);
   const page = toPositiveInteger(firstValue(searchParams.page));
 
   return {
     ...(category ? { category } : {}),
     ...(query ? { query } : {}),
     ...(sale === "true" ? { sale: true } : {}),
+    ...(favorites === "true" ? { favorites: true } : {}),
     ...(page ? { page } : {}),
   };
 }
