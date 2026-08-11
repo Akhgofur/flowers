@@ -1,6 +1,11 @@
 import "server-only";
 import { revalidateTag } from "next/cache";
-import { CATALOG_CACHE_TAGS, SITE_SETTINGS_CACHE_TAG } from "@/lib/cache";
+import {
+  BEST_SELLERS_CACHE_TAG,
+  CATALOG_CACHE_TAGS,
+  RECOMMENDATIONS_CACHE_TAG,
+  SITE_SETTINGS_CACHE_TAG,
+} from "@/lib/cache";
 import type { OrderStatus } from "@/lib/contracts";
 import type {
   CategoryInput,
@@ -25,11 +30,11 @@ import {
 import { orderService } from "@/lib/services/order-service";
 
 function invalidatePublicCatalog(): void {
-  if (process.env.NODE_ENV === "test") return;
-
   for (const tag of Object.values(CATALOG_CACHE_TAGS)) {
     revalidateTag(tag, "max");
   }
+  revalidateTag(BEST_SELLERS_CACHE_TAG, "max");
+  revalidateTag(RECOMMENDATIONS_CACHE_TAG, "max");
 }
 
 export async function getAdminProducts() {
@@ -85,7 +90,11 @@ export async function getAdminOrders() {
 }
 
 export async function transitionAdminOrder(id: string, status: OrderStatus) {
-  return orderService.transitionOrderStatus(id, status);
+  const order = await orderService.transitionOrderStatus(id, status);
+  if (order.status === "delivered") {
+    revalidateTag(BEST_SELLERS_CACHE_TAG, "max");
+  }
+  return order;
 }
 
 export async function getAdminSettings() {

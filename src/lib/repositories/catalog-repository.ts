@@ -1,5 +1,5 @@
 import "server-only";
-import type { QueryFilter, Types } from "mongoose";
+import type { PipelineStage, QueryFilter, Types } from "mongoose";
 import type {
   CatalogCategory,
   CatalogProduct,
@@ -15,6 +15,7 @@ import {
 import { dbConnect } from "@/lib/mongodb";
 import { CategoryModel, type CategoryDocument } from "@/models/Category";
 import { ProductModel, type ProductDocument } from "@/models/Product";
+import { OrderModel } from "@/models/Order";
 
 type PopulatedCategory = Pick<CategoryDocument, "slug">;
 type PublicProductRecord = Omit<ProductDocument, "categoryId"> & {
@@ -22,6 +23,10 @@ type PublicProductRecord = Omit<ProductDocument, "categoryId"> & {
   categoryId: PopulatedCategory | Types.ObjectId | null;
 };
 type PublicCategoryRecord = CategoryDocument & { _id: Types.ObjectId };
+export type RecommendationCandidate = {
+  product: CatalogProduct;
+  updatedAt: string;
+};
 
 const publishedProductFilter: QueryFilter<ProductDocument> = {
   status: "published",
@@ -202,6 +207,76 @@ export async function findPublishedProductBySlug(
     .exec()) as unknown as PublicProductRecord | null;
 
   return document ? toCatalogProduct(document, locale) : null;
+}
+
+export function buildBestSellerAggregation(): PipelineStage[] {
+  return [
+    { $match: { status: "delivered" } },
+    { $unwind: "$items" },
+    {
+      $group: {
+        _id: "$items.productId",
+        quantity: { $sum: "$items.quantity" },
+        lastDeliveredAt: { $max: "$updatedAt" },
+      },
+    },
+    { $sort: { quantity: -1, lastDeliveredAt: -1, _id: 1 } },
+    { $project: { _id: 0, productId: { $toString: "$_id" } } },
+  ];
+}
+
+export async function findBestSellerProductIds(): Promise<string[]> {
+  await dbConnect();
+  const rows = (await OrderModel.aggregate(buildBestSellerAggregation()).exec()) as Array<{
+    productId: string;
+  }>;
+  return rows.map((row) => row.productId);
+}
+
+export async function findPublishedProductsByIds(
+  locale: Locale,
+  productIds: readonly string[]
+): Promise<CatalogProduct[]> {
+  if (productIds.length === 0) return [];
+  await dbConnect();
+
+  const documents = (await ProductModel.find({
+    ...publishedProductFilter,
+    _id: { $in: productIds },
+  })
+    .populate({
+      path: "categoryId",
+      match: { status: "published" },
+      select: { slug: 1 },
+    })
+    .lean()
+    .exec()) as unknown as PublicProductRecord[];
+
+  return documents
+    .map((document) => toCatalogProduct(document, locale))
+    .filter((product): product is CatalogProduct => product !== null);
+}
+
+export async function findRecommendationCandidates(
+  locale: Locale
+): Promise<RecommendationCandidate[]> {
+  await dbConnect();
+  const documents = (await ProductModel.find(publishedProductFilter)
+    .populate({
+      path: "categoryId",
+      match: { status: "published" },
+      select: { slug: 1 },
+    })
+    .sort({ isFeatured: -1, sortOrder: 1, updatedAt: -1, _id: 1 })
+    .lean()
+    .exec()) as unknown as PublicProductRecord[];
+
+  return documents.flatMap((document) => {
+    const product = toCatalogProduct(document, locale);
+    return product
+      ? [{ product, updatedAt: document.updatedAt.toISOString() }]
+      : [];
+  });
 }
 
 export async function findPublishedCategories(locale: Locale): Promise<CatalogCategory[]> {

@@ -1,6 +1,9 @@
 import { Types } from "mongoose";
 import { describe, expect, it } from "vitest";
-import { toCatalogProduct } from "./catalog-repository";
+import {
+  buildBestSellerAggregation,
+  toCatalogProduct,
+} from "./catalog-repository";
 
 describe("catalog repository mapping", () => {
   const baseRecord = {
@@ -63,5 +66,21 @@ describe("catalog repository mapping", () => {
     );
 
     expect(mapped?.seasons).toEqual(["all_year"]);
+  });
+
+  it("ranks only delivered order items by quantity, recent delivery, then stable id", () => {
+    expect(buildBestSellerAggregation()).toEqual([
+      { $match: { status: "delivered" } },
+      { $unwind: "$items" },
+      {
+        $group: {
+          _id: "$items.productId",
+          quantity: { $sum: "$items.quantity" },
+          lastDeliveredAt: { $max: "$updatedAt" },
+        },
+      },
+      { $sort: { quantity: -1, lastDeliveredAt: -1, _id: 1 } },
+      { $project: { _id: 0, productId: { $toString: "$_id" } } },
+    ]);
   });
 });
