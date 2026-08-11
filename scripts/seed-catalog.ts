@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import nextEnv from "@next/env";
 import mongoose from "mongoose";
 import { CATEGORIES, PRODUCTS } from "../src/data/catalog";
 import { dbConnect } from "../src/lib/mongodb";
@@ -131,7 +132,7 @@ function createMongoSeedStore(): CatalogSeedStore {
       const document = await CategoryModel.findOneAndUpdate(
         { slug: category.slug },
         { $set: category },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: "after", upsert: true, setDefaultsOnInsert: true }
       )
         .select({ _id: 1 })
         .exec();
@@ -147,7 +148,7 @@ function createMongoSeedStore(): CatalogSeedStore {
       await ProductModel.findOneAndUpdate(
         { slug: product.slug },
         { $set: product },
-        { new: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: "after", upsert: true, setDefaultsOnInsert: true }
       ).exec();
 
       return { created: !existed };
@@ -196,6 +197,15 @@ export async function seedCatalog(
 }
 
 async function runCli() {
+  const projectDirectory = path.resolve(
+    path.dirname(fileURLToPath(import.meta.url)),
+    ".."
+  );
+  nextEnv.loadEnvConfig(
+    projectDirectory,
+    process.env.NODE_ENV !== "production"
+  );
+
   try {
     const summary = await seedCatalog();
     console.info(
