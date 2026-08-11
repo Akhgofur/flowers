@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CategoryModel } from "./Category";
 import { allowedOrderTransitions, OrderModel } from "./Order";
 import { ProductModel } from "./Product";
+import { HomeSectionModel } from "./HomeSection";
 import { RateLimitModel } from "./RateLimit";
 import { SiteSettingsModel } from "./SiteSettings";
 
@@ -259,5 +260,31 @@ describe("Mongoose model invariants", () => {
 
     const validationError = await order.validate().catch((error: unknown) => error);
     expect((validationError as { errors?: Record<string, unknown> }).errors?.locale).toBeDefined();
+  });
+
+  it("rejects duplicate products and an inverted home-section schedule", async () => {
+    const productId = new Types.ObjectId();
+    const section = new HomeSectionModel({
+      translations: {
+        ru: { title: "Топ цветов" },
+        uz: { title: "Top gullar" },
+        en: { title: "Top flowers" },
+      },
+      productIds: [productId, productId],
+      sortOrder: 0,
+      status: "published",
+      startsAt: new Date("2026-09-01T00:00:00.000Z"),
+      endsAt: new Date("2026-08-01T00:00:00.000Z"),
+    });
+
+    const validationError = await section.validate().catch((error: unknown) => error);
+
+    expect(validationError).toBeInstanceOf(Error);
+    expect(
+      (validationError as { errors?: Record<string, unknown> }).errors?.productIds
+    ).toBeDefined();
+    expect(
+      (validationError as { errors?: Record<string, unknown> }).errors?.endsAt
+    ).toBeDefined();
   });
 });

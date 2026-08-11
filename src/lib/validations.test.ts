@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   checkoutSchema,
+  homeSectionInputSchema,
+  homeSectionPatchInputSchema,
   orderStatusSchema,
   productPatchInputSchema,
   productInputSchema,
@@ -43,6 +45,22 @@ const validProductInput = {
   colors: ["pink"],
   stockQuantity: 12,
 };
+
+const validHomeSectionInput = {
+  translations: {
+    ru: { title: "Топ цветов", description: "Выбор флориста" },
+    uz: { title: "Top gullar", description: "Florist tanlovi" },
+    en: { title: "Top flowers", description: "Florist selection" },
+  },
+  productIds: [
+    "507f1f77bcf86cd799439011",
+    "507f1f77bcf86cd799439012",
+  ],
+  sortOrder: 2,
+  status: "published",
+  startsAt: "2026-08-01T00:00:00.000Z",
+  endsAt: "2026-09-01T00:00:00.000Z",
+} as const;
 
 describe("commerce validation boundaries", () => {
   it("requires complete Russian, Uzbek and English product content", () => {
@@ -245,5 +263,32 @@ describe("commerce validation boundaries", () => {
         seoOgImage: { url: "https://example.com/og.jpg", alt: "" },
       })
     ).toThrow();
+  });
+
+  it("accepts an ordered home section and rejects duplicate products", () => {
+    expect(homeSectionInputSchema.parse(validHomeSectionInput).productIds).toEqual([
+      "507f1f77bcf86cd799439011",
+      "507f1f77bcf86cd799439012",
+    ]);
+    expect(() =>
+      homeSectionInputSchema.parse({
+        ...validHomeSectionInput,
+        productIds: [
+          "507f1f77bcf86cd799439011",
+          "507f1f77bcf86cd799439011",
+        ],
+      })
+    ).toThrow(/unique/i);
+  });
+
+  it("rejects a home section whose schedule ends before it starts", () => {
+    expect(() =>
+      homeSectionInputSchema.parse({
+        ...validHomeSectionInput,
+        startsAt: "2026-09-01T00:00:00.000Z",
+        endsAt: "2026-08-01T00:00:00.000Z",
+      })
+    ).toThrow(/after/i);
+    expect(() => homeSectionPatchInputSchema.parse({})).toThrow(/required/i);
   });
 });

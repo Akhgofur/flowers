@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   CATEGORY_STATUSES,
+  HOME_SECTION_STATUSES,
   ORDER_STATUSES,
   PAYMENT_METHODS,
   PRODUCT_STATUSES,
@@ -95,6 +96,79 @@ const localizedSiteSettingsInputSchema = z
     en: siteSettingsTranslationInputSchema,
   })
   .strict();
+
+const homeSectionTranslationInputSchema = z
+  .object({
+    title: textSchema.max(120),
+    description: z.string().trim().min(2).max(500).optional(),
+  })
+  .strict();
+
+const localizedHomeSectionInputSchema = z
+  .object({
+    ru: homeSectionTranslationInputSchema,
+    uz: homeSectionTranslationInputSchema,
+    en: homeSectionTranslationInputSchema,
+  })
+  .strict();
+
+const isoDateTimeSchema = z.string().datetime({ offset: true });
+const homeSectionProductIdsSchema = z
+  .array(objectIdSchema)
+  .min(1)
+  .max(24)
+  .superRefine((productIds, context) => {
+    if (new Set(productIds).size !== productIds.length) {
+      context.addIssue({
+        code: "custom",
+        message: "Home section product IDs must be unique.",
+      });
+    }
+  });
+
+function validateHomeSectionSchedule(
+  value: { startsAt?: string | null; endsAt?: string | null },
+  context: z.RefinementCtx
+): void {
+  if (
+    value.startsAt &&
+    value.endsAt &&
+    new Date(value.startsAt).getTime() >= new Date(value.endsAt).getTime()
+  ) {
+    context.addIssue({
+      code: "custom",
+      path: ["endsAt"],
+      message: "Home section end must be after its start.",
+    });
+  }
+}
+
+export const homeSectionInputSchema = z
+  .object({
+    translations: localizedHomeSectionInputSchema,
+    productIds: homeSectionProductIdsSchema,
+    sortOrder: nonNegativeIntegerSchema.default(0),
+    status: z.enum(HOME_SECTION_STATUSES).default("draft"),
+    startsAt: isoDateTimeSchema.optional(),
+    endsAt: isoDateTimeSchema.optional(),
+  })
+  .strict()
+  .superRefine(validateHomeSectionSchedule);
+
+export const homeSectionPatchInputSchema = z
+  .object({
+    translations: localizedHomeSectionInputSchema.optional(),
+    productIds: homeSectionProductIdsSchema.optional(),
+    sortOrder: nonNegativeIntegerSchema.optional(),
+    status: z.enum(HOME_SECTION_STATUSES).optional(),
+    startsAt: isoDateTimeSchema.nullable().optional(),
+    endsAt: isoDateTimeSchema.nullable().optional(),
+  })
+  .strict()
+  .refine((patch) => Object.keys(patch).length > 0, {
+    message: "At least one home section field is required.",
+  })
+  .superRefine(validateHomeSectionSchedule);
 
 export const productImageSchema = z
   .object({
@@ -255,3 +329,5 @@ export type ProductInput = z.infer<typeof productInputSchema>;
 export type ProductPatchInput = z.infer<typeof productPatchInputSchema>;
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
 export type SiteSettingsInput = z.infer<typeof siteSettingsInputSchema>;
+export type HomeSectionInput = z.infer<typeof homeSectionInputSchema>;
+export type HomeSectionPatchInput = z.infer<typeof homeSectionPatchInputSchema>;

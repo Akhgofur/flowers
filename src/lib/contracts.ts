@@ -2,6 +2,7 @@ import type { Locale } from "@/i18n/config";
 
 export const PRODUCT_STATUSES = ["draft", "published", "archived"] as const;
 export const CATEGORY_STATUSES = ["published", "hidden"] as const;
+export const HOME_SECTION_STATUSES = ["draft", "published"] as const;
 export const ORDER_STATUSES = [
   "pending",
   "confirmed",
@@ -24,6 +25,7 @@ export const SEASONS = [
 
 export type ProductStatus = (typeof PRODUCT_STATUSES)[number];
 export type CategoryStatus = (typeof CATEGORY_STATUSES)[number];
+export type HomeSectionStatus = (typeof HOME_SECTION_STATUSES)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 export type Season = (typeof SEASONS)[number];
@@ -72,6 +74,11 @@ export type SiteSettingsTranslation = {
   deliveryPolicy?: string;
   seoTitle?: string;
   seoDescription?: string;
+};
+
+export type HomeSectionTranslation = {
+  title: string;
+  description?: string;
 };
 
 export type CatalogProduct = {
@@ -237,6 +244,26 @@ export type AdminSiteSettings = {
   telegramUrl?: string;
   seoOgImage?: ProductImage;
   updatedAt?: string;
+};
+
+export type AdminHomeSection = {
+  id: string;
+  translations: Localized<HomeSectionTranslation>;
+  productIds: string[];
+  sortOrder: number;
+  status: HomeSectionStatus;
+  startsAt?: string;
+  endsAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicHomeSection = {
+  id: string;
+  title: string;
+  description?: string;
+  productIds: string[];
+  sortOrder: number;
 };
 
 /** Deliberately excludes operational-only values such as delivery fee. */
