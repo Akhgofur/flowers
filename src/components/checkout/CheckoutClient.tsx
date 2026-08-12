@@ -18,6 +18,8 @@ import type { Locale } from "@/i18n/config";
 type CheckoutClientProps = {
   products: readonly CatalogProduct[];
   isDemoCatalog?: boolean;
+  /** The catalog outgrew the page budget, so `products` is not the whole catalog. */
+  catalogTruncated?: boolean;
 };
 
 type CheckoutForm = Omit<CheckoutInput["customer"], "deliveryDate" | "comment"> & {
@@ -75,7 +77,11 @@ async function readCheckoutResponse(response: Response): Promise<CheckoutRespons
   }
 }
 
-export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClientProps) {
+export function CheckoutClient({
+  products,
+  isDemoCatalog = false,
+  catalogTruncated = false,
+}: CheckoutClientProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Checkout");
   const tHeader = useTranslations("Header");
@@ -83,12 +89,15 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
   // Only orderable products may enter the cart state. Keeping an unpriceable line
   // would hide it from the summary yet still post it, and the server would reject
   // the whole order for an item the shopper can neither see nor remove.
-  const productIds = useMemo(
+  //
+  // A truncated catalog is the one case where absence proves nothing, so the cart
+  // is left alone; submission still sends only the lines that could be priced.
+  const orderableIds = useMemo(
     () =>
-      new Set(
-        products.filter(isPricedProduct).map((product) => product.id)
-      ),
-    [products]
+      catalogTruncated
+        ? undefined
+        : new Set(products.filter(isPricedProduct).map((product) => product.id)),
+    [catalogTruncated, products]
   );
   const productsById = useMemo(
     () => new Map(products.map((product) => [product.id, product])),
@@ -104,9 +113,9 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
   useEffect(() => {
     // Browser-only cart storage must be read after SSR hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLines(readCart(productIds));
+    setLines(readCart(orderableIds));
     setIsHydrated(true);
-  }, [productIds]);
+  }, [orderableIds]);
 
   useEffect(() => {
     if (isHydrated) writeCart(lines);

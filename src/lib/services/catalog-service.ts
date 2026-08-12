@@ -73,6 +73,43 @@ export async function getPublishedCatalog(
   return products.filter((product) => product.status === "published");
 }
 
+export const CATALOG_PAGE_LIMIT = MAX_LIMIT;
+
+/** Safety valve: 20 pages is far beyond any real catalog, but bounds the loop. */
+const MAX_CATALOG_PAGES = 20;
+
+export type EntirePublishedCatalog = {
+  products: CatalogProduct[];
+  /** True when the catalog outgrew the page budget, so callers know it is partial. */
+  truncated: boolean;
+};
+
+/**
+ * Reads every published product rather than a single capped page. Callers that
+ * filter or reconcile client state need the whole catalog; a silent cut-off used
+ * to drop products from search and cart lines from checkout as the catalog grew.
+ */
+export async function getEntirePublishedCatalog(
+  locale: Locale
+): Promise<EntirePublishedCatalog> {
+  const byId = new Map<string, CatalogProduct>();
+
+  for (let page = 1; page <= MAX_CATALOG_PAGES; page += 1) {
+    const batch = await getPublishedCatalog(locale, {
+      page,
+      limit: CATALOG_PAGE_LIMIT,
+    });
+
+    for (const product of batch) byId.set(product.id, product);
+
+    if (batch.length < CATALOG_PAGE_LIMIT) {
+      return { products: [...byId.values()], truncated: false };
+    }
+  }
+
+  return { products: [...byId.values()], truncated: true };
+}
+
 export async function getPublishedProductBySlug(
   locale: Locale,
   slug: string

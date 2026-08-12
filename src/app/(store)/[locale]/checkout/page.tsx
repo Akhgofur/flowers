@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { CheckoutClient } from "@/components/checkout/CheckoutClient";
 import { PRODUCTS } from "@/data/catalog";
 import type { CatalogProduct } from "@/lib/contracts";
-import { getPublishedCatalog } from "@/lib/services/catalog-service";
+import { getEntirePublishedCatalog } from "@/lib/services/catalog-service";
 import { toBootstrapCatalogProduct } from "@/components/storefront/storefront-mappers";
 import type { Locale } from "@/i18n/config";
 import { DEFAULT_LOCALE, isLocale } from "@/i18n/config";
@@ -37,10 +37,15 @@ export const dynamic = "force-dynamic";
 async function loadCheckoutProducts(locale: Locale): Promise<{
   products: CatalogProduct[];
   isDemoCatalog: boolean;
+  catalogTruncated: boolean;
 }> {
   try {
-    const products = await getPublishedCatalog(locale, { page: 1, limit: 200 });
-    return { products, isDemoCatalog: false };
+    const catalog = await getEntirePublishedCatalog(locale);
+    return {
+      products: catalog.products,
+      isDemoCatalog: false,
+      catalogTruncated: catalog.truncated,
+    };
   } catch {
     if (process.env.NODE_ENV === "production") throw new Error("Checkout catalog is unavailable.");
 
@@ -49,6 +54,7 @@ async function loadCheckoutProducts(locale: Locale): Promise<{
         toBootstrapCatalogProduct(product, index, locale)
       ),
       isDemoCatalog: true,
+      catalogTruncated: false,
     };
   }
 }
@@ -60,6 +66,13 @@ export default async function CheckoutPage({
 }) {
   const { locale: candidate } = await params;
   const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
-  const { products, isDemoCatalog } = await loadCheckoutProducts(locale);
-  return <CheckoutClient products={products} isDemoCatalog={isDemoCatalog} />;
+  const { products, isDemoCatalog, catalogTruncated } =
+    await loadCheckoutProducts(locale);
+  return (
+    <CheckoutClient
+      products={products}
+      isDemoCatalog={isDemoCatalog}
+      catalogTruncated={catalogTruncated}
+    />
+  );
 }

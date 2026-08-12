@@ -196,6 +196,56 @@ describe("CheckoutClient", () => {
     );
   });
 
+  // With a partial catalog an unknown id may be a perfectly good product the page
+  // simply did not load, so deleting it would destroy a real basket.
+  it("keeps unknown lines when the catalog is truncated but still does not post them", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([
+        { productId: products[0]?.id, quantity: 2 },
+        { productId: "507f1f77bcf86cd799439099", quantity: 1 },
+      ])
+    );
+
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          order: {
+            orderId: "507f191e810c19729de860ea",
+            orderNumber: "FL-20260812-ORDER1234",
+            total: 300_000,
+            status: "pending",
+          },
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={products} catalogTruncated />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    expect(localStorage.getItem(CART_STORAGE_KEY)).toContain(
+      "507f1f77bcf86cd799439099"
+    );
+
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      items: Array<{ productId: string }>;
+    };
+    expect(body.items).toEqual([{ productId: products[0]?.id, quantity: 2 }]);
+  });
+
   it("drops unpriceable lines from browser storage so the cart count stays honest", async () => {
     localStorage.setItem(
       CART_STORAGE_KEY,

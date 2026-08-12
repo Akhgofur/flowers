@@ -1,7 +1,10 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const catalogService = vi.hoisted(() => ({
-  getPublishedCatalog: vi.fn(async () => []),
+  getEntirePublishedCatalog: vi.fn(async () => ({
+    products: [],
+    truncated: false,
+  })),
 }));
 
 vi.mock("@/lib/services/catalog-service", () => catalogService);
@@ -9,14 +12,34 @@ vi.mock("@/lib/services/catalog-service", () => catalogService);
 import CheckoutPage from "./page";
 
 describe("checkout server route", () => {
-  it("loads every product that can be added from the public catalog", async () => {
-    await CheckoutPage({
-      params: Promise.resolve({ locale: "ru" }),
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  // Checkout reconciles the browser cart against this list, so a capped page
+  // would silently drop a shopper's line as the catalog grows.
+  it("loads the entire published catalog, not a single capped page", async () => {
+    catalogService.getEntirePublishedCatalog.mockResolvedValueOnce({
+      products: [],
+      truncated: false,
     });
 
-    expect(catalogService.getPublishedCatalog).toHaveBeenCalledWith("ru", {
-      page: 1,
-      limit: 200,
+    await CheckoutPage({ params: Promise.resolve({ locale: "ru" }) });
+
+    expect(catalogService.getEntirePublishedCatalog).toHaveBeenCalledWith("ru");
+  });
+
+  it("passes catalog truncation down so the cart is not pruned on partial data", async () => {
+    catalogService.getEntirePublishedCatalog.mockResolvedValueOnce({
+      products: [],
+      truncated: true,
     });
+
+    const element = (await CheckoutPage({
+      params: Promise.resolve({ locale: "ru" }),
+    })) as { props: { catalogTruncated: boolean; isDemoCatalog: boolean } };
+
+    expect(element.props.catalogTruncated).toBe(true);
+    expect(element.props.isDemoCatalog).toBe(false);
   });
 });

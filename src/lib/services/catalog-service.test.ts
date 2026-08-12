@@ -10,6 +10,8 @@ const repository = vi.hoisted(() => ({
 vi.mock("@/lib/repositories/catalog-repository", () => repository);
 
 import {
+  CATALOG_PAGE_LIMIT,
+  getEntirePublishedCatalog,
   getPublishedCatalog,
   getPublishedCategories,
   getPublishedProductBySlug,
@@ -99,6 +101,72 @@ describe("public catalog service", () => {
     await expect(
       getPublishedProductBySlug("ru", unavailable.slug)
     ).resolves.toEqual(unavailable);
+  });
+
+  describe("getEntirePublishedCatalog", () => {
+    const pageOf = (count: number, offset: number) =>
+      Array.from({ length: count }, (_, index) => ({
+        ...publishedProduct,
+        id: `product-${offset + index}`,
+        slug: `product-${offset + index}`,
+      }));
+
+    it("returns a single short page without asking for another", async () => {
+      repository.findPublishedCatalogProducts.mockResolvedValueOnce(pageOf(3, 0));
+
+      const result = await getEntirePublishedCatalog("ru");
+
+      expect(result.products).toHaveLength(3);
+      expect(result.truncated).toBe(false);
+      expect(repository.findPublishedCatalogProducts).toHaveBeenCalledTimes(1);
+    });
+
+    // A catalog larger than one page used to be silently cut off at the limit.
+    it("pages past the per-request limit until the catalog is exhausted", async () => {
+      repository.findPublishedCatalogProducts
+        .mockResolvedValueOnce(pageOf(CATALOG_PAGE_LIMIT, 0))
+        .mockResolvedValueOnce(pageOf(CATALOG_PAGE_LIMIT, CATALOG_PAGE_LIMIT))
+        .mockResolvedValueOnce(pageOf(7, CATALOG_PAGE_LIMIT * 2));
+
+      const result = await getEntirePublishedCatalog("ru");
+
+      expect(result.products).toHaveLength(CATALOG_PAGE_LIMIT * 2 + 7);
+      expect(result.truncated).toBe(false);
+      expect(repository.findPublishedCatalogProducts).toHaveBeenCalledTimes(3);
+      expect(repository.findPublishedCatalogProducts).toHaveBeenNthCalledWith(
+        2,
+        "ru",
+        expect.objectContaining({ page: 2, limit: CATALOG_PAGE_LIMIT })
+      );
+    });
+
+    it("reports truncation instead of looping forever on a runaway catalog", async () => {
+      // Every page is full and distinct, so the loop can only end at its budget.
+      repository.findPublishedCatalogProducts.mockImplementation(
+        (_locale: unknown, filters: { page: number }) =>
+          Promise.resolve(
+            pageOf(CATALOG_PAGE_LIMIT, (filters.page - 1) * CATALOG_PAGE_LIMIT)
+          )
+      );
+
+      const result = await getEntirePublishedCatalog("ru");
+
+      expect(result.truncated).toBe(true);
+      expect(result.products.length).toBeGreaterThan(CATALOG_PAGE_LIMIT);
+      expect(repository.findPublishedCatalogProducts.mock.calls.length).toBeLessThan(50);
+    });
+
+    it("does not repeat a product when pages overlap", async () => {
+      repository.findPublishedCatalogProducts
+        .mockResolvedValueOnce(pageOf(CATALOG_PAGE_LIMIT, 0))
+        .mockResolvedValueOnce(pageOf(2, CATALOG_PAGE_LIMIT - 1));
+
+      const result = await getEntirePublishedCatalog("ru");
+
+      expect(new Set(result.products.map((p) => p.id)).size).toBe(
+        result.products.length
+      );
+    });
   });
 
   it("returns only published categories from the repository boundary", async () => {

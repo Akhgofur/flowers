@@ -18,6 +18,16 @@ export const DEFAULT_FILTERS: CatalogFilters = {
   tab: "all",
 };
 
+/**
+ * Same fields the server-side catalog query searches, so a term that finds a
+ * product through the API also finds it in the client-filtered catalog page.
+ */
+function searchHaystack(product: Product): string {
+  return [product.name, product.shortDescription, ...product.composition]
+    .join(" ")
+    .toLocaleLowerCase("uz-UZ");
+}
+
 export function applyCatalogFilters(
   products: readonly Product[],
   filters: CatalogFilters
@@ -25,11 +35,7 @@ export function applyCatalogFilters(
   const query = filters.query.trim().toLocaleLowerCase("uz-UZ");
 
   return products.filter((product) => {
-    if (
-      query &&
-      !product.name.toLocaleLowerCase("uz-UZ").includes(query) &&
-      !product.shortDescription.toLocaleLowerCase("uz-UZ").includes(query)
-    ) {
+    if (query && !searchHaystack(product).includes(query)) {
       return false;
     }
 

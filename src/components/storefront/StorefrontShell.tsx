@@ -8,7 +8,7 @@ import type {
   PublicSiteSettings,
 } from "@/lib/contracts";
 import {
-  getPublishedCatalog,
+  getEntirePublishedCatalog,
   getPublishedCategories,
 } from "@/lib/services/catalog-service";
 import {
@@ -68,13 +68,13 @@ async function loadStorefrontData(
   locale: Locale
 ): Promise<StorefrontData> {
   try {
-    const [products, categories, settings] = await Promise.all([
-      getPublishedCatalog(locale, { page: 1, limit: 200 }),
+    const [catalog, categories, settings] = await Promise.all([
+      getEntirePublishedCatalog(locale),
       getPublishedCategories(locale),
       getPublicSiteSettings(locale),
     ]);
 
-    return { products, categories, settings, source: "mongo" };
+    return { products: catalog.products, categories, settings, source: "mongo" };
   } catch (error) {
     // Local visual work remains useful before the owner supplies MONGODB_URI.
     // Production never silently presents bootstrap data as live inventory.

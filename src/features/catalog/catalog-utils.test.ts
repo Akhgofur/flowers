@@ -56,6 +56,39 @@ it("matches a query regardless of case and surrounding whitespace", () => {
   ]);
 });
 
+// The server searches name, shortDescription, description and composition. The
+// catalog page filters on the client, so it must not be blind to composition.
+it("matches a query against the composition, not only the name and summary", () => {
+  const roses = PRODUCTS.find((product) => product.id === "scarlet-roses");
+  expect(roses?.composition.join(" ")).toMatch(/evkalipt/i);
+
+  const result = applyCatalogFilters(PRODUCTS, {
+    ...DEFAULT_FILTERS,
+    query: "evkalipt",
+  });
+
+  expect(result.map((product) => product.id)).toContain("scarlet-roses");
+});
+
+it("matches a partial word anywhere inside a field", () => {
+  const result = applyCatalogFilters(PRODUCTS, {
+    ...DEFAULT_FILTERS,
+    query: "tirgul",
+  });
+
+  expect(result.length).toBeGreaterThan(0);
+  for (const product of result) {
+    const haystack = [
+      product.name,
+      product.shortDescription,
+      ...product.composition,
+    ]
+      .join(" ")
+      .toLocaleLowerCase("uz-UZ");
+    expect(haystack).toContain("tirgul");
+  }
+});
+
 it("does not mutate product order, products, or filters", () => {
   const products = PRODUCTS.map((product) => ({
     ...product,
