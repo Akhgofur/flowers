@@ -201,8 +201,6 @@
     "availability": {
       "available": "Available to order",
       "out_of_season": "This composition is currently out of season",
-      "out_of_stock": "Temporarily out of stock",
-      "price_missing": "Price confirmed by a florist",
       "unpublished": "Unavailable to order"
     }
   },

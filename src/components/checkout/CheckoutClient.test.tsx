@@ -2,7 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CART_STORAGE_KEY } from "@/features/cart/cart-storage";
-import type { CatalogProduct } from "@/lib/contracts";
+import type { CatalogProduct, Season } from "@/lib/contracts";
 import { renderWithIntl as render } from "@/test/render-with-intl";
 import { CheckoutClient } from "./CheckoutClient";
 
@@ -146,56 +146,6 @@ describe("CheckoutClient", () => {
     expect(localStorage.getItem(CART_STORAGE_KEY)).toContain(products[0]?.id ?? "");
   });
 
-  // A line the checkout refuses to show must not be posted: the shopper cannot see
-  // it, cannot remove it, and the server rejects the whole order because of it.
-  it("posts only the lines it can price, ignoring stale cart entries", async () => {
-    const user = userEvent.setup();
-    localStorage.setItem(
-      CART_STORAGE_KEY,
-      JSON.stringify([
-        { productId: products[0]?.id, quantity: 2 },
-        { productId: products[1]?.id, quantity: 1 },
-      ])
-    );
-
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          order: {
-            orderId: "507f191e810c19729de860ea",
-            orderNumber: "FL-20260812-ORDER1234",
-            total: 300_000,
-            status: "pending",
-          },
-        }),
-        { status: 201, headers: { "content-type": "application/json" } }
-      )
-    );
-    vi.stubGlobal("fetch", fetchMock);
-
-    render(<CheckoutClient products={products} />, { locale: "uz" });
-
-    await screen.findByText(/pushti lola buketi/i);
-    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
-    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
-    await user.type(
-      screen.getByLabelText(/yetkazib berish manzili/i),
-      "Toshkent shahri, Chilonzor tumani"
-    );
-    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
-
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    const [, request] = fetchMock.mock.calls[0] ?? [];
-    const body = JSON.parse(String((request as RequestInit).body)) as {
-      items: Array<{ productId: string }>;
-    };
-
-    expect(body.items).toEqual([{ productId: products[0]?.id, quantity: 2 }]);
-    expect(body.items.map((item) => item.productId)).not.toContain(
-      products[1]?.id
-    );
-  });
-
   // With a partial catalog an unknown id may be a perfectly good product the page
   // simply did not load, so deleting it would destroy a real basket.
   it("keeps unknown lines when the catalog is truncated but still does not post them", async () => {
@@ -278,20 +228,17 @@ describe("CheckoutClient", () => {
     expect(localStorage.getItem(CART_STORAGE_KEY)).toContain(products[0]?.id ?? "");
   });
 
-  // Price is only one of four rules the server enforces. A line that fails any of
-  // them produces the same unhelpful "one of the products is unavailable".
+  // Season is the remaining hard gate the server enforces. A line that fails it
+  // produces the same unhelpful "one of the products is unavailable".
   // "unpublished" is absent on purpose: CatalogProduct.status is narrowed to
   // "published", so a draft cannot reach the checkout through this type at all.
-  it.each<[string, Partial<CatalogProduct>]>([
-    ["out of stock", { stockQuantity: 0 }],
-    ["out of season", { seasons: ["winter"] }],
-  ])("does not post a line that is %s", async (_label, overrides) => {
+  it("does not post a line that is out of season", async () => {
     const blocked = {
       ...products[0]!,
       id: "507f1f77bcf86cd799439013",
       slug: "blocked",
       name: "Bloklangan buket",
-      ...overrides,
+      seasons: ["winter"] as Season[],
     };
     localStorage.setItem(
       CART_STORAGE_KEY,
@@ -383,24 +330,5 @@ describe("CheckoutClient", () => {
       items: Array<{ productId: string; quantity: number }>;
     };
     expect(body.items).toEqual([{ productId: scarce.id, quantity: 2 }]);
-  });
-
-  it("drops unpriceable lines from browser storage so the cart count stays honest", async () => {
-    localStorage.setItem(
-      CART_STORAGE_KEY,
-      JSON.stringify([
-        { productId: products[0]?.id, quantity: 2 },
-        { productId: products[1]?.id, quantity: 1 },
-      ])
-    );
-
-    render(<CheckoutClient products={products} />, { locale: "uz" });
-    await screen.findByText(/pushti lola buketi/i);
-
-    await waitFor(() =>
-      expect(JSON.parse(localStorage.getItem(CART_STORAGE_KEY) ?? "[]")).toEqual([
-        { productId: products[0]?.id, quantity: 2 },
-      ])
-    );
   });
 });

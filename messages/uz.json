@@ -201,8 +201,6 @@
     "availability": {
       "available": "Buyurtma uchun mavjud",
       "out_of_season": "Bu kompozitsiyaning mavsumi hozir emas",
-      "out_of_stock": "Vaqtincha mavjud emas",
-      "price_missing": "Narxni florist aniqlashtiradi",
       "unpublished": "Buyurtma uchun mavjud emas"
     }
   },

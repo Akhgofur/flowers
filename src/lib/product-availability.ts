@@ -8,8 +8,6 @@ import type {
 export type ProductAvailabilityInput = {
   status: ProductStatus;
   seasons: readonly Season[];
-  stockQuantity: number;
-  price?: number;
 };
 
 const monthFormatter = new Intl.DateTimeFormat("en-US", {
@@ -41,12 +39,6 @@ export function getProductAvailability(
   }
   if (!isSeasonActive(product.seasons, now)) {
     return { available: false, currentSeason, reason: "out_of_season" };
-  }
-  if (product.stockQuantity <= 0) {
-    return { available: false, currentSeason, reason: "out_of_stock" };
-  }
-  if (!Number.isSafeInteger(product.price) || (product.price ?? 0) <= 0) {
-    return { available: false, currentSeason, reason: "price_missing" };
   }
 
   return { available: true, currentSeason, reason: "available" };

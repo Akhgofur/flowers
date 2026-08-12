@@ -40,9 +40,7 @@ export type CurrentSeason = Exclude<Season, "all_year">;
 export type ProductAvailabilityReason =
   | "available"
   | "unpublished"
-  | "out_of_season"
-  | "out_of_stock"
-  | "price_missing";
+  | "out_of_season";
 
 export type ProductAvailability = {
   available: boolean;
