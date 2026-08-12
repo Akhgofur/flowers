@@ -283,21 +283,16 @@ describe("CheckoutClient", () => {
     expect(body.items.map((item) => item.productId)).toEqual([products[0]?.id]);
   });
 
-  // Reserving more than exists fails server-side, so the line is capped instead.
-  it("caps a line at the stock the catalog reports", async () => {
-    const scarce = {
-      ...products[0]!,
-      id: "507f1f77bcf86cd799439014",
-      slug: "scarce",
-      name: "Kam qolgan buket",
-      stockQuantity: 2,
-    };
+  it("submits a price-less line and shows it without a sum", async () => {
+    const user = userEvent.setup();
     localStorage.setItem(
       CART_STORAGE_KEY,
-      JSON.stringify([{ productId: scarce.id, quantity: 7 }])
+      JSON.stringify([
+        { productId: products[0]?.id, quantity: 2 },
+        { productId: products[1]?.id, quantity: 1 },
+      ])
     );
 
-    const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -313,9 +308,9 @@ describe("CheckoutClient", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<CheckoutClient products={[scarce]} />, { locale: "uz" });
+    render(<CheckoutClient products={products} />, { locale: "uz" });
 
-    await screen.findByText(/kam qolgan buket/i);
+    await screen.findByText(/gul savati №79/i);
     await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
     await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
     await user.type(
@@ -329,6 +324,9 @@ describe("CheckoutClient", () => {
     const body = JSON.parse(String((request as RequestInit).body)) as {
       items: Array<{ productId: string; quantity: number }>;
     };
-    expect(body.items).toEqual([{ productId: scarce.id, quantity: 2 }]);
+    expect(body.items).toEqual([
+      { productId: products[0]?.id, quantity: 2 },
+      { productId: products[1]?.id, quantity: 1 },
+    ]);
   });
 });

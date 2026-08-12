@@ -18,10 +18,6 @@ export type CartDrawerProps = {
   onContinueShopping: () => void;
 };
 
-function isPricedProduct(product: Product | undefined): product is Product & { price: number } {
-  return product?.price !== undefined;
-}
-
 export function CartDrawer({
   open,
   lines,
@@ -34,6 +30,7 @@ export function CartDrawer({
 }: CartDrawerProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Cart");
+  const tProduct = useTranslations("Product");
   const drawerRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const shouldRestoreFocusRef = useRef(true);
@@ -48,12 +45,12 @@ export function CartDrawer({
 
     return lines.flatMap((line) => {
       const product = productsById.get(line.productId);
-      return isPricedProduct(product) ? [{ line, product }] : [];
+      return product ? [{ line, product }] : [];
     });
   }, [lines, products]);
 
   const total = items.reduce(
-    (sum, { line, product }) => sum + line.quantity * product.price,
+    (sum, { line, product }) => sum + (product.price ?? 0) * line.quantity,
     0
   );
 
@@ -148,7 +145,11 @@ export function CartDrawer({
                         {t("removeShort")}
                       </button>
                     </div>
-                    <p>{formatSum(product.price, locale)} / {t("each")}</p>
+                    <p>
+                      {product.price === undefined
+                        ? tProduct("priceOnRequest")
+                        : `${formatSum(product.price, locale)} / ${t("each")}`}
+                    </p>
                     <div className="cart-line__footer">
                       <div className="quantity-control quantity-control--compact">
                         <button
@@ -174,7 +175,11 @@ export function CartDrawer({
                           <span aria-hidden="true">+</span>
                         </button>
                       </div>
-                      <strong>{formatSum(product.price * line.quantity, locale)}</strong>
+                      <strong>
+                        {product.price === undefined
+                          ? tProduct("priceOnRequest")
+                          : formatSum(product.price * line.quantity, locale)}
+                      </strong>
                     </div>
                   </div>
                 </article>

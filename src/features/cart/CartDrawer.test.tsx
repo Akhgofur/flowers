@@ -75,9 +75,7 @@ describe("CartDrawer", () => {
     ).toBeVisible();
   });
 
-  // Products entered without a price are not purchasable, so the cart must skip
-  // them instead of rendering a line with a missing or NaN total.
-  it("omits cart lines whose product has no price", () => {
+  it("keeps a price-less line and labels it instead of a sum", () => {
     renderDrawer({
       lines: [
         { productId: "roses", quantity: 1 },
@@ -86,7 +84,8 @@ describe("CartDrawer", () => {
     });
 
     expect(screen.getByRole("heading", { name: "Qirmizi atirgul" })).toBeVisible();
-    expect(screen.queryByRole("heading", { name: "Narxsiz buket" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Narxsiz buket" })).toBeVisible();
+    expect(screen.getAllByText("Narx so‘rov bo‘yicha").length).toBeGreaterThan(0);
   });
 
   it("changes quantity with plus and minus and removes the line", async () => {

@@ -42,4 +42,13 @@ describe("ProductDetail gallery", () => {
       expect.stringContaining("side.jpg")
     );
   });
+
+  it("offers add-to-cart for a product with no price", () => {
+    render(<ProductDetail product={{ ...product, price: undefined }} />, {
+      locale: "en",
+    });
+
+    expect(screen.getByText("Price on request")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Add to cart" })).toBeVisible();
+  });
 });

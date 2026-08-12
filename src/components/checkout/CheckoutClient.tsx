@@ -37,24 +37,11 @@ type CheckoutResponse = {
 };
 
 /**
- * Mirrors the server's reservation rule, which requires a published product that
- * is in season, in stock and positively priced. Checking only the price left the
- * other three failures to the server, where they surface as one opaque "a product
- * is unavailable" naming an item the shopper cannot see.
- *
- * getProductAvailability only reports available for a positive integer price, so
- * narrowing price to number here is sound.
+ * Mirrors the server: a published, in-season product is orderable. Price is not a
+ * gate — an unpriced line is ordered and the operator agrees the price by phone.
  */
-function isOrderable(
-  product: CatalogProduct | undefined,
-  now: Date
-): product is CatalogProduct & { price: number } {
+function isOrderable(product: CatalogProduct | undefined, now: Date): product is CatalogProduct {
   return product !== undefined && getProductAvailability(product, now).available;
-}
-
-/** The server reserves atomically, so never ask for more than the catalog reports. */
-function cappedQuantity(quantity: number, product: CatalogProduct): number {
-  return Math.max(1, Math.min(quantity, product.stockQuantity));
 }
 
 const EMPTY_FORM: CheckoutForm = {
@@ -102,12 +89,13 @@ export function CheckoutClient({
   const t = useTranslations("Checkout");
   const tHeader = useTranslations("Header");
   const tProduct = useTranslations("Product");
-  // Only orderable products may enter the cart state. Keeping an unpriceable line
-  // would hide it from the summary yet still post it, and the server would reject
-  // the whole order for an item the shopper can neither see nor remove.
+  // Only orderable (published, in-season) products may enter the cart state.
+  // Keeping an unavailable line would hide it from the summary yet still post it,
+  // and the server would reject the whole order for an item the shopper can
+  // neither see nor remove.
   //
   // A truncated catalog is the one case where absence proves nothing, so the cart
-  // is left alone; submission still sends only the lines that could be priced.
+  // is left alone; submission still sends only the lines that are orderable.
   const now = useMemo(() => new Date(), []);
   const orderableIds = useMemo(
     () =>
@@ -132,16 +120,11 @@ export function CheckoutClient({
   const [createdOrder, setCreatedOrder] = useState<OrderCreationResult | null>(null);
 
   useEffect(() => {
-    // Browser-only cart storage must be read after SSR hydration. Quantities are
-    // capped here so the summary, the storage and the payload agree on one number.
-    const stored = readCart(orderableIds).map((line) => {
-      const product = productsById.get(line.productId);
-      return product ? { ...line, quantity: cappedQuantity(line.quantity, product) } : line;
-    });
+    // Browser-only cart storage must be read after SSR hydration.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLines(stored);
+    setLines(readCart(orderableIds));
     setIsHydrated(true);
-  }, [orderableIds, productsById]);
+  }, [orderableIds]);
 
   useEffect(() => {
     if (isHydrated) writeCart(lines);
@@ -151,13 +134,12 @@ export function CheckoutClient({
     () =>
       lines.flatMap((line) => {
         const product = productsById.get(line.productId);
-        if (!isOrderable(product, now)) return [];
-        return [{ line: { ...line, quantity: cappedQuantity(line.quantity, product) }, product }];
+        return isOrderable(product, now) ? [{ line, product }] : [];
       }),
     [lines, now, productsById]
   );
   const subtotal = items.reduce(
-    (sum, { line, product }) => sum + product.price * line.quantity,
+    (sum, { line, product }) => sum + (product.price ?? 0) * line.quantity,
     0
   );
 
@@ -166,9 +148,7 @@ export function CheckoutClient({
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
-    const product = productsById.get(productId);
-    const requested = product ? cappedQuantity(quantity, product) : quantity;
-    setLines((current) => setCartQuantity(current, productId, requested));
+    setLines((current) => setCartQuantity(current, productId, quantity));
     setError(null);
   };
 
@@ -427,7 +407,11 @@ export function CheckoutClient({
                   />
                   <div>
                     <h3>{product.name}</h3>
-                    <p>{formatSum(product.price, locale)} / {t("each")}</p>
+                    <p>
+                      {product.price === undefined
+                        ? tProduct("priceOnRequest")
+                        : `${formatSum(product.price, locale)} / ${t("each")}`}
+                    </p>
                     <div className="checkout-line-actions">
                       <div className="quantity-control quantity-control--compact" aria-label={t("quantityLabel", { name: product.name })}>
                         <button
@@ -456,7 +440,11 @@ export function CheckoutClient({
                       </button>
                     </div>
                   </div>
-                  <strong>{formatSum(product.price * line.quantity, locale)}</strong>
+                  <strong>
+                    {product.price === undefined
+                      ? tProduct("priceOnRequest")
+                      : formatSum(product.price * line.quantity, locale)}
+                  </strong>
                 </article>
               ))}
             </div>
