@@ -28,10 +28,15 @@ type CheckoutForm = Omit<CheckoutInput["customer"], "deliveryDate" | "comment"> 
 
 type CheckoutResponse = { order?: OrderCreationResult; error?: string };
 
+/**
+ * Mirrors the server's reservation rule: an order line is only orderable when the
+ * product carries a positive price. Products imported without a price stay
+ * browsable, so the cart must not carry them into checkout.
+ */
 function isPricedProduct(
   product: CatalogProduct | undefined
 ): product is CatalogProduct & { price: number } {
-  return product?.price !== undefined;
+  return typeof product?.price === "number" && product.price > 0;
 }
 
 const EMPTY_FORM: CheckoutForm = {
@@ -75,7 +80,16 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
   const t = useTranslations("Checkout");
   const tHeader = useTranslations("Header");
   const tProduct = useTranslations("Product");
-  const productIds = useMemo(() => new Set(products.map((product) => product.id)), [products]);
+  // Only orderable products may enter the cart state. Keeping an unpriceable line
+  // would hide it from the summary yet still post it, and the server would reject
+  // the whole order for an item the shopper can neither see nor remove.
+  const productIds = useMemo(
+    () =>
+      new Set(
+        products.filter(isPricedProduct).map((product) => product.id)
+      ),
+    [products]
+  );
   const productsById = useMemo(
     () => new Map(products.map((product) => [product.id, product])),
     [products]
@@ -136,7 +150,9 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(toCheckoutPayload(form, lines, locale)),
+        body: JSON.stringify(
+          toCheckoutPayload(form, items.map(({ line }) => line), locale)
+        ),
       });
       const payload = await readCheckoutResponse(response);
 
