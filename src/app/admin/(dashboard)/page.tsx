@@ -90,7 +90,7 @@ export default async function AdminDashboardPage() {
           <p className="eyebrow">Tezkor harakatlar</p>
           <h2>Do‘konni yangilang</h2>
           <div>
-            <Link href="/admin/products">Mahsulot va qoldiqni tahrirlash <span>→</span></Link>
+            <Link href="/admin/products">Mahsulotlarni tahrirlash <span>→</span></Link>
             <Link href="/admin/categories">Kategoriyalarni tartiblash <span>→</span></Link>
             <Link href="/admin/settings">Yetkazib berish narxini sozlash <span>→</span></Link>
           </div>

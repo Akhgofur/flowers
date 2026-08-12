@@ -23,7 +23,6 @@ const product = (id: string, name: string): AdminProduct => ({
   flowerTypes: ["rose"],
   colors: ["pink"],
   seasons: ["all_year"],
-  stockQuantity: 5,
   sortOrder: 0,
   isFeatured: false,
   isNew: false,

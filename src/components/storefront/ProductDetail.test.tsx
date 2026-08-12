@@ -21,7 +21,6 @@ const product: CatalogProduct = {
   flowerTypes: ["mixed"],
   colors: ["pink"],
   seasons: ["all_year"],
-  stockQuantity: 10,
   sortOrder: 1,
   isFeatured: false,
   isNew: true,

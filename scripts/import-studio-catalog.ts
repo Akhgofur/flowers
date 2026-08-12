@@ -200,7 +200,6 @@ async function main() {
             currency: "UZS",
             images,
             seasons: ["all_year"],
-            stockQuantity: 100,
             sortOrder: 10_000 + number,
             isFeatured: false,
             isNewArrival: true,

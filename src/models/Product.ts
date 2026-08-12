@@ -20,7 +20,6 @@ export type ProductDocument = {
   flowerTypes: string[];
   colors: string[];
   seasons: Season[];
-  stockQuantity: number;
   sortOrder: number;
   isFeatured: boolean;
   /** Stored under a non-reserved name; public contracts expose this as `isNew`. */
@@ -162,16 +161,6 @@ const productSchema = new Schema<ProductDocument>(
           !(value.includes("all_year") && value.length > 1),
         message:
           "Product seasons must be unique and all_year cannot be combined with another season.",
-      },
-    },
-    stockQuantity: {
-      type: Number,
-      required: true,
-      default: 0,
-      min: 0,
-      validate: {
-        validator: integerValidator,
-        message: "Stock quantity must be a non-negative integer.",
       },
     },
     sortOrder: {

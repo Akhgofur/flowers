@@ -23,7 +23,6 @@ function product(
     flowerTypes: ["mixed"],
     colors: ["pink"],
     seasons: ["all_year"],
-    stockQuantity: 4,
     sortOrder: 0,
     isFeatured: false,
     isNew: false,

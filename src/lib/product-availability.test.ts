@@ -3,7 +3,6 @@ import {
   getProductAvailability,
   getTashkentSeason,
   isSeasonActive,
-  type ProductAvailabilityInput,
 } from "./product-availability";
 
 describe("seasonal product availability", () => {
@@ -34,21 +33,6 @@ describe("seasonal product availability", () => {
     expect(
       getProductAvailability({ status: "published", seasons: ["all_year"] }, summer)
     ).toEqual({ available: true, currentSeason: "summer", reason: "available" });
-  });
-
-  it("ignores inventory entirely", () => {
-    // Still carries a zero stock, which used to block it outright.
-    const soldOut = {
-      status: "published",
-      seasons: ["summer"],
-      stockQuantity: 0,
-    } as ProductAvailabilityInput;
-
-    expect(getProductAvailability(soldOut, summer)).toEqual({
-      available: true,
-      currentSeason: "summer",
-      reason: "available",
-    });
   });
 
   it("still refuses an out-of-season product", () => {

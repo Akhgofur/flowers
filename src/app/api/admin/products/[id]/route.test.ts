@@ -48,7 +48,6 @@ const input = {
   flowerTypes: ["rose"],
   colors: ["red"],
   seasons: ["all_year"] as const,
-  stockQuantity: 4,
   sortOrder: 1,
   isFeatured: false,
   isNew: false,

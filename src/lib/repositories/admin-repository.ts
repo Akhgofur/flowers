@@ -58,7 +58,6 @@ function toAdminProduct(document: ProductRecord): AdminProduct {
     flowerTypes: [...document.flowerTypes],
     colors: [...document.colors],
     seasons: document.seasons?.length > 0 ? [...document.seasons] : ["all_year"],
-    stockQuantity: document.stockQuantity,
     sortOrder: document.sortOrder,
     isFeatured: document.isFeatured,
     isNew: document.isNewArrival,
@@ -241,7 +240,6 @@ export async function patchAdminProduct(
   if (input.translations?.ru?.name) set["translations.ru.name"] = input.translations.ru.name;
   if (input.categoryId) set.categoryId = input.categoryId;
   if (input.seasons !== undefined) set.seasons = [...input.seasons];
-  if (input.stockQuantity !== undefined) set.stockQuantity = input.stockQuantity;
   if (input.sortOrder !== undefined) set.sortOrder = input.sortOrder;
   if (input.status !== undefined) set.status = input.status;
   if (input.isFeatured !== undefined) set.isFeatured = input.isFeatured;
@@ -273,7 +271,7 @@ export async function archiveAdminProduct(id: string): Promise<void> {
   await dbConnect();
   const result = await ProductModel.updateOne(
     { _id: id },
-    { $set: { status: "archived", stockQuantity: 0 } }
+    { $set: { status: "archived" } }
   ).exec();
 
   if (result.matchedCount === 0) throw new AdminNotFoundError("Mahsulot topilmadi.");

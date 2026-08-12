@@ -35,7 +35,6 @@ describe("catalog repository mapping", () => {
     images: [{ url: "https://images.pexels.com/photos/123/flower.jpg", alt: "Bouquet" }],
     flowerTypes: ["mixed"],
     colors: ["pink"],
-    stockQuantity: 2,
     sortOrder: 1,
     isFeatured: false,
     isNewArrival: false,

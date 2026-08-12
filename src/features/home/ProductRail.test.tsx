@@ -18,7 +18,6 @@ const product: CatalogProduct = {
   flowerTypes: ["rose"],
   colors: ["red"],
   seasons: ["all_year"],
-  stockQuantity: 5,
   sortOrder: 1,
   isFeatured: true,
   isNew: false,

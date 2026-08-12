@@ -32,14 +32,12 @@ export type ReservedProduct = {
   slug: string;
   name: string;
   price?: number;
-  stockQuantity: number;
   images: ProductImage[];
 };
 
 export type ProductPurchaseState = {
   status: ProductStatus;
   seasons: Season[];
-  stockQuantity: number;
   price?: number;
 };
 
@@ -125,7 +123,6 @@ type ProductRecord = Pick<
   | "slug"
   | "translations"
   | "price"
-  | "stockQuantity"
   | "images"
   | "status"
   | "seasons"
@@ -158,7 +155,6 @@ export const RESERVED_PRODUCT_PROJECTION = {
   translations: 1,
   name: 1,
   price: 1,
-  stockQuantity: 1,
   images: 1,
 } as const;
 
@@ -267,7 +263,6 @@ function createMongoOrderStore(): OrderStore {
         slug: document.slug,
         name: translation.name,
         price: document.price,
-        stockQuantity: document.stockQuantity,
         images: document.images.map((image) => ({ ...image })),
       };
     },
@@ -276,7 +271,7 @@ function createMongoOrderStore(): OrderStore {
       if (!mongoose.isValidObjectId(productId)) return null;
 
       const document = (await ProductModel.findById(productId)
-        .select({ status: 1, seasons: 1, stockQuantity: 1, price: 1 })
+        .select({ status: 1, seasons: 1, price: 1 })
         .session(asClientSession(transaction))
         .lean()
         .exec()) as unknown as ProductRecord | null;
@@ -287,7 +282,6 @@ function createMongoOrderStore(): OrderStore {
         status: document.status,
         seasons:
           document.seasons?.length > 0 ? [...document.seasons] : ["all_year"],
-        stockQuantity: document.stockQuantity,
         ...(document.price === undefined ? {} : { price: document.price }),
       };
     },

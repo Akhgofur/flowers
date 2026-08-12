@@ -444,7 +444,7 @@ export function AdminProductsPanel({
       setProducts((current) =>
         current.map((candidate) =>
           candidate.id === product.id
-            ? { ...candidate, status: "archived", stockQuantity: 0 }
+            ? { ...candidate, status: "archived" }
             : candidate
         )
       );

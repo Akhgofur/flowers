@@ -23,7 +23,6 @@ const ROSES: CatalogProduct = {
   flowerTypes: ["rose"],
   colors: ["red"],
   seasons: ["all_year"],
-  stockQuantity: 10,
   sortOrder: 1,
   isFeatured: false,
   isNew: false,

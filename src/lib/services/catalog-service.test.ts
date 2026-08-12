@@ -36,7 +36,6 @@ const publishedProduct: CatalogProduct = {
   flowerTypes: ["tulip"],
   colors: ["pink"],
   seasons: ["all_year"],
-  stockQuantity: 12,
   sortOrder: 2,
   isFeatured: false,
   isNew: true,
@@ -91,7 +90,6 @@ describe("public catalog service", () => {
     const unavailable = {
       ...publishedProduct,
       price: undefined,
-      stockQuantity: 0,
       seasons: ["winter"] as const,
     };
     repository.findPublishedCatalogProducts.mockResolvedValue([unavailable]);

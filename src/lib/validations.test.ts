@@ -43,7 +43,6 @@ const validProductInput = {
   ],
   flowerTypes: ["tulip"],
   colors: ["pink"],
-  stockQuantity: 12,
 };
 
 const validHomeSectionInput = {

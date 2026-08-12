@@ -79,7 +79,6 @@ export function toCatalogProduct(
     flowerTypes: [...document.flowerTypes],
     colors: [...document.colors],
     seasons: document.seasons?.length > 0 ? [...document.seasons] : ["all_year"],
-    stockQuantity: document.stockQuantity,
     sortOrder: document.sortOrder,
     isFeatured: document.isFeatured,
     isNew: document.isNewArrival,

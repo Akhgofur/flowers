@@ -51,7 +51,6 @@ const product: AdminProduct = {
   flowerTypes: ["tulip"],
   colors: ["pink"],
   seasons: ["all_year"],
-  stockQuantity: 12,
   sortOrder: 0,
   isFeatured: false,
   isNew: true,

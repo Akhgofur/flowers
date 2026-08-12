@@ -34,8 +34,6 @@ export type CatalogSeedSummary = {
   products: { created: number; updated: number };
 };
 
-const seedStockQuantity = 20;
-
 const DEFAULT_SEED_SETTINGS: SeedSiteSettings = {
   key: "default",
   siteName: "Floraluxe",
@@ -108,7 +106,6 @@ function toSeedProduct(
     flowerTypes: [...product.flowerTypes],
     colors: [...product.colors],
     seasons: ["all_year"],
-    stockQuantity: seedStockQuantity,
     sortOrder: index,
     isFeatured: index < 4,
     isNewArrival: product.isNew,

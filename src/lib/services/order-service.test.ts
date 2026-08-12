@@ -43,15 +43,9 @@ const checkoutInput: CheckoutInput = {
 type MutableProduct = ReservedProduct & {
   status: ProductStatus;
   seasons: Season[];
-  stockQuantity: number;
 };
 
-function product(
-  id: string,
-  name: string,
-  price: number,
-  stockQuantity: number
-): MutableProduct {
+function product(id: string, name: string, price: number): MutableProduct {
   return {
     id,
     slug: name.toLowerCase().replaceAll(" ", "-"),
@@ -59,15 +53,14 @@ function product(
     price,
     status: "published",
     seasons: ["all_year"],
-    stockQuantity,
     images: [{ url: "https://images.pexels.com/photos/1234567/flower.jpg", alt: name }],
   };
 }
 
 class InMemoryOrderStore implements OrderStore {
   readonly products = new Map<string, MutableProduct>([
-    [redRoseId, product(redRoseId, "Qizil atirgullar", 150_000, 4)],
-    [tulipId, product(tulipId, "Oq lolalar", 90_000, 2)],
+    [redRoseId, product(redRoseId, "Qizil atirgullar", 150_000)],
+    [tulipId, product(tulipId, "Oq lolalar", 90_000)],
   ]);
   readonly orders = new Map<string, StoredOrder>();
   readonly notifications: Array<{ orderId: string; channel: "telegram" }> = [];
@@ -109,7 +102,7 @@ class InMemoryOrderStore implements OrderStore {
     const record = this.products.get(productId);
     if (
       !record ||
-      record.stockQuantity < quantity ||
+      record.status !== "published" ||
       (record.seasons[0] !== "all_year" && !record.seasons.includes(currentSeason))
     ) {
       return null;
@@ -125,7 +118,6 @@ class InMemoryOrderStore implements OrderStore {
     return {
       status: record.status,
       seasons: [...record.seasons],
-      stockQuantity: record.stockQuantity,
       price: record.price,
     };
   }
@@ -240,17 +232,17 @@ describe("transactional order service", () => {
 
   it("rolls all reservations back when a later item is unavailable", async () => {
     const store = new InMemoryOrderStore();
-    store.products.get(tulipId)!.stockQuantity = 0;
+    store.products.get(tulipId)!.status = "archived";
 
     await expect(makeService(store).createPendingOrder(checkoutInput)).rejects.toBeInstanceOf(
       ProductUnavailableError
     );
 
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
+    expect(store.reservationOrder).toEqual([redRoseId, tulipId]);
     expect(store.orders).toHaveLength(0);
   });
 
-  it("rejects an out-of-season product without decrementing its stock", async () => {
+  it("rejects an out-of-season product before creating an order", async () => {
     const store = new InMemoryOrderStore();
     store.products.get(redRoseId)!.seasons = ["winter"];
 
@@ -266,13 +258,12 @@ describe("transactional order service", () => {
       code: "PRODUCT_OUT_OF_SEASON",
       productId: redRoseId,
     });
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
     expect(store.orders).toHaveLength(0);
   });
 
   it("accepts a line with no price and counts only priced lines in the total", async () => {
     const store = new InMemoryOrderStore();
-    const priceless = product(tulipId, "Narxsiz buket", 0, 5);
+    const priceless = product(tulipId, "Narxsiz buket", 0);
     priceless.price = undefined as unknown as number;
     store.products.set(tulipId, priceless);
 
@@ -370,7 +361,6 @@ describe("reservation projection", () => {
     slug: "qirmizi-atirgul",
     name: "Qirmizi atirgul",
     price: 500_000,
-    stockQuantity: 100,
     status: "published",
     seasons: ["summer"],
     images: [{ url: "https://cdn.example.com/rose.png", alt: "Qirmizi atirgul" }],
@@ -405,7 +395,6 @@ describe("reservation projection", () => {
     expect(projected).toMatchObject({
       slug: "qirmizi-atirgul",
       price: 500_000,
-      stockQuantity: 100,
     });
     expect(projected.images).toHaveLength(1);
   });

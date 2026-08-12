@@ -28,7 +28,6 @@ const product: CatalogProduct = {
   flowerTypes: ["tulip"],
   colors: ["pink"],
   seasons: ["all_year"],
-  stockQuantity: 12,
   sortOrder: 2,
   isFeatured: false,
   isNew: true,

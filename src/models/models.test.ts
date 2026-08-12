@@ -24,7 +24,6 @@ const validProductDocument = {
   ],
   flowerTypes: ["tulip"],
   colors: ["pink"],
-  stockQuantity: 12,
   isFeatured: false,
   isNewArrival: false,
   isOnSale: false,
@@ -100,10 +99,9 @@ describe("Mongoose model invariants", () => {
     ).toBeDefined();
   });
 
-  it("rejects empty image alt text and negative stock before a database write", async () => {
+  it("rejects empty image alt text before a database write", async () => {
     const product = new ProductModel({
       ...validProductDocument,
-      stockQuantity: -1,
       images: [{ ...validProductDocument.images[0], alt: "" }],
     });
 
@@ -111,7 +109,6 @@ describe("Mongoose model invariants", () => {
 
     expect(validationError).toBeInstanceOf(Error);
     expect((validationError as { errors?: Record<string, unknown> }).errors?.["images.0.alt"]).toBeDefined();
-    expect((validationError as { errors?: Record<string, unknown> }).errors?.stockQuantity).toBeDefined();
   });
 
   it("allows a published inquiry-only product but rejects its sale metadata", async () => {
@@ -158,6 +155,10 @@ describe("Mongoose model invariants", () => {
     expect(
       (validationError as { errors?: Record<string, unknown> }).errors?.seasons
     ).toBeDefined();
+  });
+
+  it("no longer tracks inventory on a product", () => {
+    expect(ProductModel.schema.path("stockQuantity")).toBeUndefined();
   });
 
   it("declares the required catalog and singleton indexes", () => {

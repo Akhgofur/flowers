@@ -101,7 +101,6 @@ export type CatalogProduct = {
   flowerTypes: string[];
   colors: string[];
   seasons: Season[];
-  stockQuantity: number;
   sortOrder: number;
   isFeatured: boolean;
   isNew: boolean;
@@ -186,7 +185,6 @@ export type AdminProduct = {
   flowerTypes: string[];
   colors: string[];
   seasons: Season[];
-  stockQuantity: number;
   sortOrder: number;
   isFeatured: boolean;
   isNew: boolean;

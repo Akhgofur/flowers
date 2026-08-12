@@ -37,7 +37,6 @@ const product: AdminProduct = {
   flowerTypes: ["rose"],
   colors: ["red"],
   seasons: ["all_year"],
-  stockQuantity: 4,
   sortOrder: 1,
   isFeatured: false,
   isNew: false,
