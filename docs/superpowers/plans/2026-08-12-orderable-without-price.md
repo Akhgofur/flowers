@@ -125,6 +125,18 @@ Leave `getTashkentSeason` and `isSeasonActive` untouched.
 
 Remove the `out_of_stock` and `price_missing` entries from the `Product.availability` object in all three of `messages/ru.json`, `messages/uz.json`, `messages/en.json`. Keep `available`, `out_of_season` and `unpublished`.
 
+- [ ] **Step 5b: Delete the checkout tests this rule change obsoletes**
+
+Three tests in `src/components/checkout/CheckoutClient.test.tsx` assert the gating that Step 4 just removed, so they now fail by design. A test belongs to the rule it describes; delete these three with the rule:
+
+- `"posts only the lines it can price, ignoring stale cart entries"`
+- `"does not post a line that is out of stock"` (one of the two `it.each` cases — keep the `"out of season"` case, which still passes and must keep passing)
+- `"drops unpriceable lines from browser storage so the cart count stays honest"`
+
+If the `it.each` block is left with a single case, collapse it into a plain `it(...)` for the out-of-season case. Change nothing in `CheckoutClient.tsx` — the source belongs to Task 4.
+
+Do not delete `"caps a line at the stock the catalog reports"`; it still passes because `cappedQuantity` is untouched, and Task 4 removes it along with that helper.
+
 - [ ] **Step 6: Run the gates**
 
 Run: `npx vitest run src/lib/product-availability.test.ts && npm run typecheck && npm run lint`
@@ -383,7 +395,7 @@ it("keeps a price-less line and labels it instead of a sum", () => {
 });
 ```
 
-In `src/components/checkout/CheckoutClient.test.tsx`, delete the "caps a line at the stock the catalog reports" test and the two `it.each` cases for out-of-stock and out-of-season, then add:
+In `src/components/checkout/CheckoutClient.test.tsx`, delete the `"caps a line at the stock the catalog reports"` test — Step 4 of this task removes the `cappedQuantity` helper it covers. Task 1 already removed the three tests that asserted price and stock gating; the out-of-season case stays and must keep passing. Then add:
 
 ```ts
 it("submits a price-less line and shows it without a sum", async () => {
