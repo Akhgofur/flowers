@@ -49,12 +49,18 @@ it("treats a product without a price as orderable", () => {
 });
 
 it("ignores inventory entirely", () => {
-  expect(
-    getProductAvailability(
-      { status: "published", seasons: ["summer"] } as never,
-      summer
-    ).available
-  ).toBe(true);
+  // Still carries a zero stock, which used to block it outright.
+  const soldOut = {
+    status: "published",
+    seasons: ["summer"],
+    stockQuantity: 0,
+  } as ProductAvailabilityInput;
+
+  expect(getProductAvailability(soldOut, summer)).toEqual({
+    available: true,
+    currentSeason: "summer",
+    reason: "available",
+  });
 });
 
 it("still refuses an out-of-season product", () => {
