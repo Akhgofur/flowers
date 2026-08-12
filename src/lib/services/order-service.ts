@@ -77,7 +77,6 @@ export type PendingOrderRecord = {
 export type StoredOrder = Omit<PendingOrderRecord, "status"> & {
   id: string;
   status: OrderStatus;
-  stockReleasedAt?: Date;
 };
 
 export type OrderStore = {
@@ -113,16 +112,6 @@ export type OrderStore = {
     nextStatus: OrderStatus,
     transaction: OrderTransaction
   ): Promise<StoredOrder | null>;
-  claimStockRelease(
-    orderId: string,
-    at: Date,
-    transaction: OrderTransaction
-  ): Promise<boolean>;
-  restoreProductStock(
-    productId: string,
-    quantity: number,
-    transaction: OrderTransaction
-  ): Promise<void>;
 };
 
 type OrderServiceDependencies = {
@@ -238,9 +227,6 @@ function serializeOrder(document: OrderRecord): StoredOrder {
     paymentMethod: document.paymentMethod,
     paymentStatus: "unpaid",
     status: document.status,
-    ...(document.stockReleasedAt === undefined
-      ? {}
-      : { stockReleasedAt: document.stockReleasedAt }),
   };
 }
 
@@ -256,23 +242,18 @@ function createMongoOrderStore(): OrderStore {
     },
 
     async reserveProduct(productId, quantity, locale, currentSeason, transaction) {
-      const document = (await ProductModel.findOneAndUpdate(
-        {
-          _id: productId,
-          status: "published",
-          price: { $gt: 0 },
-          stockQuantity: { $gte: quantity },
-          $or: [
-            { seasons: "all_year" },
-            { seasons: currentSeason },
-            { seasons: { $exists: false } },
-            { seasons: { $size: 0 } },
-          ],
-        },
-        { $inc: { stockQuantity: -quantity } },
-        { new: true, session: asClientSession(transaction) }
-      )
+      const document = (await ProductModel.findOne({
+        _id: productId,
+        status: "published",
+        $or: [
+          { seasons: "all_year" },
+          { seasons: currentSeason },
+          { seasons: { $exists: false } },
+          { seasons: { $size: 0 } },
+        ],
+      })
         .select(RESERVED_PRODUCT_PROJECTION)
+        .session(asClientSession(transaction))
         .lean()
         .exec()) as unknown as ProductRecord | null;
 
@@ -367,24 +348,6 @@ function createMongoOrderStore(): OrderStore {
         .exec()) as unknown as OrderRecord | null;
 
       return document ? serializeOrder(document) : null;
-    },
-
-    async claimStockRelease(orderId, at, transaction) {
-      const result = await OrderModel.updateOne(
-        { _id: orderId, stockReleasedAt: { $exists: false } },
-        { $set: { stockReleasedAt: at } },
-        { session: asClientSession(transaction) }
-      ).exec();
-
-      return result.modifiedCount === 1;
-    },
-
-    async restoreProductStock(productId, quantity, transaction) {
-      await ProductModel.updateOne(
-        { _id: productId },
-        { $inc: { stockQuantity: quantity } },
-        { session: asClientSession(transaction) }
-      ).exec();
     },
   };
 }
@@ -571,27 +534,6 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
           transaction
         );
         if (!updated) throw new OrderStateConflictError();
-
-        if (nextStatus === "cancelled") {
-          const releasedAt = now();
-          const isFirstRelease = await dependencies.store.claimStockRelease(
-            orderId,
-            releasedAt,
-            transaction
-          );
-
-          if (isFirstRelease) {
-            // Keep session operations sequential: a failed increment aborts both status and release claim.
-            for (const item of updated.items) {
-              await dependencies.store.restoreProductStock(
-                item.productId,
-                item.quantity,
-                transaction
-              );
-            }
-            return { ...updated, stockReleasedAt: releasedAt };
-          }
-        }
 
         return updated;
       });

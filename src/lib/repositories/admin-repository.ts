@@ -132,9 +132,6 @@ function toAdminOrder(
               : { sentAt: notification.sentAt.toISOString() }),
           },
         }),
-    ...(document.stockReleasedAt === undefined
-      ? {}
-      : { stockReleasedAt: document.stockReleasedAt.toISOString() }),
     createdAt: document.createdAt.toISOString(),
     updatedAt: document.updatedAt.toISOString(),
   };

@@ -35,7 +35,6 @@ export type OrderDocument = {
   paymentMethod: PaymentMethod;
   paymentStatus: "unpaid";
   status: OrderStatus;
-  stockReleasedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -128,7 +127,6 @@ const orderSchema = new Schema<OrderDocument>(
       ],
       default: "pending",
     },
-    stockReleasedAt: { type: Date },
   },
   { timestamps: true, versionKey: false }
 );

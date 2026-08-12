@@ -239,7 +239,6 @@ export type AdminOrder = {
     lastErrorCode?: string;
     sentAt?: string;
   };
-  stockReleasedAt?: string;
   createdAt: string;
   updatedAt: string;
 };

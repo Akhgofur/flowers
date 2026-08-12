@@ -19,7 +19,6 @@ import {
   type ReservedProduct,
   type StoredOrder,
 } from "./order-service";
-import { InvalidOrderTransitionError } from "./order-transitions";
 import { resolveProductTranslation } from "@/lib/locale-content";
 
 const redRoseId = "507f1f77bcf86cd799439011";
@@ -116,7 +115,6 @@ class InMemoryOrderStore implements OrderStore {
       return null;
     }
 
-    record.stockQuantity -= quantity;
     return { ...record, images: [...record.images] };
   }
 
@@ -169,21 +167,6 @@ class InMemoryOrderStore implements OrderStore {
     return updated;
   }
 
-  async claimStockRelease(orderId: string, at: Date): Promise<boolean> {
-    const order = this.orders.get(orderId);
-    if (!order || order.stockReleasedAt) return false;
-    this.orders.set(orderId, { ...order, stockReleasedAt: at });
-    return true;
-  }
-
-  async restoreProductStock(
-    productId: string,
-    quantity: number
-  ): Promise<void> {
-    const record = this.products.get(productId);
-    if (!record) throw new Error("Missing product during stock restore");
-    record.stockQuantity += quantity;
-  }
 }
 
 function makeService(store: InMemoryOrderStore) {
@@ -195,7 +178,7 @@ function makeService(store: InMemoryOrderStore) {
 }
 
 describe("transactional order service", () => {
-  it("takes prices from reserved products, snapshots them, and reserves stock sequentially", async () => {
+  it("takes prices from reserved products, snapshots them, and reserves products sequentially", async () => {
     const store = new InMemoryOrderStore();
     const result = await makeService(store).createPendingOrder(checkoutInput);
     const order = store.orders.get(result.orderId);
@@ -209,8 +192,6 @@ describe("transactional order service", () => {
     expect(store.reservationOrder).toEqual([redRoseId, tulipId]);
     expect(store.reservationLocales).toEqual(["ru", "ru"]);
     expect(store.reservationSeasons).toEqual(["summer", "summer"]);
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(2);
-    expect(store.products.get(tulipId)?.stockQuantity).toBe(1);
     expect(order).toMatchObject({
       paymentStatus: "unpaid",
       paymentMethod: "cash_on_delivery" as PaymentMethod,
@@ -322,27 +303,22 @@ describe("transactional order service", () => {
       orderNumber: "FL-20260811-RETRY2",
     });
     expect(store.orders).toHaveLength(1);
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(2);
   });
 
-  it("transitions forward and restores stock exactly once on cancellation", async () => {
+  it("cancels an order without touching any product record", async () => {
     const store = new InMemoryOrderStore();
     const service = makeService(store);
     const created = await service.createPendingOrder(checkoutInput);
-
-    await expect(service.transitionOrderStatus(created.orderId, "confirmed")).resolves.toMatchObject({
-      status: "confirmed",
-    });
-    await expect(service.transitionOrderStatus(created.orderId, "cancelled")).resolves.toMatchObject({
-      status: "cancelled",
-      stockReleasedAt: expect.any(Date),
-    });
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
-    expect(store.products.get(tulipId)?.stockQuantity).toBe(2);
-    await expect(service.transitionOrderStatus(created.orderId, "cancelled")).rejects.toBeInstanceOf(
-      InvalidOrderTransitionError
+    const before = new Map(
+      [...store.products].map(([id, value]) => [id, { ...value }])
     );
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
+
+    await service.transitionOrderStatus(created.orderId, "confirmed");
+    await expect(
+      service.transitionOrderStatus(created.orderId, "cancelled")
+    ).resolves.toMatchObject({ status: "cancelled" });
+
+    expect([...store.products]).toEqual([...before]);
   });
 
   it("does not allow a transition for an unknown order", async () => {
