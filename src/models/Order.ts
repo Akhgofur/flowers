@@ -19,9 +19,9 @@ export type OrderItemSnapshot = {
   slug: string;
   name: string;
   imageUrl: string;
-  unitPrice: number;
+  unitPrice?: number;
   quantity: number;
-  lineTotal: number;
+  lineTotal?: number;
 };
 
 export type OrderDocument = {
@@ -61,7 +61,7 @@ const orderItemSchema = new Schema<OrderItemSnapshot>(
       trim: true,
       match: /^https:\/\//,
     },
-    unitPrice: integerMoneyField,
+    unitPrice: { ...integerMoneyField, required: false },
     quantity: {
       type: Number,
       required: true,
@@ -72,7 +72,7 @@ const orderItemSchema = new Schema<OrderItemSnapshot>(
         message: "Quantity must be an integer between 1 and 99.",
       },
     },
-    lineTotal: integerMoneyField,
+    lineTotal: { ...integerMoneyField, required: false },
   },
   { _id: false }
 );

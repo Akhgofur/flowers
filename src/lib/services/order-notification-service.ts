@@ -7,7 +7,7 @@ import { formatSum } from "@/shared/format";
 export type NewOrderNotificationItem = {
   name: string;
   quantity: number;
-  lineTotal: number;
+  lineTotal?: number;
   /** Snapshot taken when the order was placed; empty when the product had none. */
   imageUrl: string;
 };
@@ -90,7 +90,11 @@ export function formatNewOrderNotification(order: NewOrderNotification): string 
         "Mahsulotlar:",
         ...order.items.map(
           (item, index) =>
-            `${index + 1}. ${item.name} × ${item.quantity} — ${formatSum(item.lineTotal, "uz")}`
+            `${index + 1}. ${item.name} × ${item.quantity} — ${
+              item.lineTotal === undefined
+                ? "narx so‘rov bo‘yicha"
+                : formatSum(item.lineTotal, "uz")
+            }`
         ),
       ]
     : [];

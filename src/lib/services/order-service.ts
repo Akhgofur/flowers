@@ -31,7 +31,7 @@ export type ReservedProduct = {
   id: string;
   slug: string;
   name: string;
-  price: number;
+  price?: number;
   stockQuantity: number;
   images: ProductImage[];
 };
@@ -48,9 +48,9 @@ export type StoredOrderItem = {
   slug: string;
   name: string;
   imageUrl: string;
-  unitPrice: number;
+  unitPrice?: number;
   quantity: number;
-  lineTotal: number;
+  lineTotal?: number;
 };
 
 export type StoredOrderCustomer = {
@@ -277,9 +277,6 @@ function createMongoOrderStore(): OrderStore {
         .exec()) as unknown as ProductRecord | null;
 
       if (!document) return null;
-      if (document.price === undefined) {
-        throw new Error("Reserved product is missing a price.");
-      }
 
       const translation = resolveProductTranslation(document, locale);
       if (!translation) return null;
@@ -491,16 +488,22 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                 throw new ProductUnavailableError(item.productId);
               }
 
-              const lineTotal = ensureMoney(product.price * item.quantity, "Line total");
-              subtotal = ensureMoney(subtotal + lineTotal, "Subtotal");
+              const lineTotal =
+                product.price === undefined
+                  ? undefined
+                  : ensureMoney(product.price * item.quantity, "Line total");
+              if (lineTotal !== undefined) {
+                subtotal = ensureMoney(subtotal + lineTotal, "Subtotal");
+              }
               items.push({
                 productId: product.id,
                 slug: product.slug,
                 name: product.name,
                 imageUrl: image.url,
-                unitPrice: product.price,
                 quantity: item.quantity,
-                lineTotal,
+                ...(product.price === undefined || lineTotal === undefined
+                  ? {}
+                  : { unitPrice: product.price, lineTotal }),
               });
             }
 

@@ -94,8 +94,8 @@ export async function loadOrderNotification(
     items: document.items.map((item) => ({
       name: item.name,
       quantity: item.quantity,
-      lineTotal: item.lineTotal,
       imageUrl: item.imageUrl,
+      ...(item.lineTotal === undefined ? {} : { lineTotal: item.lineTotal }),
     })),
     customer: {
       fullName: document.customer.fullName,

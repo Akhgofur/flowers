@@ -111,8 +111,6 @@ class InMemoryOrderStore implements OrderStore {
     if (
       !record ||
       record.stockQuantity < quantity ||
-      !Number.isSafeInteger(record.price) ||
-      record.price <= 0 ||
       (record.seasons[0] !== "all_year" && !record.seasons.includes(currentSeason))
     ) {
       return null;
@@ -291,19 +289,23 @@ describe("transactional order service", () => {
     expect(store.orders).toHaveLength(0);
   });
 
-  it("rejects a product with a non-positive price before decrementing stock", async () => {
+  it("accepts a line with no price and counts only priced lines in the total", async () => {
     const store = new InMemoryOrderStore();
-    store.products.get(redRoseId)!.price = 0;
+    const priceless = product(tulipId, "Narxsiz buket", 0, 5);
+    priceless.price = undefined as unknown as number;
+    store.products.set(tulipId, priceless);
 
-    await expect(
-      makeService(store).createPendingOrder({
-        ...checkoutInput,
-        items: [{ productId: redRoseId, quantity: 1 }],
-      })
-    ).rejects.toBeInstanceOf(ProductUnavailableError);
+    const result = await makeService(store).createPendingOrder(checkoutInput);
+    const order = store.orders.get(result.orderId);
 
-    expect(store.products.get(redRoseId)?.stockQuantity).toBe(4);
-    expect(store.orders).toHaveLength(0);
+    expect(order?.items).toEqual([
+      expect.objectContaining({ productId: redRoseId, unitPrice: 150_000, lineTotal: 300_000 }),
+      expect.objectContaining({ productId: tulipId, quantity: 1 }),
+    ]);
+    expect(order?.items[1]).not.toHaveProperty("unitPrice");
+    expect(order?.items[1]).not.toHaveProperty("lineTotal");
+    expect(order?.subtotal).toBe(300_000);
+    expect(order?.total).toBe(320_000);
   });
 
   it("retries the whole transaction when the unique order number index reports a collision", async () => {

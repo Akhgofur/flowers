@@ -223,9 +223,9 @@ export type AdminOrder = {
     slug: string;
     name: string;
     imageUrl: string;
-    unitPrice: number;
+    unitPrice?: number;
     quantity: number;
-    lineTotal: number;
+    lineTotal?: number;
   }>;
   subtotal: number;
   deliveryFee: number;
