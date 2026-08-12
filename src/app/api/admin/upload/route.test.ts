@@ -34,7 +34,7 @@ describe("admin image upload API", () => {
       new Response(JSON.stringify({ error: "Xatolik" }), { status: 500 })
     );
     imageService.uploadProductImage.mockResolvedValue({
-      url: "https://res.cloudinary.com/nafis/image/upload/rose.webp",
+      url: "https://res.cloudinary.com/floraluxe/image/upload/rose.webp",
       publicId: "floraluxe/products/rose",
       alt: "Pushti atirgul buketi",
     });
@@ -48,7 +48,7 @@ describe("admin image upload API", () => {
     expect(response.status).toBe(201);
     await expect(response.json()).resolves.toEqual({
       image: {
-        url: "https://res.cloudinary.com/nafis/image/upload/rose.webp",
+        url: "https://res.cloudinary.com/floraluxe/image/upload/rose.webp",
         publicId: "floraluxe/products/rose",
         alt: "Pushti atirgul buketi",
       },

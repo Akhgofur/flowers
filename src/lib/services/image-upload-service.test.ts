@@ -7,7 +7,7 @@ const cloudinary = vi.hoisted(() => ({
   },
 }));
 const env = vi.hoisted(() => ({
-  CLOUDINARY_CLOUD_NAME: "nafis-test",
+  CLOUDINARY_CLOUD_NAME: "floraluxe-test",
   CLOUDINARY_API_KEY: "key",
   CLOUDINARY_API_SECRET: "secret",
 }));
@@ -31,20 +31,20 @@ describe("uploadProductImage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     cloudinary.v2.uploader.upload.mockResolvedValue({
-      secure_url: "https://res.cloudinary.com/nafis/image/upload/rose.webp",
+      secure_url: "https://res.cloudinary.com/floraluxe/image/upload/rose.webp",
       public_id: "floraluxe/products/rose",
     });
   });
 
   it("validates inputs and uploads a safe data URI only after validation", async () => {
     await expect(uploadProductImage(validFile, "Pushti atirgul buketi")).resolves.toEqual({
-      url: "https://res.cloudinary.com/nafis/image/upload/rose.webp",
+      url: "https://res.cloudinary.com/floraluxe/image/upload/rose.webp",
       publicId: "floraluxe/products/rose",
       alt: "Pushti atirgul buketi",
     });
 
     expect(cloudinary.v2.config).toHaveBeenCalledWith({
-      cloud_name: "nafis-test",
+      cloud_name: "floraluxe-test",
       api_key: "key",
       api_secret: "secret",
       secure: true,

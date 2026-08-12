@@ -244,7 +244,7 @@ describe("commerce validation boundaries", () => {
       deliveryFee: 25_000,
       workingHours: "08:00–22:00",
       seoOgImage: {
-        url: "https://res.cloudinary.com/nafis/image/upload/og.jpg",
+        url: "https://res.cloudinary.com/floraluxe/image/upload/og.jpg",
         alt: "Floraluxe uchun pushti gullar kompozitsiyasi",
       },
     });

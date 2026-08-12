@@ -8,17 +8,23 @@ const SOURCE_ROOTS = [
 ];
 const TEXT_EXTENSIONS = new Set([".ts", ".tsx", ".json", ".css", ".svg"]);
 
-function collectProductionFiles(directory: string): string[] {
+function collectFiles(
+  directory: string,
+  { includeTests }: { includeTests: boolean }
+): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
 
-    if (entry.isDirectory()) return collectProductionFiles(path);
+    if (entry.isDirectory()) return collectFiles(path, { includeTests });
     if (!TEXT_EXTENSIONS.has(extname(entry.name))) return [];
-    if (/\.(?:test|spec)\.[^.]+$/.test(entry.name)) return [];
+    if (!includeTests && /\.(?:test|spec)\.[^.]+$/.test(entry.name)) return [];
 
     return [path];
   });
 }
+
+const collectProductionFiles = (directory: string) =>
+  collectFiles(directory, { includeTests: false });
 
 /** Capitalised brand usages and the retired order-number prefix. */
 const RETIRED_BRAND_COPY = /\bNafis\b|\bNAFIS\b|\bNF-/;
@@ -40,11 +46,22 @@ describe("Floraluxe brand identity", () => {
     expect(violations).toEqual([]);
   });
 
-  // The storage migration must name the retired keys to be able to drop them.
-  const IDENTIFIER_EXCEPTIONS = [join("features", "cart", "cart-storage.ts")];
+  /**
+   * Only files that must name the retired keys in order to retire them: the
+   * storage migration, its test, and this guard's own fixtures.
+   */
+  const IDENTIFIER_EXCEPTIONS = [
+    join("features", "cart", "cart-storage.ts"),
+    join("features", "cart", "cart-storage-migration.test.ts"),
+    join("lib", "brand-identity.test.ts"),
+  ];
 
+  // Tests are scanned too: fixture cloud names like `nafis-test` survived the
+  // whole rebrand precisely because the production-only scan never saw them.
   it("does not leave retired brand identifiers in storage keys, ids or globals", () => {
-    const violations = SOURCE_ROOTS.flatMap(collectProductionFiles).flatMap((path) => {
+    const violations = SOURCE_ROOTS.flatMap((root) =>
+      collectFiles(root, { includeTests: true })
+    ).flatMap((path) => {
       if (IDENTIFIER_EXCEPTIONS.some((allowed) => path.endsWith(allowed))) return [];
 
       const content = readFileSync(path, "utf8");
