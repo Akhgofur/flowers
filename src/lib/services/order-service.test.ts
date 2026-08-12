@@ -118,7 +118,6 @@ class InMemoryOrderStore implements OrderStore {
     return {
       status: record.status,
       seasons: [...record.seasons],
-      price: record.price,
     };
   }
 

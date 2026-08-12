@@ -88,6 +88,32 @@ describe("CartDrawer", () => {
     expect(screen.getAllByText("Narx so‘rov bo‘yicha").length).toBeGreaterThan(0);
   });
 
+  it("shows the price-on-request label in place of the footer total when no line has a price", () => {
+    renderDrawer({
+      lines: [{ productId: "on-request", quantity: 2 }] as CartLine[],
+    });
+
+    const footer = screen.getByRole("dialog").querySelector("footer")!;
+    // Only the price-on-request label appears in the total slot — no "0 so'm" sum.
+    expect(within(footer).getByText("Narx so‘rov bo‘yicha")).toBeVisible();
+    expect(within(footer).queryByText(/so‘m/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the sum but flags the omission in the footer for a mixed cart", () => {
+    renderDrawer({
+      lines: [
+        { productId: "roses", quantity: 2 },
+        { productId: "on-request", quantity: 1 },
+      ] as CartLine[],
+    });
+
+    const footer = screen.getByRole("dialog").querySelector("footer")!;
+    // The sum still reflects only the priced line (535 000 x 2).
+    expect(within(footer).getByText("1 070 000 so‘m")).toBeVisible();
+    // ...and the footer surfaces that a line was left out of it.
+    expect(within(footer).getByText("Narx so‘rov bo‘yicha")).toBeVisible();
+  });
+
   it("changes quantity with plus and minus and removes the line", async () => {
     const user = userEvent.setup();
     const props = renderDrawer();

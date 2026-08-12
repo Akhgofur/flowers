@@ -118,6 +118,10 @@ export function CheckoutClient({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdOrder, setCreatedOrder] = useState<OrderCreationResult | null>(null);
+  // Captured at submit time, before the cart is cleared: whether the order that was
+  // just placed contained a line with no price, so the confirmation screen can flag
+  // that its total is partial rather than presenting it as the final sum.
+  const [createdOrderHasUnpricedLine, setCreatedOrderHasUnpricedLine] = useState(false);
 
   useEffect(() => {
     // Browser-only cart storage must be read after SSR hydration.
@@ -186,6 +190,9 @@ export function CheckoutClient({
       }
 
       setCreatedOrder(payload.order);
+      setCreatedOrderHasUnpricedLine(
+        items.some(({ product }) => product.price === undefined)
+      );
       setLines([]);
       writeCart([]);
     } catch (submitError) {
@@ -217,6 +224,9 @@ export function CheckoutClient({
               <dd>{formatSum(createdOrder.total, locale)}</dd>
             </div>
           </dl>
+          {createdOrderHasUnpricedLine ? (
+            <p className="checkout-confirmation__note">{t("totalPending")}</p>
+          ) : null}
           <Link href="/catalog" className="primary-button">
             {t("continueShopping")}
           </Link>

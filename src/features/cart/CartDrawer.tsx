@@ -53,6 +53,9 @@ export function CartDrawer({
     (sum, { line, product }) => sum + (product.price ?? 0) * line.quantity,
     0
   );
+  const hasPricedLine = items.some(({ product }) => product.price !== undefined);
+  const hasUnpricedLine = items.some(({ product }) => product.price === undefined);
+  const isMixedCart = hasPricedLine && hasUnpricedLine;
 
   useLayoutEffect(() => {
     if (open) shouldRestoreFocusRef.current = true;
@@ -189,7 +192,18 @@ export function CartDrawer({
             <footer className="cart-drawer__footer">
               <div className="cart-drawer__total">
                 <span>{t("subtotal")}</span>
-                <strong>{formatSum(total, locale)}</strong>
+                {!hasPricedLine ? (
+                  <strong>{tProduct("priceOnRequest")}</strong>
+                ) : isMixedCart ? (
+                  <span className="cart-drawer__total-amount">
+                    <strong>{formatSum(total, locale)}</strong>
+                    <small className="cart-drawer__total-note">
+                      {tProduct("priceOnRequest")}
+                    </small>
+                  </span>
+                ) : (
+                  <strong>{formatSum(total, locale)}</strong>
+                )}
               </div>
               <Link
                 className="primary-button"

@@ -116,6 +116,8 @@ describe("CheckoutClient", () => {
     });
     expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
     expect(localStorage.getItem(CART_STORAGE_KEY)).toBe("[]");
+    // Every submitted line was priced, so the confirmation total needs no caveat.
+    expect(screen.queryByText("Operator tasdiqlaydi")).not.toBeInTheDocument();
   });
 
   it("keeps the cart intact and announces a safe server error on failure", async () => {
@@ -326,5 +328,48 @@ describe("CheckoutClient", () => {
       { productId: products[0]?.id, quantity: 2 },
       { productId: products[1]?.id, quantity: 1 },
     ]);
+  });
+
+  it("flags the confirmation total as pending when the placed order had a price-less line", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([
+        { productId: products[0]?.id, quantity: 2 },
+        { productId: products[1]?.id, quantity: 1 },
+      ])
+    );
+
+    // The server total here is only the delivery fee plus the priced line — the
+    // point of the fix is that the confirmation screen says so instead of
+    // presenting it as a complete sum.
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          order: {
+            orderId: "507f191e810c19729de860ea",
+            orderNumber: "FL-20260812-ORDER1234",
+            total: 300_000,
+            status: "pending",
+          },
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+
+    await screen.findByText(/gul savati №79/i);
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
+    expect(screen.getByText("Operator tasdiqlaydi")).toBeVisible();
   });
 });

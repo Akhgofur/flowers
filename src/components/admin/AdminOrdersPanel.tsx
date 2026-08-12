@@ -169,7 +169,7 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
 
   return (
     <>
-      <section className="admin-page-heading"><div><p className="eyebrow">Fulfilment oqimi</p><h1>Buyurtmalar</h1><p>Holat faqat oldinga o‘tadi; bekor qilinganda stok bitta tranzaksiyada qaytariladi.</p></div></section>
+      <section className="admin-page-heading"><div><p className="eyebrow">Fulfilment oqimi</p><h1>Buyurtmalar</h1><p>Holat faqat oldinga o‘tadi.</p></div></section>
       {notice ? <p className="admin-form-notice" role="status">{notice}</p> : null}
       {error ? <p className="admin-form-error" role="alert">{error}</p> : null}
       <section className="admin-card admin-orders-card" aria-labelledby="orders-title">

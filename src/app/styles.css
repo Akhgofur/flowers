@@ -1806,6 +1806,19 @@ img {
   font-size: 1.45rem;
 }
 
+.cart-drawer__total-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.cart-drawer__total-note {
+  color: var(--color-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
 .cart-drawer__footer .primary-button {
   width: 100%;
 }
@@ -2958,6 +2971,13 @@ img {
 
 .checkout-confirmation .primary-button {
   display: inline-flex;
+}
+
+.checkout-confirmation__note {
+  margin-top: -14px;
+  color: var(--color-accent-dark);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 @media (max-width: 980px) {

@@ -38,7 +38,6 @@ export type ReservedProduct = {
 export type ProductPurchaseState = {
   status: ProductStatus;
   seasons: Season[];
-  price?: number;
 };
 
 export type StoredOrderItem = {
@@ -160,7 +159,7 @@ export const RESERVED_PRODUCT_PROJECTION = {
 
 export class ProductUnavailableError extends OrderServiceError {
   constructor(readonly productId: string) {
-    super("Bu mahsulot hozir yetarli miqdorda mavjud emas.", "PRODUCT_UNAVAILABLE", 409);
+    super("Bu mahsulot hozir buyurtma uchun mavjud emas.", "PRODUCT_UNAVAILABLE", 409);
     this.name = "ProductUnavailableError";
   }
 }
@@ -271,7 +270,7 @@ function createMongoOrderStore(): OrderStore {
       if (!mongoose.isValidObjectId(productId)) return null;
 
       const document = (await ProductModel.findById(productId)
-        .select({ status: 1, seasons: 1, price: 1 })
+        .select({ status: 1, seasons: 1 })
         .session(asClientSession(transaction))
         .lean()
         .exec()) as unknown as ProductRecord | null;
@@ -282,7 +281,6 @@ function createMongoOrderStore(): OrderStore {
         status: document.status,
         seasons:
           document.seasons?.length > 0 ? [...document.seasons] : ["all_year"],
-        ...(document.price === undefined ? {} : { price: document.price }),
       };
     },
 
