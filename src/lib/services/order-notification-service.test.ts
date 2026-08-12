@@ -74,3 +74,87 @@ describe("order notifications", () => {
     expect(logFailure).toHaveBeenCalledWith("telegram");
   });
 });
+
+const orderWithItems: NewOrderNotification = {
+  ...order,
+  items: [
+    {
+      name: "Цветочная корзина №79",
+      quantity: 5,
+      lineTotal: 2_500_000,
+      imageUrl: "https://res.cloudinary.com/demo/basket.png",
+    },
+    {
+      name: "Букет алых роз",
+      quantity: 1,
+      lineTotal: 535_000,
+      imageUrl: "https://res.cloudinary.com/demo/roses.png",
+    },
+  ],
+};
+
+describe("operator message contents", () => {
+  it("lists what was ordered, not only the total", () => {
+    const text = formatNewOrderNotification(orderWithItems);
+
+    expect(text).toContain("Mahsulotlar:");
+    expect(text).toContain("1. Цветочная корзина №79 × 5");
+    expect(text).toContain("2. Букет алых роз × 1");
+    // The line total must be there so the operator can check the sum.
+    expect(text).toMatch(/Цветочная корзина №79 × 5 — 2[\s ]500[\s ]000/);
+  });
+
+  it("still formats an order whose items were not loaded", () => {
+    expect(() => formatNewOrderNotification(order)).not.toThrow();
+    expect(formatNewOrderNotification(order)).toContain("Yangi buyurtma");
+  });
+});
+
+describe("telegram photo delivery", () => {
+  function serviceWith(sendTelegram: ReturnType<typeof vi.fn>) {
+    return createOrderNotificationService({
+      getConfig: () => ({ telegram: { botToken: "token", chatId: "-100" } }),
+      sendEmail: vi.fn(),
+      sendTelegram,
+      logFailure: vi.fn(),
+    });
+  }
+
+  it("passes every product photo alongside the text", async () => {
+    const sendTelegram = vi.fn().mockResolvedValue(undefined);
+
+    await serviceWith(sendTelegram).notifyTelegramOrder(orderWithItems);
+
+    const [, message] = sendTelegram.mock.calls[0] ?? [];
+    expect(message.photos).toEqual([
+      "https://res.cloudinary.com/demo/basket.png",
+      "https://res.cloudinary.com/demo/roses.png",
+    ]);
+    expect(message.text).toContain("Yangi buyurtma");
+  });
+
+  it("sends no photos when the order carries none", async () => {
+    const sendTelegram = vi.fn().mockResolvedValue(undefined);
+
+    await serviceWith(sendTelegram).notifyTelegramOrder(order);
+
+    const [, message] = sendTelegram.mock.calls[0] ?? [];
+    expect(message.photos).toEqual([]);
+  });
+
+  it("skips a line whose image url is empty", async () => {
+    const sendTelegram = vi.fn().mockResolvedValue(undefined);
+    const mixed: NewOrderNotification = {
+      ...orderWithItems,
+      items: [
+        { ...orderWithItems.items![0]!, imageUrl: "" },
+        orderWithItems.items![1]!,
+      ],
+    };
+
+    await serviceWith(sendTelegram).notifyTelegramOrder(mixed);
+
+    const [, message] = sendTelegram.mock.calls[0] ?? [];
+    expect(message.photos).toEqual(["https://res.cloudinary.com/demo/roses.png"]);
+  });
+});

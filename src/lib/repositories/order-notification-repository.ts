@@ -91,6 +91,12 @@ export async function loadOrderNotification(
     orderNumber: document.number,
     total: document.total,
     paymentMethod: document.paymentMethod,
+    items: document.items.map((item) => ({
+      name: item.name,
+      quantity: item.quantity,
+      lineTotal: item.lineTotal,
+      imageUrl: item.imageUrl,
+    })),
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,

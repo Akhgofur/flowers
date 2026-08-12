@@ -59,3 +59,33 @@ describe("AdminOrdersPanel notifications", () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe("AdminOrdersPanel order lines", () => {
+  it("shows the ordered product image so the florist can prepare it", () => {
+    render(<AdminOrdersPanel initialOrders={[order]} />);
+
+    const image = screen.getByRole("img", { name: /rose basket/i });
+    expect(image).toBeVisible();
+    expect(image.getAttribute("src")).toContain("rose.jpg");
+  });
+
+  it("keeps the quantity and name beside the image", () => {
+    render(<AdminOrdersPanel initialOrders={[order]} />);
+
+    expect(screen.getByText(/1×\s*Rose basket/)).toBeVisible();
+  });
+
+  // An order placed before an image existed, or a product deleted since, must not
+  // break the fulfilment list.
+  it("renders a line whose product has no image", () => {
+    const withoutImage: AdminOrder = {
+      ...order,
+      items: [{ ...order.items[0]!, imageUrl: "" }],
+    };
+
+    render(<AdminOrdersPanel initialOrders={[withoutImage]} />);
+
+    expect(screen.getByText(/1×\s*Rose basket/)).toBeVisible();
+    expect(screen.queryByRole("img", { name: /rose basket/i })).not.toBeInTheDocument();
+  });
+});

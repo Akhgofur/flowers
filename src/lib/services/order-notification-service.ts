@@ -4,6 +4,14 @@ import type { PaymentMethod } from "@/lib/contracts";
 import { env } from "@/lib/env";
 import { formatSum } from "@/shared/format";
 
+export type NewOrderNotificationItem = {
+  name: string;
+  quantity: number;
+  lineTotal: number;
+  /** Snapshot taken when the order was placed; empty when the product had none. */
+  imageUrl: string;
+};
+
 export type NewOrderNotification = {
   orderNumber: string;
   total: number;
@@ -15,7 +23,19 @@ export type NewOrderNotification = {
     deliveryDate?: string;
     comment?: string;
   };
+  /** Absent for notifications stored before the operator message listed items. */
+  items?: NewOrderNotificationItem[];
 };
+
+export type TelegramMessage = {
+  text: string;
+  /** Product photos, already filtered to usable URLs and capped for one album. */
+  photos: string[];
+};
+
+/** Telegram renders at most 10 media per album and 1024 characters of caption. */
+const TELEGRAM_ALBUM_LIMIT = 10;
+const TELEGRAM_CAPTION_LIMIT = 1024;
 
 export type EmailNotificationConfig = {
   host: string;
@@ -39,7 +59,10 @@ export type OrderNotificationConfig = {
 type NotificationDependencies = {
   getConfig: () => OrderNotificationConfig;
   sendEmail: (config: EmailNotificationConfig, text: string) => Promise<void>;
-  sendTelegram: (config: TelegramNotificationConfig, text: string) => Promise<void>;
+  sendTelegram: (
+    config: TelegramNotificationConfig,
+    message: TelegramMessage
+  ) => Promise<void>;
   logFailure: (channel: "email" | "telegram" | "configuration") => void;
 };
 
@@ -60,16 +83,39 @@ export function formatNewOrderNotification(order: NewOrderNotification): string 
     order.customer.comment ? `Izoh: ${order.customer.comment}` : null,
   ].filter(Boolean);
 
+  // The florist needs to know what to prepare, which the totals alone never said.
+  const itemRows = order.items?.length
+    ? [
+        "",
+        "Mahsulotlar:",
+        ...order.items.map(
+          (item, index) =>
+            `${index + 1}. ${item.name} × ${item.quantity} — ${formatSum(item.lineTotal, "uz")}`
+        ),
+      ]
+    : [];
+
   return [
     `Yangi buyurtma: ${order.orderNumber}`,
     `Jami: ${formatSum(order.total, "uz")}`,
     `To'lov: ${paymentMethodLabel(order.paymentMethod)}`,
+    ...itemRows,
     "",
     `Mijoz: ${order.customer.fullName}`,
     `Telefon: ${order.customer.phone}`,
     `Manzil: ${order.customer.address}`,
     ...optionalRows,
   ].join("\n");
+}
+
+export function buildTelegramMessage(order: NewOrderNotification): TelegramMessage {
+  return {
+    text: formatNewOrderNotification(order),
+    photos: (order.items ?? [])
+      .map((item) => item.imageUrl)
+      .filter((url) => url.startsWith("https://"))
+      .slice(0, TELEGRAM_ALBUM_LIMIT),
+  };
 }
 
 function readConfig(): OrderNotificationConfig {
@@ -124,16 +170,20 @@ async function sendEmail(config: EmailNotificationConfig, text: string): Promise
   });
 }
 
-async function sendTelegram(config: TelegramNotificationConfig, text: string): Promise<void> {
+async function callTelegram(
+  config: TelegramNotificationConfig,
+  method: "sendMessage" | "sendPhoto" | "sendMediaGroup",
+  payload: Record<string, unknown>
+): Promise<void> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 4_000);
+  const timeout = setTimeout(() => controller.abort(), 6_000);
   try {
     const response = await fetch(
-      `https://api.telegram.org/bot${config.botToken}/sendMessage`,
+      `https://api.telegram.org/bot${config.botToken}/${method}`,
       {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ chat_id: config.chatId, text }),
+        body: JSON.stringify({ chat_id: config.chatId, ...payload }),
         signal: controller.signal,
       }
     );
@@ -141,6 +191,42 @@ async function sendTelegram(config: TelegramNotificationConfig, text: string): P
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function sendTelegram(
+  config: TelegramNotificationConfig,
+  message: TelegramMessage
+): Promise<void> {
+  // Photos carry the order text as their caption so the group gets one message.
+  // Telegram fetches the image itself, which can fail for reasons unrelated to the
+  // order, so a rejected album falls back to the plain text that always worked.
+  const canCaption =
+    message.photos.length > 0 && message.text.length <= TELEGRAM_CAPTION_LIMIT;
+
+  if (canCaption) {
+    try {
+      if (message.photos.length === 1) {
+        await callTelegram(config, "sendPhoto", {
+          photo: message.photos[0],
+          caption: message.text,
+        });
+      } else {
+        await callTelegram(config, "sendMediaGroup", {
+          media: message.photos.map((photo, index) => ({
+            type: "photo",
+            media: photo,
+            // Telegram shows only the first caption as the album caption.
+            ...(index === 0 ? { caption: message.text } : {}),
+          })),
+        });
+      }
+      return;
+    } catch {
+      // Fall through: the operator must get the order even without pictures.
+    }
+  }
+
+  await callTelegram(config, "sendMessage", { text: message.text });
 }
 
 function logFailure(channel: "email" | "telegram" | "configuration"): void {
@@ -169,10 +255,7 @@ export function createOrderNotificationService(
       if (!config.telegram) throw new TelegramNotificationError("CONFIG_MISSING");
 
       try {
-        await dependencies.sendTelegram(
-          config.telegram,
-          formatNewOrderNotification(order)
-        );
+        await dependencies.sendTelegram(config.telegram, buildTelegramMessage(order));
       } catch (error) {
         const code =
           error instanceof Error && error.name === "AbortError"
@@ -195,18 +278,21 @@ export function createOrderNotificationService(
         return { attempted: 0, delivered: 0, failed: 1 };
       }
 
-      const text = formatNewOrderNotification(order);
+      const message = buildTelegramMessage(order);
       const deliveries: Array<{
         channel: "email" | "telegram";
         request: Promise<void>;
       }> = [];
       if (config.email) {
-        deliveries.push({ channel: "email", request: dependencies.sendEmail(config.email, text) });
+        deliveries.push({
+          channel: "email",
+          request: dependencies.sendEmail(config.email, message.text),
+        });
       }
       if (config.telegram) {
         deliveries.push({
           channel: "telegram",
-          request: dependencies.sendTelegram(config.telegram, text),
+          request: dependencies.sendTelegram(config.telegram, message),
         });
       }
 

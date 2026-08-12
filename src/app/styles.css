@@ -4087,6 +4087,30 @@ img {
   gap: 4px;
 }
 
+.admin-order__items {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-order__items li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-order__thumb {
+  width: 44px;
+  height: 52px;
+  flex: 0 0 auto;
+  object-fit: cover;
+  border: 1px solid rgba(48, 30, 35, 0.1);
+  border-radius: 2px;
+  background: #f3ece8;
+}
+
 .admin-order__body strong {
   font-family: var(--font-display);
   font-size: 1.35rem;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import { allowedOrderTransitions, type AdminOrder, type OrderStatus } from "@/lib/contracts";
 import { formatSum } from "@/shared/format";
@@ -36,6 +36,15 @@ async function readRetryResponse(response: Response): Promise<RetryResponse> {
   } catch {
     return {};
   }
+}
+
+/**
+ * Fulfilment must stay truthful: a broken thumbnail is hidden rather than swapped
+ * for the storefront's decorative fallback, which would show the florist a bouquet
+ * that is not the one ordered.
+ */
+function hideBrokenThumbnail(event: SyntheticEvent<HTMLImageElement>): void {
+  event.currentTarget.style.display = "none";
 }
 
 export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
@@ -122,7 +131,19 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
         {orders.length === 0 ? <p className="admin-empty-copy">Hali buyurtma yo‘q.</p> : <div className="admin-orders-list">{orders.map((order) => {
           const choices = allowedOrderTransitions[order.status];
           const selected = nextStatuses[order.id] ?? "";
-          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><p>{order.customer.address}</p><ul>{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>{item.quantity}× {item.name}</li>)}</ul>{order.telegram ? <div className="admin-notification-status"><div><span>Telegram</span><strong data-status={order.telegram.status}>{order.telegram.status}</strong><small>{order.telegram.attempts} urinish{order.telegram.lastErrorCode ? <> · <code>{order.telegram.lastErrorCode}</code></> : null}</small></div><button type="button" disabled={!(["failed", "pending"] as const).includes(order.telegram.status as "failed" | "pending") || retryingId === order.id} onClick={() => retryTelegram(order)}>{retryingId === order.id ? "Yuborilmoqda..." : "Telegram xabarini qayta yuborish"}</button></div> : <p className="admin-notification-status">Telegram xabari hali yaratilmagan.</p>}</div>{choices.length > 0 ? <footer><label><span>Keyingi holat</span><select value={selected} onChange={(event) => setNextStatuses((current) => ({ ...current, [order.id]: event.target.value as OrderStatus }))}><option value="">Tanlang</option>{choices.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="admin-primary-button" type="button" disabled={!selected || savingId === order.id} onClick={() => saveStatus(order)}>{savingId === order.id ? "Saqlanmoqda…" : "Yangilash"}</button></footer> : <footer><span className="admin-order__terminal">Yakuniy holat</span></footer>}</article>;
+          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><p>{order.customer.address}</p><ul className="admin-order__items">{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>
+                    {item.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element -- an order snapshot may point at any host the operator once typed into the product form, and next/image throws on an unconfigured one, which would take the whole fulfilment page down for a 44px thumbnail.
+                      <img
+                        className="admin-order__thumb"
+                        src={item.imageUrl}
+                        alt={item.name}
+                        loading="lazy"
+                        onError={hideBrokenThumbnail}
+                      />
+                    ) : null}
+                    <span>{item.quantity}× {item.name}</span>
+                  </li>)}</ul>{order.telegram ? <div className="admin-notification-status"><div><span>Telegram</span><strong data-status={order.telegram.status}>{order.telegram.status}</strong><small>{order.telegram.attempts} urinish{order.telegram.lastErrorCode ? <> · <code>{order.telegram.lastErrorCode}</code></> : null}</small></div><button type="button" disabled={!(["failed", "pending"] as const).includes(order.telegram.status as "failed" | "pending") || retryingId === order.id} onClick={() => retryTelegram(order)}>{retryingId === order.id ? "Yuborilmoqda..." : "Telegram xabarini qayta yuborish"}</button></div> : <p className="admin-notification-status">Telegram xabari hali yaratilmagan.</p>}</div>{choices.length > 0 ? <footer><label><span>Keyingi holat</span><select value={selected} onChange={(event) => setNextStatuses((current) => ({ ...current, [order.id]: event.target.value as OrderStatus }))}><option value="">Tanlang</option>{choices.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="admin-primary-button" type="button" disabled={!selected || savingId === order.id} onClick={() => saveStatus(order)}>{savingId === order.id ? "Saqlanmoqda…" : "Yangilash"}</button></footer> : <footer><span className="admin-order__terminal">Yakuniy holat</span></footer>}</article>;
         })}</div>}
       </section>
     </>
