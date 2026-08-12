@@ -246,6 +246,113 @@ describe("CheckoutClient", () => {
     expect(body.items).toEqual([{ productId: products[0]?.id, quantity: 2 }]);
   });
 
+  // Price is only one of four rules the server enforces. A line that fails any of
+  // them produces the same unhelpful "one of the products is unavailable".
+  // "unpublished" is absent on purpose: CatalogProduct.status is narrowed to
+  // "published", so a draft cannot reach the checkout through this type at all.
+  it.each<[string, Partial<CatalogProduct>]>([
+    ["out of stock", { stockQuantity: 0 }],
+    ["out of season", { seasons: ["winter"] }],
+  ])("does not post a line that is %s", async (_label, overrides) => {
+    const blocked = {
+      ...products[0]!,
+      id: "507f1f77bcf86cd799439013",
+      slug: "blocked",
+      name: "Bloklangan buket",
+      ...overrides,
+    };
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([
+        { productId: products[0]?.id, quantity: 2 },
+        { productId: blocked.id, quantity: 1 },
+      ])
+    );
+
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          order: {
+            orderId: "507f191e810c19729de860ea",
+            orderNumber: "FL-20260812-ORDER1234",
+            total: 300_000,
+            status: "pending",
+          },
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={[...products, blocked]} />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      items: Array<{ productId: string }>;
+    };
+    expect(body.items.map((item) => item.productId)).toEqual([products[0]?.id]);
+  });
+
+  // Reserving more than exists fails server-side, so the line is capped instead.
+  it("caps a line at the stock the catalog reports", async () => {
+    const scarce = {
+      ...products[0]!,
+      id: "507f1f77bcf86cd799439014",
+      slug: "scarce",
+      name: "Kam qolgan buket",
+      stockQuantity: 2,
+    };
+    localStorage.setItem(
+      CART_STORAGE_KEY,
+      JSON.stringify([{ productId: scarce.id, quantity: 7 }])
+    );
+
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          order: {
+            orderId: "507f191e810c19729de860ea",
+            orderNumber: "FL-20260812-ORDER1234",
+            total: 300_000,
+            status: "pending",
+          },
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={[scarce]} />, { locale: "uz" });
+
+    await screen.findByText(/kam qolgan buket/i);
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      items: Array<{ productId: string; quantity: number }>;
+    };
+    expect(body.items).toEqual([{ productId: scarce.id, quantity: 2 }]);
+  });
+
   it("drops unpriceable lines from browser storage so the cart count stays honest", async () => {
     localStorage.setItem(
       CART_STORAGE_KEY,
