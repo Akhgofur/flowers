@@ -108,6 +108,21 @@ describe("operator message contents", () => {
     expect(() => formatNewOrderNotification(order)).not.toThrow();
     expect(formatNewOrderNotification(order)).toContain("Yangi buyurtma");
   });
+
+  it("labels a line the shop has not priced", () => {
+    const text = formatNewOrderNotification({
+      ...order,
+      items: [
+        {
+          name: "Авторский букет №1",
+          quantity: 1,
+          imageUrl: "https://res.cloudinary.com/demo/bouquet.png",
+        },
+      ],
+    });
+
+    expect(text).toContain("Авторский букет №1 × 1 — narx so‘rov bo‘yicha");
+  });
 });
 
 describe("telegram photo delivery", () => {

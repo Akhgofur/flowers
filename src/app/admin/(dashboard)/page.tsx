@@ -14,8 +14,8 @@ export default async function AdminDashboardPage() {
   ]);
   const pendingOrders = orders.filter((order) => order.status === "pending").length;
   const activeProducts = products.filter((product) => product.status === "published").length;
-  const lowStockProducts = products.filter(
-    (product) => product.status === "published" && product.stockQuantity <= 5
+  const unpricedProducts = products.filter(
+    (product) => product.status === "published" && product.price === undefined
   ).length;
   const orderValue = orders
     .filter((order) => order.status !== "cancelled")
@@ -53,8 +53,8 @@ export default async function AdminDashboardPage() {
         </article>
         <article>
           <span>04</span>
-          <p>Kam qolgan mahsulotlar</p>
-          <strong>{lowStockProducts}</strong>
+          <p>Narxsiz mahsulotlar</p>
+          <strong>{unpricedProducts}</strong>
           <small>{categories.length} ta kategoriya boshqaruvda</small>
         </article>
       </section>

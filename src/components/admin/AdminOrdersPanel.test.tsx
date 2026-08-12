@@ -91,6 +91,17 @@ describe("AdminOrdersPanel order lines", () => {
     expect(screen.getByText(/1×\s*Rose basket/)).toBeVisible();
     expect(screen.queryByRole("img", { name: /rose basket/i })).not.toBeInTheDocument();
   });
+
+  it("marks an order line the shop has not priced", () => {
+    const priceless: AdminOrder = {
+      ...order,
+      items: [{ ...order.items[0]!, unitPrice: undefined, lineTotal: undefined }],
+    };
+
+    render(<AdminOrdersPanel initialOrders={[priceless]} />);
+
+    expect(screen.getByText(/narx so‘rov bo‘yicha/i)).toBeVisible();
+  });
 });
 
 describe("AdminOrdersPanel image lightbox", () => {

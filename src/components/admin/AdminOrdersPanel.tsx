@@ -201,7 +201,7 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
                         />
                       </button>
                     ) : null}
-                    <span>{item.quantity}× {item.name}</span>
+                    <span>{item.quantity}× {item.name}{item.lineTotal === undefined ? " · Narx so‘rov bo‘yicha" : ""}</span>
                   </li>)}</ul>{order.telegram ? <div className="admin-notification-status"><div><span>Telegram</span><strong data-status={order.telegram.status}>{order.telegram.status}</strong><small>{order.telegram.attempts} urinish{order.telegram.lastErrorCode ? <> · <code>{order.telegram.lastErrorCode}</code></> : null}</small></div><button type="button" disabled={!(["failed", "pending"] as const).includes(order.telegram.status as "failed" | "pending") || retryingId === order.id} onClick={() => retryTelegram(order)}>{retryingId === order.id ? "Yuborilmoqda..." : "Telegram xabarini qayta yuborish"}</button></div> : <p className="admin-notification-status">Telegram xabari hali yaratilmagan.</p>}</div>{choices.length > 0 ? <footer><label><span>Keyingi holat</span><select value={selected} onChange={(event) => setNextStatuses((current) => ({ ...current, [order.id]: event.target.value as OrderStatus }))}><option value="">Tanlang</option>{choices.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="admin-primary-button" type="button" disabled={!selected || savingId === order.id} onClick={() => saveStatus(order)}>{savingId === order.id ? "Saqlanmoqda…" : "Yangilash"}</button></footer> : <footer><span className="admin-order__terminal">Yakuniy holat</span></footer>}</article>;
         })}</div>}
       </section>

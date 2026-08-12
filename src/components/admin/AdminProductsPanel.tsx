@@ -29,7 +29,6 @@ type ProductDraft = {
   categoryId: string;
   price: string;
   originalPrice: string;
-  stockQuantity: string;
   sortOrder: string;
   imageUrl: string;
   imageAlt: string;
@@ -74,7 +73,6 @@ function emptyDraft(categoryId: string): ProductDraft {
     categoryId,
     price: "",
     originalPrice: "",
-    stockQuantity: "0",
     sortOrder: "0",
     imageUrl: "",
     imageAlt: "",
@@ -114,7 +112,6 @@ function productToDraft(product: AdminProduct): ProductDraft {
     categoryId: product.categoryId,
     price: product.price === undefined ? "" : String(product.price),
     originalPrice: product.originalPrice === undefined ? "" : String(product.originalPrice),
-    stockQuantity: String(product.stockQuantity),
     sortOrder: String(product.sortOrder),
     imageUrl: product.images[0]?.url ?? "",
     imageAlt: product.images[0]?.alt ?? product.translations.ru.name,
@@ -297,14 +294,12 @@ export function AdminProductsPanel({
 
   const buildInlinePatch = (product: AdminProduct, row: ProductDraft) => {
     const price = row.price.trim() === "" ? null : integer(row.price, "Narx");
-    const stockQuantity = integer(row.stockQuantity, "Qoldiq");
     const patch: Record<string, unknown> = {};
     if (row.translations.ru.name.trim() !== product.translations.ru.name) {
       patch.translations = { ru: { name: row.translations.ru.name.trim() } };
     }
     if (row.categoryId !== product.categoryId) patch.categoryId = row.categoryId;
     if (price !== (product.price ?? null)) patch.price = price;
-    if (stockQuantity !== product.stockQuantity) patch.stockQuantity = stockQuantity;
     if (row.status !== product.status) patch.status = row.status;
     if (row.seasons.join("|") !== product.seasons.join("|")) patch.seasons = row.seasons;
     return patch;
@@ -363,7 +358,6 @@ export function AdminProductsPanel({
     setNotice(null);
     try {
       const price = draft.price.trim() === "" ? undefined : integer(draft.price, "Narx");
-      const stockQuantity = integer(draft.stockQuantity, "Qoldiq");
       const sortOrder = integer(draft.sortOrder, "Tartib");
       const originalPrice = draft.originalPrice
         ? integer(draft.originalPrice, "Eski narx")
@@ -397,7 +391,6 @@ export function AdminProductsPanel({
         flowerTypes,
         colors,
         seasons: draft.seasons,
-        stockQuantity,
         sortOrder,
         isFeatured: draft.isFeatured,
         isNew: draft.isNew,
@@ -549,10 +542,6 @@ export function AdminProductsPanel({
               <input inputMode="numeric" value={draft.originalPrice} onChange={(event) => update("originalPrice", event.target.value)} />
             </label>
             <label>
-              <span>Qoldiq</span>
-              <input required inputMode="numeric" value={draft.stockQuantity} onChange={(event) => update("stockQuantity", event.target.value)} />
-            </label>
-            <label>
               <span>Tartib</span>
               <input required inputMode="numeric" value={draft.sortOrder} onChange={(event) => update("sortOrder", event.target.value)} />
             </label>
@@ -700,7 +689,7 @@ export function AdminProductsPanel({
         ) : (
           <div className="admin-table-wrap">
             <table className="admin-table">
-              <thead><tr><th>Mahsulot</th><th>Kategoriya</th><th>Narx</th><th>Qoldiq</th><th>Mavsum</th><th>Holat</th><th aria-label="Harakatlar" /></tr></thead>
+              <thead><tr><th>Mahsulot</th><th>Kategoriya</th><th>Narx</th><th>Mavsum</th><th>Holat</th><th aria-label="Harakatlar" /></tr></thead>
               <tbody>
                 {products.map((product) => {
                   const row = inlineDrafts[product.id];
@@ -737,7 +726,6 @@ export function AdminProductsPanel({
                         ? "Narx so‘rov bo‘yicha"
                         : formatSum(product.price, "uz")}
                     </td>
-                    <td data-label="Qoldiq">{isListEditing && row ? <input aria-label={`Qoldiq: ${rowName}`} inputMode="numeric" value={row.stockQuantity} onChange={(event) => updateInline(product.id, "stockQuantity", event.target.value)} /> : product.stockQuantity}</td>
                     <td data-label="Mavsum">{isListEditing && row ? <fieldset className="admin-season-fieldset admin-season-fieldset--compact"><legend className="sr-only">Mavsum: {rowName}</legend>{SEASONS.map((season) => <label key={season}><input type="checkbox" aria-label={`${season[0]!.toUpperCase()}${season.slice(1)}: ${rowName}`} checked={row.seasons.includes(season)} onChange={(event) => toggleInlineSeason(product.id, season, event.target.checked)} /><span>{season}</span></label>)}</fieldset> : product.seasons.join(", ")}</td>
                     <td data-label="Holat">{isListEditing && row ? <select aria-label={`Holat: ${rowName}`} value={row.status} onChange={(event) => updateInline(product.id, "status", event.target.value as ProductStatus)}><option value="draft">Qoralama</option><option value="published">E’lon qilingan</option><option value="archived">Arxiv</option></select> : <span className="admin-status" data-status={product.status}>{product.status}</span>}</td>
                     <td className="admin-product-actions">
