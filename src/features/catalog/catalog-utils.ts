@@ -1,5 +1,13 @@
 import type { CatalogFilters, Product } from "../../shared/types";
 
+/**
+ * Catalog state a server route may seed into the client island. Kept next to the
+ * filter model itself so storefront components do not depend on a page module.
+ */
+export type InitialCatalogFilters = Partial<
+  Pick<CatalogFilters, "query" | "category" | "tab">
+> & { page?: number; favoritesOnly?: boolean };
+
 export const DEFAULT_FILTERS: CatalogFilters = {
   query: "",
   category: null,

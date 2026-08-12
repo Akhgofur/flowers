@@ -7,16 +7,16 @@ type MongooseCache = {
 };
 
 declare global {
-  var __nafisFlowersMongooseCache: MongooseCache | undefined;
+  var __floraluxeMongooseCache: MongooseCache | undefined;
 }
 
-const cached: MongooseCache = globalThis.__nafisFlowersMongooseCache ?? {
+const cached: MongooseCache = globalThis.__floraluxeMongooseCache ?? {
   connection: null,
   promise: null,
 };
 
-if (!globalThis.__nafisFlowersMongooseCache) {
-  globalThis.__nafisFlowersMongooseCache = cached;
+if (!globalThis.__floraluxeMongooseCache) {
+  globalThis.__floraluxeMongooseCache = cached;
 }
 
 const connectionOptions = {

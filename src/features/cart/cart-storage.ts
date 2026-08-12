@@ -1,7 +1,16 @@
 import type { CartLine } from "../../shared/types";
 
-export const CART_STORAGE_KEY = "nafis.cart.v1";
-export const FAVORITES_STORAGE_KEY = "nafis.favorites.v1";
+export const CART_STORAGE_KEY = "floraluxe.cart.v1";
+export const FAVORITES_STORAGE_KEY = "floraluxe.favorites.v1";
+
+/**
+ * Keys written before the Floraluxe rebrand. Returning visitors still carry them,
+ * so a read falls back to the retired key once and rewrites under the new name.
+ */
+const LEGACY_KEYS: Readonly<Record<string, string>> = {
+  [CART_STORAGE_KEY]: "nafis.cart.v1",
+  [FAVORITES_STORAGE_KEY]: "nafis.favorites.v1",
+};
 
 const MAX_CART_QUANTITY = 99;
 
@@ -13,15 +22,47 @@ const getStorage = (): Storage | null => {
   }
 };
 
+const parseArray = (raw: string | null): unknown[] => {
+  try {
+    const parsed: unknown = JSON.parse(raw ?? "null");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 const readJsonArray = (key: string): unknown[] => {
   const storage = getStorage();
   if (!storage) {
     return [];
   }
 
+  // Privacy modes can make any storage method throw, so every access is guarded.
   try {
-    const parsed: unknown = JSON.parse(storage.getItem(key) ?? "null");
-    return Array.isArray(parsed) ? parsed : [];
+    const current = storage.getItem(key);
+    if (current !== null) {
+      return parseArray(current);
+    }
+
+    const legacyKey = LEGACY_KEYS[key];
+    if (!legacyKey) {
+      return [];
+    }
+
+    const legacy = storage.getItem(legacyKey);
+    if (legacy === null) {
+      return [];
+    }
+
+    const migrated = parseArray(legacy);
+    try {
+      storage.setItem(key, JSON.stringify(migrated));
+      storage.removeItem(legacyKey);
+    } catch {
+      // A failed rewrite is not fatal: the value was still read for this session.
+    }
+
+    return migrated;
   } catch {
     return [];
   }

@@ -23,8 +23,8 @@ const DEFAULT_TRANSLATIONS: Record<Locale, SiteSettingsTranslation> = {
 
 const DEFAULT_UNIVERSAL_SETTINGS = {
   siteName: "Floraluxe",
-  brandLogo: { url: "/brand/floraluxe-logo.jpg", alt: "Floraluxe" },
-  brandMark: { url: "/brand/floraluxe-mark.jpg", alt: "Floraluxe belgisi" },
+  brandLogo: { url: "/brand/floraluxe-logo.png", alt: "Floraluxe" },
+  brandMark: { url: "/brand/floraluxe-mark.png", alt: "Floraluxe belgisi" },
   phone: "+998 88 780 22 08",
   address: "Yunusobod, Toshkent",
   workingHours: "08:00–22:00",

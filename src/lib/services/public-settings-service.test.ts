@@ -6,7 +6,7 @@ describe("Floraluxe public settings defaults", () => {
     const settings = getDefaultPublicSiteSettings("ru");
 
     expect(settings.siteName).toBe("Floraluxe");
-    expect(settings.brandLogo?.url).toBe("/brand/floraluxe-logo.jpg");
-    expect(settings.brandMark?.url).toBe("/brand/floraluxe-mark.jpg");
+    expect(settings.brandLogo?.url).toBe("/brand/floraluxe-logo.png");
+    expect(settings.brandMark?.url).toBe("/brand/floraluxe-mark.png");
   });
 });

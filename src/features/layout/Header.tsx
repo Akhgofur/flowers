@@ -73,10 +73,10 @@ export function Header({ cartItemCount, favoriteCount, isCartOpen, brandLogo, se
         <Link className="wordmark" href="/" aria-label={t("homeLabel")}>
           <Image
             className="wordmark__image"
-            src={brandLogo?.url ?? "/brand/floraluxe-logo.jpg"}
+            src={brandLogo?.url ?? "/brand/floraluxe-logo.png"}
             alt={brandLogo?.alt ?? "Floraluxe"}
             width={320}
-            height={120}
+            height={166}
             priority
           />
           <span className="visually-hidden">Floraluxe</span>

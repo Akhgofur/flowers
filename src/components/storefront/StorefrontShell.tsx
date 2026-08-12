@@ -1,6 +1,6 @@
 import { CATEGORIES, PRODUCTS } from "@/data/catalog";
 import type { Locale } from "@/i18n/config";
-import type { AppInitialCatalogFilters } from "@/app/App";
+import type { InitialCatalogFilters } from "@/features/catalog/catalog-utils";
 import type {
   CatalogCategory,
   CatalogProduct,
@@ -41,7 +41,7 @@ export type StorefrontShellProps = {
 
 function toInitialClientFilters(
   filters: PublicCatalogFilters
-): AppInitialCatalogFilters {
+): InitialCatalogFilters {
   return {
     query: filters.query ?? "",
     category: filters.category ?? null,

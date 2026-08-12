@@ -1,6 +1,6 @@
 "use client";
 
-import type { AppInitialCatalogFilters } from "@/app/App";
+import type { InitialCatalogFilters } from "@/features/catalog/catalog-utils";
 import type { CatalogCategory, CatalogProduct, PublicSiteSettings } from "@/lib/contracts";
 import type { HomePageCatalogData } from "@/lib/services/home-merchandising-service";
 import { HomePage } from "@/features/home/HomePage";
@@ -11,7 +11,7 @@ export type StorefrontClientProps = {
   products: readonly CatalogProduct[];
   categories: readonly CatalogCategory[];
   settings?: PublicSiteSettings;
-  initialFilters?: AppInitialCatalogFilters;
+  initialFilters?: InitialCatalogFilters;
   mode?: "home" | "catalog";
   merchandising?: HomePageCatalogData;
 };

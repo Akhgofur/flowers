@@ -1,12 +1,57 @@
-import { screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { CatalogProduct } from "@/lib/contracts";
 import { renderWithIntl as render } from "@/test/render-with-intl";
-import { StorefrontFrame } from "./StorefrontFrame";
+import { StorefrontFrame, useStorefront } from "./StorefrontFrame";
 
 vi.mock("@/components/storefront/LanguageSwitcher", () => ({
   LanguageSwitcher: () => <span>RU UZ EN</span>,
 }));
+
+const ROSES: CatalogProduct = {
+  id: "507f1f77bcf86cd799439011",
+  name: "Qirmizi atirgul buketi",
+  slug: "qirmizi-atirgul-buketi",
+  shortDescription: "Qirmizi atirgullardan buket.",
+  description: "Bayram uchun qirmizi atirgullar.",
+  composition: ["Atirgul"],
+  price: 535_000,
+  currency: "UZS",
+  images: [{ url: "https://images.pexels.com/photos/1/roses.jpg", alt: "Qirmizi atirgullar" }],
+  categorySlug: "roses",
+  flowerTypes: ["rose"],
+  colors: ["red"],
+  seasons: ["all_year"],
+  stockQuantity: 10,
+  sortOrder: 1,
+  isFeatured: false,
+  isNew: false,
+  isOnSale: false,
+  status: "published",
+  deliveryEstimate: "Bugun 90 daqiqada",
+  size: "55 sm",
+};
+
+/** Drives the frame's context the way a real route island would. */
+function CartTrigger() {
+  const { addProduct, toggleFavorite } = useStorefront();
+  return (
+    <>
+      <button type="button" onClick={() => addProduct(ROSES.id)}>
+        Savatga
+      </button>
+      <button type="button" onClick={() => toggleFavorite(ROSES.id)}>
+        Sevimlilarga
+      </button>
+    </>
+  );
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+  localStorage.clear();
+});
 
 describe("StorefrontFrame", () => {
   it("renders shared sticky chrome and the mobile navigation around route content", () => {
@@ -53,5 +98,81 @@ describe("StorefrontFrame", () => {
       "true"
     );
     expect(document.body).toHaveStyle({ overflow: "hidden" });
+  });
+
+  it("announces a cart addition through a live status region", async () => {
+    const user = userEvent.setup();
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    await user.click(screen.getByRole("button", { name: "Savatga" }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Qirmizi atirgul buketi savatga qo‘shildi."
+    );
+  });
+
+  it("announces favorite changes in both directions", async () => {
+    const user = userEvent.setup();
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    const toggle = screen.getByRole("button", { name: "Sevimlilarga" });
+
+    await user.click(toggle);
+    expect(screen.getByRole("status")).toHaveTextContent(/sevimlilarga qo‘shildi/i);
+
+    await user.click(toggle);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(/sevimlilardan olib tashlandi/i)
+    );
+  });
+
+  // Each announcement carries its own id so a later one is not cleared early by
+  // the previous timeout, and the region empties three seconds after the last.
+  it("refreshes a repeated announcement and auto-dismisses it after three seconds", async () => {
+    vi.useFakeTimers();
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    const add = screen.getByRole("button", { name: "Savatga" });
+
+    act(() => add.click());
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(2000));
+    act(() => add.click());
+
+    act(() => vi.advanceTimersByTime(2000));
+    expect(screen.getByRole("status")).toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1000));
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("ignores cart requests for products the route did not ship", async () => {
+    const user = userEvent.setup();
+    render(
+      <StorefrontFrame products={[]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    await user.click(screen.getByRole("button", { name: "Savatga" }));
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

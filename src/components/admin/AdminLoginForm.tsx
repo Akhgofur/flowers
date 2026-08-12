@@ -49,7 +49,7 @@ export function AdminLoginForm({ authConfigured = true }: AdminLoginFormProps) {
     <main className="admin-login-page">
       <div className="admin-login-card">
         <Link href="/" className="admin-login-card__brand" aria-label="Floraluxe bosh sahifasi">
-          <Image src="/brand/floraluxe-mark.jpg" alt="" width={46} height={46} aria-hidden="true" />
+          <Image src="/brand/floraluxe-mark.png" alt="" width={46} height={46} aria-hidden="true" />
           Floraluxe
         </Link>
         <p className="eyebrow">Yopiq hudud</p>

@@ -193,10 +193,10 @@ export function CheckoutClient({ products, isDemoCatalog = false }: CheckoutClie
           <Link className="wordmark" href="/" aria-label={tHeader("homeLabel")}>
             <Image
               className="wordmark__image"
-              src="/brand/floraluxe-logo.jpg"
+              src="/brand/floraluxe-logo.png"
               alt="Floraluxe"
               width={320}
-              height={120}
+              height={166}
               priority
             />
           </Link>

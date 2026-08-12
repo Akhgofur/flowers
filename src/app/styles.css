@@ -197,12 +197,15 @@ img {
   line-height: 0.9;
 }
 
+/* Height drives the lockup; width follows the artwork so the wordmark never sits
+   in dead space. max-width keeps a wider future logo from crowding the nav.
+   The logo carries its own alpha, so it needs no blend mode to erase a backdrop. */
 .wordmark__image {
-  width: clamp(138px, 12vw, 184px);
+  width: auto;
+  max-width: min(220px, 22vw);
   height: 58px;
   object-fit: contain;
   object-position: left center;
-  mix-blend-mode: multiply;
 }
 
 .wordmark__bloom {
@@ -1360,7 +1363,6 @@ img {
   width: min(100%, 220px);
   height: auto;
   margin-bottom: 24px;
-  filter: brightness(1.08);
 }
 
 .footer-grid h2 {
@@ -3069,11 +3071,11 @@ img {
   font-size: 1.2rem;
 }
 
+/* The mark is a round seal on transparency: a square frame would box its corners. */
 .admin-wordmark > img {
   width: 42px;
   height: 42px;
-  object-fit: cover;
-  border: 1px solid rgba(240, 192, 118, 0.5);
+  object-fit: contain;
 }
 
 .admin-wordmark strong {
@@ -4189,8 +4191,7 @@ img {
 .admin-login-card__brand img {
   width: 46px;
   height: 46px;
-  object-fit: cover;
-  border: 1px solid rgba(146, 93, 31, 0.25);
+  object-fit: contain;
 }
 
 .admin-login-card .eyebrow {
@@ -5072,7 +5073,7 @@ img {
 
   .utility-bar { display: none; }
   .header-main, .site-header--compact .header-main { min-height: 68px; }
-  .wordmark__image, .site-header--compact .wordmark__image { width: 132px; height: 48px; }
+  .wordmark__image, .site-header--compact .wordmark__image { width: auto; max-width: 150px; height: 46px; }
 
   .hero__layout { padding-block: 42px 46px; }
   .hero__image-frame { height: min(92vw, 390px); border-width: 1px; }

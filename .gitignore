@@ -11,6 +11,8 @@ node_modules/
 # Local tooling and deploy state
 .vercel/
 .superpowers/
+.claude/
+.codex-remote-attachments/
 dist/
 coverage/
 playwright-report/

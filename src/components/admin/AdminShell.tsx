@@ -22,7 +22,7 @@ export function AdminShell({ email, children }: AdminShellProps) {
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <Link href="/admin" className="admin-wordmark" aria-label="Floraluxe admin paneli">
-          <Image src="/brand/floraluxe-mark.jpg" alt="" width={42} height={42} aria-hidden="true" />
+          <Image src="/brand/floraluxe-mark.png" alt="" width={42} height={42} aria-hidden="true" />
           <strong>Floraluxe</strong>
           <small>ADMIN STUDIO</small>
         </Link>

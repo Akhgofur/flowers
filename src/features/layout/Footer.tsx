@@ -53,10 +53,10 @@ export function Footer({ settings }: FooterProps) {
           <section id="about" tabIndex={-1}>
             <Image
               className="footer-wordmark-image"
-              src={settings?.brandLogo?.url ?? "/brand/floraluxe-logo.jpg"}
+              src={settings?.brandLogo?.url ?? "/brand/floraluxe-logo.png"}
               alt={settings?.brandLogo?.alt ?? value.siteName}
               width={320}
-              height={120}
+              height={166}
             />
             <h2>{t("aboutTitle")}</h2>
             <p>{description}</p>

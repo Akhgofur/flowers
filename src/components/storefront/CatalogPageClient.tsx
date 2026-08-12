@@ -11,21 +11,21 @@ import { MobileFilterDrawer } from "@/features/catalog/MobileFilterDrawer";
 import {
   DEFAULT_FILTERS,
   applyCatalogFilters,
+  type InitialCatalogFilters,
 } from "@/features/catalog/catalog-utils";
 import type { CatalogFilters as CatalogFilterState, CatalogTab } from "@/shared/types";
 import { toClientCategory, toClientProduct } from "./storefront-mappers";
 import { useStorefront } from "./StorefrontFrame";
-import type { AppInitialCatalogFilters } from "@/app/App";
 
 export type CatalogPageClientProps = {
   products: readonly CatalogProduct[];
   categories: readonly CatalogCategory[];
-  initialFilters?: AppInitialCatalogFilters;
+  initialFilters?: InitialCatalogFilters;
 };
 
 const PAGE_SIZE = 24;
 
-function createFilters(initial?: AppInitialCatalogFilters): CatalogFilterState {
+function createFilters(initial?: InitialCatalogFilters): CatalogFilterState {
   return {
     ...DEFAULT_FILTERS,
     flowerTypes: [...DEFAULT_FILTERS.flowerTypes],
