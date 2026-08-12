@@ -157,6 +157,22 @@ export class OrderServiceError extends Error {
   }
 }
 
+/**
+ * Everything a reservation needs, including the whole `translations` subtree.
+ * resolveProductTranslation rejects a translation that is missing
+ * shortDescription, description or composition, so projecting only
+ * `translations.<locale>.name` made every reservation resolve to null and no
+ * order could be created at all.
+ */
+export const RESERVED_PRODUCT_PROJECTION = {
+  slug: 1,
+  translations: 1,
+  name: 1,
+  price: 1,
+  stockQuantity: 1,
+  images: 1,
+} as const;
+
 export class ProductUnavailableError extends OrderServiceError {
   constructor(readonly productId: string) {
     super("Bu mahsulot hozir yetarli miqdorda mavjud emas.", "PRODUCT_UNAVAILABLE", 409);
@@ -256,15 +272,7 @@ function createMongoOrderStore(): OrderStore {
         { $inc: { stockQuantity: -quantity } },
         { new: true, session: asClientSession(transaction) }
       )
-        .select({
-          slug: 1,
-          [`translations.${locale}.name`]: 1,
-          "translations.ru.name": 1,
-          name: 1,
-          price: 1,
-          stockQuantity: 1,
-          images: 1,
-        })
+        .select(RESERVED_PRODUCT_PROJECTION)
         .lean()
         .exec()) as unknown as ProductRecord | null;
 

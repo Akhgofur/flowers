@@ -246,6 +246,38 @@ describe("CheckoutClient", () => {
     expect(body.items).toEqual([{ productId: products[0]?.id, quantity: 2 }]);
   });
 
+  it("names the rejected product and keeps the line so the message stays on screen", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            code: "PRODUCT_UNAVAILABLE",
+            error: "Bitta mahsulot hozir mavjud emas.",
+            productId: products[0]?.id,
+          }),
+          { status: 409, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/mahsulot hozir mavjud emas/i);
+    expect(alert).toHaveTextContent(/pushti lola buketi/i);
+    expect(localStorage.getItem(CART_STORAGE_KEY)).toContain(products[0]?.id ?? "");
+  });
+
   // Price is only one of four rules the server enforces. A line that fails any of
   // them produces the same unhelpful "one of the products is unavailable".
   // "unpublished" is absent on purpose: CatalogProduct.status is narrowed to

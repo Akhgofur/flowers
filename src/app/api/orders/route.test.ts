@@ -144,6 +144,36 @@ describe("POST /api/orders", () => {
     });
   });
 
+  // Without the id the shopper only learns that "a product" failed, which is
+  // useless when the offending line is not the one shown in the summary.
+  it("names the offending product so the client can identify and drop it", async () => {
+    orderService.createPendingOrder.mockRejectedValue({
+      code: "PRODUCT_UNAVAILABLE",
+      status: 409,
+      productId: "507f1f77bcf86cd799439011",
+    });
+
+    const response = await POST(postJson(validCheckout));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      code: "PRODUCT_UNAVAILABLE",
+      error: expect.any(String),
+      productId: "507f1f77bcf86cd799439011",
+    });
+  });
+
+  it("omits productId when the failure does not carry one", async () => {
+    orderService.createPendingOrder.mockRejectedValue({
+      code: "ORDER_STATE_CONFLICT",
+      status: 409,
+    });
+
+    const response = await POST(postJson(validCheckout));
+
+    expect(await response.json()).not.toHaveProperty("productId");
+  });
+
   it("rejects malformed bodies before the order service sees them", async () => {
     const response = await POST(
       postJson({ ...validCheckout, total: 1, items: [] })

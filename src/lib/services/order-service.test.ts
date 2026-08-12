@@ -11,6 +11,7 @@ import {
   OrderNotFoundError,
   ProductOutOfSeasonError,
   ProductUnavailableError,
+  RESERVED_PRODUCT_PROJECTION,
   createOrderService,
   type OrderStore,
   type PendingOrderRecord,
@@ -19,6 +20,7 @@ import {
   type StoredOrder,
 } from "./order-service";
 import { InvalidOrderTransitionError } from "./order-transitions";
+import { resolveProductTranslation } from "@/lib/locale-content";
 
 const redRoseId = "507f1f77bcf86cd799439011";
 const tulipId = "507f1f77bcf86cd799439012";
@@ -345,5 +347,88 @@ describe("transactional order service", () => {
     await expect(
       makeService(new InMemoryOrderStore()).transitionOrderStatus("missing", "confirmed")
     ).rejects.toBeInstanceOf(OrderNotFoundError);
+  });
+});
+
+/**
+ * The store tests above inject an in-memory store, so the real MongoDB reservation
+ * projection is never exercised there. It once selected only `translations.<locale>.name`
+ * while resolveProductTranslation also requires shortDescription, description and a
+ * non-empty composition — so every reservation resolved to null and no order could
+ * ever be created. These tests pin the projection to what the resolver consumes.
+ */
+describe("reservation projection", () => {
+  /** Mirrors how MongoDB applies an inclusion projection, dotted paths included. */
+  function project(
+    document: Record<string, unknown>,
+    projection: Record<string, unknown>
+  ): Record<string, unknown> {
+    const result: Record<string, unknown> = {};
+
+    for (const path of Object.keys(projection)) {
+      const segments = path.split(".");
+      let source: unknown = document;
+      for (const segment of segments) {
+        source =
+          typeof source === "object" && source !== null
+            ? (source as Record<string, unknown>)[segment]
+            : undefined;
+      }
+      if (source === undefined) continue;
+
+      let target = result;
+      for (const segment of segments.slice(0, -1)) {
+        target[segment] ??= {};
+        target = target[segment] as Record<string, unknown>;
+      }
+      target[segments[segments.length - 1]!] = source;
+    }
+
+    return result;
+  }
+
+  const storedProduct = {
+    _id: redRoseId,
+    slug: "qirmizi-atirgul",
+    name: "Qirmizi atirgul",
+    price: 500_000,
+    stockQuantity: 100,
+    status: "published",
+    seasons: ["summer"],
+    images: [{ url: "https://cdn.example.com/rose.png", alt: "Qirmizi atirgul" }],
+    translations: {
+      ru: {
+        name: "Красные розы",
+        shortDescription: "Свежие красные розы.",
+        description: "Букет из свежих красных роз.",
+        composition: ["Розы", "Зелень"],
+      },
+      uz: {
+        name: "Qirmizi atirgul",
+        shortDescription: "Yangi qirmizi atirgullar.",
+        description: "Yangi qirmizi atirgullardan buket.",
+        composition: ["Atirgul", "Yashillik"],
+      },
+    },
+  };
+
+  it.each(["ru", "uz", "en"] as const)(
+    "keeps a %s reservation resolvable after projection",
+    (locale) => {
+      const projected = project(storedProduct, RESERVED_PRODUCT_PROJECTION);
+
+      expect(resolveProductTranslation(projected as never, locale)).not.toBeNull();
+    }
+  );
+
+  it("still carries the fields the reserved product is built from", () => {
+    const projected = project(storedProduct, RESERVED_PRODUCT_PROJECTION);
+
+    expect(projected).toMatchObject({
+      slug: "qirmizi-atirgul",
+      price: 500_000,
+      stockQuantity: 100,
+    });
+    expect(projected.images).toHaveLength(1);
   });
 });

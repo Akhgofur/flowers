@@ -53,10 +53,14 @@ function getRequestSubject(request: Request): string {
 
 function publicOrderError(
   error: unknown
-): { code: string; status: number } | null {
+): { code: string; status: number; productId?: string } | null {
   if (typeof error !== "object" || error === null) return null;
 
-  const candidate = error as { code?: unknown; status?: unknown };
+  const candidate = error as {
+    code?: unknown;
+    status?: unknown;
+    productId?: unknown;
+  };
   if (
     typeof candidate.code !== "string" ||
     !PUBLIC_ORDER_ERRORS.has(candidate.code) ||
@@ -68,7 +72,15 @@ function publicOrderError(
     return null;
   }
 
-  return { code: candidate.code, status: candidate.status };
+  // The id is public catalog data, and without it the shopper only learns that
+  // "a product" failed — useless when the culprit is not the line they can see.
+  return {
+    code: candidate.code,
+    status: candidate.status,
+    ...(typeof candidate.productId === "string" && candidate.productId
+      ? { productId: candidate.productId }
+      : {}),
+  };
 }
 
 function rateLimitHeaders(limit: number, remaining: number): HeadersInit {
@@ -157,6 +169,7 @@ export async function POST(request: Request) {
               ? "errorUnavailable"
               : "errorValidation"
           ),
+          ...(safeError.productId ? { productId: safeError.productId } : {}),
         },
         { status: safeError.status }
       );

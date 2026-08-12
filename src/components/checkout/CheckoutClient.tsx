@@ -29,7 +29,12 @@ type CheckoutForm = Omit<CheckoutInput["customer"], "deliveryDate" | "comment"> 
   paymentMethod: CheckoutInput["paymentMethod"];
 };
 
-type CheckoutResponse = { order?: OrderCreationResult; error?: string };
+type CheckoutResponse = {
+  order?: OrderCreationResult;
+  error?: string;
+  /** Set when the server rejected one specific line. */
+  productId?: string;
+};
 
 /**
  * Mirrors the server's reservation rule, which requires a published product that
@@ -190,9 +195,14 @@ export function CheckoutClient({
       const payload = await readCheckoutResponse(response);
 
       if (!response.ok || !payload.order) {
-        throw new Error(
-          payload.error ?? t("errorService")
-        );
+        // Name the rejected line rather than removing it: dropping the only line
+        // would empty the cart and take the explanation off screen with it. The
+        // shopper already has a remove control for the line now that they know it.
+        const rejected = payload.productId
+          ? productsById.get(payload.productId)
+          : undefined;
+        const message = payload.error ?? t("errorService");
+        throw new Error(rejected ? `${message} — «${rejected.name}»` : message);
       }
 
       setCreatedOrder(payload.order);
