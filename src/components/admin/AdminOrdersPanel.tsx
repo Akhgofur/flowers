@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type SyntheticEvent } from "react";
+import { useRef, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useFocusTrap } from "@/shared/a11y/useFocusTrap";
 import { allowedOrderTransitions, type AdminOrder, type OrderStatus } from "@/lib/contracts";
 import { formatSum } from "@/shared/format";
 
@@ -47,12 +48,57 @@ function hideBrokenThumbnail(event: SyntheticEvent<HTMLImageElement>): void {
   event.currentTarget.style.display = "none";
 }
 
+type ZoomedImage = { url: string; name: string; trigger: HTMLElement };
+
+function OrderImageLightbox({
+  image,
+  onClose,
+}: {
+  image: ZoomedImage;
+  onClose: () => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useFocusTrap({
+    active: true,
+    containerRef: dialogRef,
+    initialFocusRef: closeRef,
+    restoreFocusTarget: image.trigger,
+    onEscape: onClose,
+  });
+
+  return (
+    <div className="admin-lightbox-backdrop" onMouseDown={onClose}>
+      <div
+        ref={dialogRef}
+        className="admin-lightbox"
+        role="dialog"
+        aria-modal="true"
+        aria-label={image.name}
+        tabIndex={-1}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <header>
+          <strong>{image.name}</strong>
+          <button ref={closeRef} type="button" aria-label="Yopish" onClick={onClose}>
+            <span aria-hidden="true">×</span>
+          </button>
+        </header>
+        {/* eslint-disable-next-line @next/next/no-img-element -- same snapshot-host reason as the thumbnail. */}
+        <img src={image.url} alt={image.name} />
+      </div>
+    </div>
+  );
+}
+
 export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
   const router = useRouter();
   const [orders, setOrders] = useState<AdminOrder[]>(() => [...initialOrders]);
   const [nextStatuses, setNextStatuses] = useState<Record<string, OrderStatus>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
   const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState<ZoomedImage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -133,19 +179,35 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
           const selected = nextStatuses[order.id] ?? "";
           return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><p>{order.customer.address}</p><ul className="admin-order__items">{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>
                     {item.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- an order snapshot may point at any host the operator once typed into the product form, and next/image throws on an unconfigured one, which would take the whole fulfilment page down for a 44px thumbnail.
-                      <img
-                        className="admin-order__thumb"
-                        src={item.imageUrl}
-                        alt={item.name}
-                        loading="lazy"
-                        onError={hideBrokenThumbnail}
-                      />
+                      <button
+                        className="admin-order__thumb-button"
+                        type="button"
+                        aria-label={`${item.name} rasmini kattalashtirish`}
+                        onClick={(event) =>
+                          setZoomed({
+                            url: item.imageUrl,
+                            name: item.name,
+                            trigger: event.currentTarget,
+                          })
+                        }
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element -- an order snapshot may point at any host the operator once typed into the product form, and next/image throws on an unconfigured one, which would take the whole fulfilment page down for a 44px thumbnail. */}
+                        <img
+                          className="admin-order__thumb"
+                          src={item.imageUrl}
+                          alt=""
+                          loading="lazy"
+                          onError={hideBrokenThumbnail}
+                        />
+                      </button>
                     ) : null}
                     <span>{item.quantity}× {item.name}</span>
                   </li>)}</ul>{order.telegram ? <div className="admin-notification-status"><div><span>Telegram</span><strong data-status={order.telegram.status}>{order.telegram.status}</strong><small>{order.telegram.attempts} urinish{order.telegram.lastErrorCode ? <> · <code>{order.telegram.lastErrorCode}</code></> : null}</small></div><button type="button" disabled={!(["failed", "pending"] as const).includes(order.telegram.status as "failed" | "pending") || retryingId === order.id} onClick={() => retryTelegram(order)}>{retryingId === order.id ? "Yuborilmoqda..." : "Telegram xabarini qayta yuborish"}</button></div> : <p className="admin-notification-status">Telegram xabari hali yaratilmagan.</p>}</div>{choices.length > 0 ? <footer><label><span>Keyingi holat</span><select value={selected} onChange={(event) => setNextStatuses((current) => ({ ...current, [order.id]: event.target.value as OrderStatus }))}><option value="">Tanlang</option>{choices.map((status) => <option key={status} value={status}>{STATUS_LABELS[status]}</option>)}</select></label><button className="admin-primary-button" type="button" disabled={!selected || savingId === order.id} onClick={() => saveStatus(order)}>{savingId === order.id ? "Saqlanmoqda…" : "Yangilash"}</button></footer> : <footer><span className="admin-order__terminal">Yakuniy holat</span></footer>}</article>;
         })}</div>}
       </section>
+      {zoomed ? (
+        <OrderImageLightbox image={zoomed} onClose={() => setZoomed(null)} />
+      ) : null}
     </>
   );
 }

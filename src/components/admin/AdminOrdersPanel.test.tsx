@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { AdminOrder } from "@/lib/contracts";
@@ -64,9 +64,12 @@ describe("AdminOrdersPanel order lines", () => {
   it("shows the ordered product image so the florist can prepare it", () => {
     render(<AdminOrdersPanel initialOrders={[order]} />);
 
-    const image = screen.getByRole("img", { name: /rose basket/i });
+    // The img is decorative: the button around it carries the accessible name,
+    // so screen readers announce the product once rather than twice.
+    const trigger = screen.getByRole("button", { name: /rose basket rasmini kattalashtirish/i });
+    const image = trigger.querySelector("img");
     expect(image).toBeVisible();
-    expect(image.getAttribute("src")).toContain("rose.jpg");
+    expect(image?.getAttribute("src")).toContain("rose.jpg");
   });
 
   it("keeps the quantity and name beside the image", () => {
@@ -87,5 +90,56 @@ describe("AdminOrdersPanel order lines", () => {
 
     expect(screen.getByText(/1×\s*Rose basket/)).toBeVisible();
     expect(screen.queryByRole("img", { name: /rose basket/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("AdminOrdersPanel image lightbox", () => {
+  it("enlarges the product image when its thumbnail is activated", async () => {
+    const user = userEvent.setup();
+    render(<AdminOrdersPanel initialOrders={[order]} />);
+
+    await user.click(screen.getByRole("button", { name: /rose basket.*kattalashtirish/i }));
+
+    const dialog = screen.getByRole("dialog", { name: /rose basket/i });
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    const enlarged = within(dialog).getByRole("img", { name: /rose basket/i });
+    expect(enlarged.getAttribute("src")).toContain("rose.jpg");
+  });
+
+  it("closes on Escape and hands focus back to the thumbnail", async () => {
+    const user = userEvent.setup();
+    render(<AdminOrdersPanel initialOrders={[order]} />);
+
+    const trigger = screen.getByRole("button", { name: /rose basket.*kattalashtirish/i });
+    await user.click(trigger);
+    expect(screen.getByRole("dialog")).toBeVisible();
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
+
+  it("closes from its own close control", async () => {
+    const user = userEvent.setup();
+    render(<AdminOrdersPanel initialOrders={[order]} />);
+
+    await user.click(screen.getByRole("button", { name: /rose basket.*kattalashtirish/i }));
+    await user.click(screen.getByRole("button", { name: /yopish/i }));
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("offers no zoom control for a line without an image", () => {
+    const withoutImage: AdminOrder = {
+      ...order,
+      items: [{ ...order.items[0]!, imageUrl: "" }],
+    };
+
+    render(<AdminOrdersPanel initialOrders={[withoutImage]} />);
+
+    expect(
+      screen.queryByRole("button", { name: /kattalashtirish/i })
+    ).not.toBeInTheDocument();
   });
 });
