@@ -9,6 +9,7 @@ import type {
 } from "@/lib/contracts";
 import { LOCALES, type Locale } from "@/i18n/config";
 import { AdminLocaleTabs, ADMIN_LOCALE_LABELS } from "./AdminLocaleTabs";
+import { ImageUploader } from "./ImageUploader";
 
 type AdminCategoriesPanelProps = { initialCategories: readonly AdminCategory[] };
 type CategoryTranslationDraft = Record<keyof CategoryTranslation, string>;
@@ -17,6 +18,8 @@ type CategoryDraft = {
   translations: Record<Locale, CategoryTranslationDraft>;
   imageUrl: string;
   imageAlt: string;
+  /** Cloudinary's own id for the upload, kept so the asset stays traceable. */
+  imagePublicId: string;
   order: string;
   status: CategoryStatus;
 };
@@ -36,6 +39,7 @@ function emptyDraft(): CategoryDraft {
     },
     imageUrl: "",
     imageAlt: "",
+    imagePublicId: "",
     order: "0",
     status: "published",
   };
@@ -60,6 +64,7 @@ function toDraft(category: AdminCategory): CategoryDraft {
     },
     imageUrl: category.image?.url ?? "",
     imageAlt: category.image?.alt ?? "",
+    imagePublicId: category.image?.publicId ?? "",
     order: String(category.order),
     status: category.status,
   };
@@ -167,7 +172,13 @@ export function AdminCategoriesPanel({
         slug: draft.slug,
         translations: buildTranslations(draft),
         ...(draft.imageUrl
-          ? { image: { url: draft.imageUrl, alt: draft.imageAlt } }
+          ? {
+              image: {
+                url: draft.imageUrl,
+                alt: draft.imageAlt,
+                ...(draft.imagePublicId ? { publicId: draft.imagePublicId } : {}),
+              },
+            }
           : {}),
         order: Number(draft.order),
         status: draft.status,
@@ -276,8 +287,20 @@ export function AdminCategoriesPanel({
             <label><span>Slug</span><input required value={draft.slug} onChange={(event) => update("slug", event.target.value)} placeholder="roses" /></label>
             <label><span>Tartib</span><input required inputMode="numeric" value={draft.order} onChange={(event) => update("order", event.target.value)} /></label>
             <label><span>Holat</span><select value={draft.status} onChange={(event) => update("status", event.target.value as CategoryStatus)}><option value="published">E’lon qilingan</option><option value="hidden">Yashirilgan</option></select></label>
-            <label className="admin-form-grid__full"><span>Rasm URL (ixtiyoriy)</span><input type="url" value={draft.imageUrl} onChange={(event) => update("imageUrl", event.target.value)} /></label>
             <label className="admin-form-grid__full"><span>Rasm tavsifi</span><input value={draft.imageAlt} onChange={(event) => update("imageAlt", event.target.value)} /></label>
+            <label className="admin-form-grid__full"><span>Rasm URL (ixtiyoriy)</span><input type="url" value={draft.imageUrl} onChange={(event) => { update("imageUrl", event.target.value); update("imagePublicId", ""); }} /></label>
+            <div className="admin-form-grid__full">
+              <ImageUploader
+                alt={draft.imageAlt}
+                disabled={isSaving}
+                onUploaded={(image) => {
+                  update("imageUrl", image.url);
+                  update("imageAlt", image.alt);
+                  update("imagePublicId", image.publicId ?? "");
+                  setNotice("Rasm yuklandi. Kategoriyani saqlashni unutmang.");
+                }}
+              />
+            </div>
 
             <div className="admin-form-grid__full admin-localized-editor">
               <AdminLocaleTabs activeLocale={activeLocale} onChange={setActiveLocale} />
