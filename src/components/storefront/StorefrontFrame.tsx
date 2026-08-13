@@ -65,7 +65,19 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [status, setStatus] = useState<{ id: number; text: string } | null>(null);
-  const clientProducts = useMemo(() => products.map(toClientProduct), [products]);
+  /** Basket products this route never shipped, fetched on demand and kept per session. */
+  const [cartProducts, setCartProducts] = useState<readonly CatalogProduct[]>([]);
+  const requestedIdsRef = useRef(new Set<string>());
+
+  const clientProducts = useMemo(
+    () =>
+      [
+        ...new Map(
+          [...products, ...cartProducts].map((product) => [product.id, product])
+        ).values(),
+      ].map(toClientProduct),
+    [products, cartProducts]
+  );
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- browser storage is intentionally hydrated after the server render */
@@ -82,6 +94,38 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
   useEffect(() => {
     if (isHydrated) writeFavorites(favoriteIds);
   }, [favoriteIds, isHydrated]);
+
+  // The cart outlives the route: a product page ships one product, yet the
+  // basket may name a dozen. Lines with no product data used to vanish from the
+  // drawer and its total, so anything missing is looked up once per id.
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const known = new Set(products.map((product) => product.id));
+    const missingIds = cartLines
+      .map((line) => line.productId)
+      .filter((id) => !known.has(id) && !requestedIdsRef.current.has(id));
+
+    if (missingIds.length === 0) return;
+    for (const id of missingIds) requestedIdsRef.current.add(id);
+
+    const controller = new AbortController();
+
+    const query = new URLSearchParams({ ids: missingIds.join(","), locale });
+    fetch(`/api/products?${query}`, { signal: controller.signal })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { products?: CatalogProduct[] } | null) => {
+        const fetched = payload?.products;
+        if (!fetched?.length) return;
+        setCartProducts((current) => [...current, ...fetched]);
+      })
+      .catch(() => {
+        // An offline or failing lookup must not break the page. The ids stay
+        // marked as requested so a render loop cannot retry them forever.
+      });
+
+    return () => controller.abort();
+  }, [cartLines, isHydrated, locale, products]);
 
   useEffect(() => {
     if (!status) return;

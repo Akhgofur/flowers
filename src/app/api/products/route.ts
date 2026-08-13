@@ -1,9 +1,24 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getPublishedCatalog } from "@/lib/services/catalog-service";
+import {
+  getPublishedCatalog,
+  getPublishedProductsByIds,
+} from "@/lib/services/catalog-service";
 import { DEFAULT_LOCALE, LOCALES } from "@/i18n/config";
+import { objectIdSchema } from "@/lib/validations";
 
 export const runtime = "nodejs";
+
+/** A basket far larger than any real order, but small enough to bound the query. */
+const MAX_PRODUCT_IDS = 100;
+
+const productIdsQuerySchema = z.object({
+  locale: z.enum(LOCALES).default(DEFAULT_LOCALE),
+  ids: z
+    .string()
+    .transform((value) => value.split(",").map((id) => id.trim()).filter(Boolean))
+    .pipe(z.array(objectIdSchema).min(1).max(MAX_PRODUCT_IDS)),
+});
 
 const catalogQuerySchema = z.object({
   locale: z.enum(LOCALES).default(DEFAULT_LOCALE),
@@ -23,6 +38,36 @@ const catalogQuerySchema = z.object({
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+  const requestedIds = searchParams.get("ids");
+
+  // An explicit id list is a cart lookup, not a catalog page: paging and
+  // category filters do not apply, so it is answered before they are parsed.
+  if (requestedIds !== null) {
+    const parsedIds = productIdsQuerySchema.safeParse({
+      locale: searchParams.get("locale") ?? undefined,
+      ids: requestedIds,
+    });
+
+    if (!parsedIds.success) {
+      return NextResponse.json(
+        { error: "Mahsulot identifikatorlari noto‘g‘ri." },
+        { status: 400 }
+      );
+    }
+
+    try {
+      const { locale, ids } = parsedIds.data;
+      const products = await getPublishedProductsByIds(locale, ids);
+      return NextResponse.json({ products });
+    } catch (error) {
+      console.error("Cart product lookup failed", error);
+      return NextResponse.json(
+        { error: "Katalog vaqtincha mavjud emas." },
+        { status: 503 }
+      );
+    }
+  }
+
   const parsedQuery = catalogQuerySchema.safeParse({
     category: searchParams.get("category") ?? undefined,
     locale: searchParams.get("locale") ?? undefined,

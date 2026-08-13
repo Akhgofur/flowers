@@ -32,6 +32,18 @@ const ROSES: CatalogProduct = {
   size: "55 sm",
 };
 
+/** A product the routes under test never ship, so it can only come from storage. */
+const TULIPS: CatalogProduct = {
+  ...ROSES,
+  id: "507f1f77bcf86cd799439012",
+  name: "Tonggi lolalar",
+  slug: "tonggi-lolalar",
+  price: 285_000,
+  categorySlug: "tulips",
+  flowerTypes: ["tulip"],
+  colors: ["pink"],
+};
+
 /** Drives the frame's context the way a real route island would. */
 function CartTrigger() {
   const { addProduct, toggleFavorite } = useStorefront();
@@ -173,5 +185,90 @@ describe("StorefrontFrame", () => {
     await user.click(screen.getByRole("button", { name: "Savatga" }));
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * A route only ships the products it renders, but the basket outlives the route.
+ * A product page used to show a one-line cart and a total covering that line
+ * alone, silently hiding everything the shopper had added elsewhere.
+ */
+describe("StorefrontFrame cart lines from other routes", () => {
+  const seedCart = (...lines: { productId: string; quantity: number }[]) =>
+    localStorage.setItem("floraluxe.cart.v1", JSON.stringify(lines));
+
+  const openCart = async (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(screen.getByRole("button", { name: /Savatni ochish/i }));
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("fetches and shows basket lines the current route never rendered", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ products: [TULIPS] }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    seedCart(
+      { productId: ROSES.id, quantity: 3 },
+      { productId: TULIPS.id, quantity: 2 }
+    );
+
+    const user = userEvent.setup();
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const requested = new URL(String(fetchMock.mock.calls[0][0]), "http://localhost");
+    expect(requested.pathname).toBe("/api/products");
+    expect(requested.searchParams.get("ids")).toBe(TULIPS.id);
+    expect(requested.searchParams.get("locale")).toBe("uz");
+
+    await openCart(user);
+
+    expect(await screen.findByText(TULIPS.name)).toBeInTheDocument();
+    expect(screen.getByText(ROSES.name)).toBeInTheDocument();
+  });
+
+  it("does not ask the server for products the route already shipped", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    seedCart({ productId: ROSES.id, quantity: 1 });
+
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /Savatni ochish/i })).toBeInTheDocument()
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps the storefront usable when the lookup fails", async () => {
+    const fetchMock = vi.fn().mockRejectedValue(new Error("offline"));
+    vi.stubGlobal("fetch", fetchMock);
+    seedCart({ productId: TULIPS.id, quantity: 1 });
+
+    const user = userEvent.setup();
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await openCart(user);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
   });
 });

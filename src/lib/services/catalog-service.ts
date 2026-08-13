@@ -11,6 +11,7 @@ import {
   findPublishedCatalogProducts,
   findPublishedCategories,
   findPublishedProductBySlug,
+  findPublishedProductsByIds,
   findPublishedSitemapEntries,
 } from "@/lib/repositories/catalog-repository";
 
@@ -108,6 +109,23 @@ export async function getEntirePublishedCatalog(
   }
 
   return { products: [...byId.values()], truncated: true };
+}
+
+/**
+ * Reads an arbitrary set of products by id. The browser cart names products the
+ * current page never rendered, so it needs a lookup that is neither paged nor
+ * filtered. Deliberately uncached: the id set varies per basket, and caching it
+ * would grow a cache key per distinct combination.
+ */
+export async function getPublishedProductsByIds(
+  locale: Locale,
+  productIds: readonly string[]
+): Promise<CatalogProduct[]> {
+  const uniqueIds = [...new Set(productIds)];
+  if (uniqueIds.length === 0) return [];
+
+  const products = await findPublishedProductsByIds(locale, uniqueIds);
+  return products.filter((product) => product.status === "published");
 }
 
 export async function getPublishedProductBySlug(
