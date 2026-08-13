@@ -372,4 +372,115 @@ describe("CheckoutClient", () => {
     expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
     expect(screen.getByText("Operator tasdiqlaydi")).toBeVisible();
   });
+
+  const orderAccepted = () =>
+    new Response(
+      JSON.stringify({
+        order: {
+          orderId: "507f191e810c19729de860ea",
+          orderNumber: "FL-20260812-ORDER1234",
+          total: 300_000,
+          status: "pending",
+        },
+      }),
+      { status: 201, headers: { "content-type": "application/json" } }
+    );
+
+  const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+  };
+
+  it("sends the detected map pin alongside the written address", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      geolocation: {
+        getCurrentPosition: (onSuccess: PositionCallback) =>
+          onSuccess({
+            // Raw device output, deliberately more precise than a doorway.
+            coords: { latitude: 41.31108123, longitude: 69.2405621234 },
+          } as GeolocationPosition),
+      },
+    });
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: /joylashuvimni aniqlash/i }));
+
+    expect(await screen.findByText(/41.311081, 69.240562/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      customer: { location?: unknown };
+    };
+    expect(body.customer.location).toEqual({ latitude: 41.311081, longitude: 69.240562 });
+  });
+
+  /** Desktop browsers rarely geolocate usefully, so a pasted link must work as well. */
+  it("accepts a pasted map link as the pin", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    await fillRequiredFields(user);
+    await user.type(
+      screen.getByLabelText(/xarita havolasini/i),
+      "https://yandex.uz/maps/?pt=69.240562,41.311081&z=17"
+    );
+    await user.click(screen.getByRole("button", { name: /qo‘shish/i }));
+
+    expect(await screen.findByText(/41.311081, 69.240562/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      customer: { location?: unknown };
+    };
+    expect(body.customer.location).toEqual({ latitude: 41.311081, longitude: 69.240562 });
+  });
+
+  it("orders without a pin when the browser refuses one", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      geolocation: {
+        getCurrentPosition: (_onSuccess: PositionCallback, onError: PositionErrorCallback) =>
+          onError({ code: 1, PERMISSION_DENIED: 1 } as GeolocationPositionError),
+      },
+    });
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: /joylashuvimni aniqlash/i }));
+
+    expect(await screen.findByText(/ruxsat bermadi/i)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      customer: Record<string, unknown>;
+    };
+    expect(body.customer).not.toHaveProperty("location");
+    expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
+  });
 });

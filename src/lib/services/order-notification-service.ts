@@ -3,6 +3,8 @@ import nodemailer from "nodemailer-runtime";
 import type { PaymentMethod } from "@/lib/contracts";
 import { env } from "@/lib/env";
 import { formatSum } from "@/shared/format";
+import { formatGeoPoint, type GeoPoint } from "@/shared/geo-point";
+import { buildMapLinks } from "@/shared/map-links";
 
 export type NewOrderNotificationItem = {
   name: string;
@@ -20,6 +22,8 @@ export type NewOrderNotification = {
     fullName: string;
     phone: string;
     address: string;
+    /** Absent when the shopper placed the order without sharing a map pin. */
+    location?: GeoPoint;
     deliveryDate?: string;
     comment?: string;
   };
@@ -77,6 +81,22 @@ function paymentMethodLabel(paymentMethod: PaymentMethod): string {
   return paymentMethod === "cash_on_delivery" ? "Yetkazilganda naqd" : "Yetkazilganda karta";
 }
 
+/**
+ * Plain URLs so every channel keeps them tappable: Telegram linkifies them in a
+ * message or a photo caption, and a mail client does the same. The taxi link is
+ * the point of the pin — the operator orders the ride without retyping an address.
+ */
+function locationRows(location: GeoPoint | undefined): string[] {
+  if (!location) return [];
+
+  const links = buildMapLinks(location);
+  return [
+    `Joylashuv: ${formatGeoPoint(location)}`,
+    `Xarita: ${links.yandexMaps}`,
+    `Taksi: ${links.yandexTaxi}`,
+  ];
+}
+
 export function formatNewOrderNotification(order: NewOrderNotification): string {
   const optionalRows = [
     order.customer.deliveryDate ? `Yetkazish sanasi: ${order.customer.deliveryDate}` : null,
@@ -108,6 +128,7 @@ export function formatNewOrderNotification(order: NewOrderNotification): string 
     `Mijoz: ${order.customer.fullName}`,
     `Telefon: ${order.customer.phone}`,
     `Manzil: ${order.customer.address}`,
+    ...locationRows(order.customer.location),
     ...optionalRows,
   ].join("\n");
 }

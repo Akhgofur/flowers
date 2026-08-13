@@ -25,6 +25,31 @@ describe("order notifications", () => {
     expect(formatNewOrderNotification(order)).not.toContain("Payme");
   });
 
+  /**
+   * The pin only pays off if the operator can act on it without retyping an
+   * address, so the message carries ready-made map and taxi links.
+   */
+  it("carries tappable map and taxi links when the shopper shared a pin", () => {
+    const text = formatNewOrderNotification({
+      ...order,
+      customer: {
+        ...order.customer,
+        location: { latitude: 41.311081, longitude: 69.240562 },
+      },
+    });
+
+    expect(text).toContain("Joylashuv: 41.311081, 69.240562");
+    expect(text).toContain("https://yandex.uz/maps/?pt=69.240562,41.311081");
+    expect(text).toContain("rtt=taxi");
+  });
+
+  it("says nothing about a location the shopper never shared", () => {
+    const text = formatNewOrderNotification(order);
+
+    expect(text).not.toContain("Joylashuv");
+    expect(text).not.toContain("Taksi");
+  });
+
   it("does nothing when no optional notification channel is configured", async () => {
     const sendEmail = vi.fn();
     const sendTelegram = vi.fn();

@@ -1,6 +1,7 @@
 import mongoose, { type Model, type Types } from "mongoose";
 import type { OrderStatus, PaymentMethod } from "@/lib/contracts";
 import { LOCALES, type Locale } from "@/i18n/config";
+import type { GeoPoint } from "@/shared/geo-point";
 
 export { allowedOrderTransitions } from "@/lib/contracts";
 
@@ -10,6 +11,7 @@ export type OrderCustomer = {
   fullName: string;
   phone: string;
   address: string;
+  location?: GeoPoint;
   deliveryDate?: Date;
   comment?: string;
 };
@@ -76,11 +78,22 @@ const orderItemSchema = new Schema<OrderItemSnapshot>(
   { _id: false }
 );
 
+const orderLocationSchema = new Schema<GeoPoint>(
+  {
+    latitude: { type: Number, required: true, min: -90, max: 90 },
+    longitude: { type: Number, required: true, min: -180, max: 180 },
+  },
+  { _id: false }
+);
+
 const orderCustomerSchema = new Schema<OrderCustomer>(
   {
     fullName: { type: String, required: true, trim: true, minlength: 3, maxlength: 120 },
     phone: { type: String, required: true, trim: true, maxlength: 32 },
     address: { type: String, required: true, trim: true, minlength: 8, maxlength: 500 },
+    // Optional: orders placed before the map picker existed have no pin, and a
+    // shopper on a desktop browser may still decline to share one.
+    location: { type: orderLocationSchema, required: false },
     deliveryDate: { type: Date },
     comment: { type: String, trim: true, maxlength: 500 },
   },

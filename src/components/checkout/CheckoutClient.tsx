@@ -12,7 +12,15 @@ import { removeFromCart, setCartQuantity } from "@/features/cart/cart-reducer";
 import type { CatalogProduct, CheckoutInput, OrderCreationResult } from "@/lib/contracts";
 import { getProductAvailability } from "@/lib/product-availability";
 import { formatSum } from "@/shared/format";
+import {
+  formatGeoPoint,
+  isValidGeoPoint,
+  parseGeoPoint,
+  roundGeoPoint,
+  type GeoPoint,
+} from "@/shared/geo-point";
 import { applyImageFallback, IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
+import { buildMapLinks } from "@/shared/map-links";
 import type { CartLine } from "@/shared/types";
 import type { Locale } from "@/i18n/config";
 
@@ -23,11 +31,23 @@ type CheckoutClientProps = {
   catalogTruncated?: boolean;
 };
 
-type CheckoutForm = Omit<CheckoutInput["customer"], "deliveryDate" | "comment"> & {
+type CheckoutForm = Omit<
+  CheckoutInput["customer"],
+  "deliveryDate" | "comment" | "location"
+> & {
   deliveryDate: string;
   comment: string;
+  location: GeoPoint | null;
   paymentMethod: CheckoutInput["paymentMethod"];
 };
+
+/** What the picker is doing, so the shopper is never left guessing after a tap. */
+type LocationStatus =
+  | { kind: "idle" }
+  | { kind: "locating" }
+  | { kind: "denied" }
+  | { kind: "unavailable" }
+  | { kind: "unparsed" };
 
 type CheckoutResponse = {
   order?: OrderCreationResult;
@@ -50,6 +70,7 @@ const EMPTY_FORM: CheckoutForm = {
   address: "",
   deliveryDate: "",
   comment: "",
+  location: null,
   paymentMethod: "cash_on_delivery",
 };
 
@@ -64,6 +85,7 @@ function toCheckoutPayload(
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),
       address: form.address.trim(),
+      ...(form.location ? { location: form.location } : {}),
       ...(form.deliveryDate ? { deliveryDate: form.deliveryDate } : {}),
       ...(form.comment.trim() ? { comment: form.comment.trim() } : {}),
     },
@@ -117,6 +139,8 @@ export function CheckoutClient({
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>({ kind: "idle" });
+  const [pastedLocation, setPastedLocation] = useState("");
   const [createdOrder, setCreatedOrder] = useState<OrderCreationResult | null>(null);
   // Captured at submit time, before the cart is cleared: whether the order that was
   // just placed contained a line with no price, so the confirmation screen can flag
@@ -149,6 +173,55 @@ export function CheckoutClient({
 
   const updateForm = <Key extends keyof CheckoutForm>(key: Key, value: CheckoutForm[Key]) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const setLocation = (location: GeoPoint | null) => {
+    updateForm("location", location);
+    setLocationStatus({ kind: "idle" });
+    setPastedLocation("");
+  };
+
+  const detectLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus({ kind: "unavailable" });
+      return;
+    }
+
+    setLocationStatus({ kind: "locating" });
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        // A device can report a position it cannot actually fix. Storing that
+        // would send the courier somewhere off the map instead of nowhere.
+        if (!isValidGeoPoint(point)) {
+          setLocationStatus({ kind: "unavailable" });
+          return;
+        }
+        setLocation(roundGeoPoint(point));
+      },
+      (positionError) => {
+        setLocationStatus(
+          positionError.code === positionError.PERMISSION_DENIED
+            ? { kind: "denied" }
+            : { kind: "unavailable" }
+        );
+      },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 }
+    );
+  };
+
+  // Geolocation is unavailable on most desktops and refusable everywhere, so a
+  // pasted map link stays a first-class way to hand over the same pin.
+  const applyPastedLocation = () => {
+    const parsed = parseGeoPoint(pastedLocation);
+    if (!parsed) {
+      setLocationStatus({ kind: "unparsed" });
+      return;
+    }
+    setLocation(parsed);
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -325,6 +398,82 @@ export function CheckoutClient({
                     placeholder={t("addressPlaceholder")}
                   />
                 </label>
+                <div className="checkout-fields__full checkout-location">
+                  <div className="checkout-location__heading">
+                    <span>{t("location")} <em>({t("optional")})</em></span>
+                    <p>{t("locationHelp")}</p>
+                  </div>
+
+                  {form.location ? (
+                    <div className="checkout-location__picked">
+                      <p>
+                        <span aria-hidden="true">📍</span>
+                        {t("locationPicked", { point: formatGeoPoint(form.location) })}
+                      </p>
+                      <div className="checkout-location__actions">
+                        <a
+                          href={buildMapLinks(form.location).yandexMaps}
+                          target="_blank"
+                          rel="noreferrer noopener"
+                        >
+                          {t("locationOpenMap")}
+                        </a>
+                        <button type="button" onClick={() => setLocation(null)}>
+                          {t("locationClear")}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="checkout-location__actions">
+                      <button
+                        type="button"
+                        className="checkout-location__detect"
+                        onClick={detectLocation}
+                        disabled={locationStatus.kind === "locating"}
+                      >
+                        {locationStatus.kind === "locating"
+                          ? t("locationDetecting")
+                          : t("locationDetect")}
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="checkout-location__paste">
+                    <label>
+                      <span>{t("locationPaste")}</span>
+                      <input
+                        name="locationLink"
+                        inputMode="url"
+                        value={pastedLocation}
+                        onChange={(event) => {
+                          setPastedLocation(event.target.value);
+                          if (locationStatus.kind === "unparsed") {
+                            setLocationStatus({ kind: "idle" });
+                          }
+                        }}
+                        placeholder={t("locationPastePlaceholder")}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={applyPastedLocation}
+                      disabled={pastedLocation.trim().length === 0}
+                    >
+                      {t("locationApply")}
+                    </button>
+                  </div>
+
+                  <p className="checkout-location__status" role="status">
+                    {locationStatus.kind === "denied"
+                      ? t("locationDenied")
+                      : locationStatus.kind === "unavailable"
+                        ? t("locationUnavailable")
+                        : locationStatus.kind === "unparsed"
+                          ? t("locationUnparsed")
+                          : ""}
+                  </p>
+                </div>
+
                 <label>
                   <span>{t("deliveryDate")} <em>({t("optional")})</em></span>
                   <input

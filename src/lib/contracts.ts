@@ -1,4 +1,5 @@
 import type { Locale } from "@/i18n/config";
+import type { GeoPoint } from "@/shared/geo-point";
 
 export const PRODUCT_STATUSES = ["draft", "published", "archived"] as const;
 export const CATEGORY_STATUSES = ["published", "hidden"] as const;
@@ -158,6 +159,8 @@ export type CheckoutInput = {
     fullName: string;
     phone: string;
     address: string;
+    /** Optional map pin. The written address stays required — it names the door. */
+    location?: GeoPoint;
     deliveryDate?: string;
     comment?: string;
   };
@@ -216,6 +219,7 @@ export type AdminOrder = {
     fullName: string;
     phone: string;
     address: string;
+    location?: GeoPoint;
     deliveryDate?: string;
     comment?: string;
   };

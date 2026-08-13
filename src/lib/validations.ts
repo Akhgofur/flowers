@@ -263,6 +263,14 @@ const phoneSchema = z
   .trim()
   .regex(/^(?:\+998|998)?\d{9}$/, "Phone must be a valid Uzbekistan phone number");
 
+/** Earth's own bounds. Anything outside them is a bug in the caller, not a delivery. */
+const geoPointSchema = z
+  .object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+  })
+  .strict();
+
 export const checkoutSchema = z
   .object({
     locale: z.enum(LOCALES),
@@ -271,6 +279,7 @@ export const checkoutSchema = z
         fullName: z.string().trim().min(3).max(120),
         phone: phoneSchema,
         address: z.string().trim().min(8).max(500),
+        location: geoPointSchema.optional(),
         deliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         comment: z.string().trim().max(500).optional(),
       })

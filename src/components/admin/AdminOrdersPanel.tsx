@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useFocusTrap } from "@/shared/a11y/useFocusTrap";
 import { allowedOrderTransitions, type AdminOrder, type OrderStatus } from "@/lib/contracts";
 import { formatSum } from "@/shared/format";
+import { formatGeoPoint, type GeoPoint } from "@/shared/geo-point";
+import { buildMapLinks } from "@/shared/map-links";
 
 type AdminOrdersPanelProps = { initialOrders: readonly AdminOrder[] };
 type ApiResponse = { order?: { status: OrderStatus }; error?: string };
@@ -46,6 +48,31 @@ async function readRetryResponse(response: Response): Promise<RetryResponse> {
  */
 function hideBrokenThumbnail(event: SyntheticEvent<HTMLImageElement>): void {
   event.currentTarget.style.display = "none";
+}
+
+/**
+ * The pin the shopper shared, as the two things the operator actually does with
+ * it: look at where it is, and order a ride there. Written addresses in Tashkent
+ * routinely name a mahalla rather than a street number, so the coordinates are
+ * often the only unambiguous part of the delivery.
+ */
+function OrderLocation({ location }: { location: GeoPoint }) {
+  const links = buildMapLinks(location);
+
+  return (
+    <p className="admin-order__location">
+      <a href={links.yandexMaps} target="_blank" rel="noreferrer noopener">
+        Xaritada ochish
+      </a>
+      <a href={links.yandexTaxi} target="_blank" rel="noreferrer noopener">
+        Taksi chaqirish
+      </a>
+      <a href={links.googleMaps} target="_blank" rel="noreferrer noopener">
+        Google Maps
+      </a>
+      <span>{formatGeoPoint(location)}</span>
+    </p>
+  );
 }
 
 type ZoomedImage = { url: string; name: string; trigger: HTMLElement };
@@ -177,7 +204,7 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
         {orders.length === 0 ? <p className="admin-empty-copy">Hali buyurtma yo‘q.</p> : <div className="admin-orders-list">{orders.map((order) => {
           const choices = allowedOrderTransitions[order.status];
           const selected = nextStatuses[order.id] ?? "";
-          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><p>{order.customer.address}</p><ul className="admin-order__items">{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>
+          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><div className="admin-order__address"><p>{order.customer.address}</p>{order.customer.location ? <OrderLocation location={order.customer.location} /> : null}</div><ul className="admin-order__items">{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>
                     {item.imageUrl ? (
                       <button
                         className="admin-order__thumb-button"

@@ -16,6 +16,7 @@ import {
 } from "@/lib/product-availability";
 import { dbConnect } from "@/lib/mongodb";
 import { checkoutSchema } from "@/lib/validations";
+import { roundGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { OrderModel, type OrderDocument } from "@/models/Order";
 import { ProductModel, type ProductDocument } from "@/models/Product";
 import { SiteSettingsModel } from "@/models/SiteSettings";
@@ -54,6 +55,7 @@ export type StoredOrderCustomer = {
   fullName: string;
   phone: string;
   address: string;
+  location?: GeoPoint;
   deliveryDate?: Date;
   comment?: string;
 };
@@ -202,6 +204,14 @@ function serializeOrder(document: OrderRecord): StoredOrder {
       fullName: document.customer.fullName,
       phone: document.customer.phone,
       address: document.customer.address,
+      ...(document.customer.location === undefined
+        ? {}
+        : {
+            location: {
+              latitude: document.customer.location.latitude,
+              longitude: document.customer.location.longitude,
+            },
+          }),
       ...(document.customer.deliveryDate === undefined
         ? {}
         : { deliveryDate: document.customer.deliveryDate }),
@@ -471,6 +481,9 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                   fullName: checkout.customer.fullName,
                   phone: checkout.customer.phone,
                   address: checkout.customer.address,
+                  ...(checkout.customer.location === undefined
+                    ? {}
+                    : { location: roundGeoPoint(checkout.customer.location) }),
                   ...(checkout.customer.deliveryDate === undefined
                     ? {}
                     : { deliveryDate: parseDeliveryDate(checkout.customer.deliveryDate) }),

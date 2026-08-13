@@ -98,6 +98,14 @@ function toAdminOrder(
       fullName: document.customer.fullName,
       phone: document.customer.phone,
       address: document.customer.address,
+      ...(document.customer.location === undefined
+        ? {}
+        : {
+            location: {
+              latitude: document.customer.location.latitude,
+              longitude: document.customer.location.longitude,
+            },
+          }),
       ...(document.customer.deliveryDate === undefined
         ? {}
         : { deliveryDate: document.customer.deliveryDate.toISOString() }),
