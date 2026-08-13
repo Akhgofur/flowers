@@ -3,7 +3,11 @@
 import { useLocale, useTranslations } from "next-intl";
 import { HERO_SLIDES } from "@/data/catalog";
 import type { Locale } from "@/i18n/config";
-import type { CatalogCategory, PublicSiteSettings } from "@/lib/contracts";
+import type {
+  CatalogCategory,
+  CategoryProductCounts,
+  PublicSiteSettings,
+} from "@/lib/contracts";
 import type { HomePageCatalogData } from "@/lib/services/home-merchandising-service";
 import { CategoryStrip } from "@/features/layout/CategoryStrip";
 import { HeroCarousel } from "@/features/layout/HeroCarousel";
@@ -16,27 +20,24 @@ export type HomePageProps = {
   categories: readonly CatalogCategory[];
   merchandising: HomePageCatalogData;
   settings?: PublicSiteSettings;
+  /**
+   * Whole-catalog totals per category slug. The rails below only carry the
+   * merchandised subset, so counting them would under-report every category.
+   */
+  categoryProductCounts?: CategoryProductCounts;
 };
 
-function uniqueProducts(merchandising: HomePageCatalogData) {
-  return [
-    ...new Map(
-      [
-        ...merchandising.dynamicSections.flatMap((section) => section.products),
-        ...merchandising.bestSellers,
-        ...merchandising.recommended,
-      ].map((product) => [product.id, product])
-    ).values(),
-  ];
-}
-
-export function HomePage({ categories, merchandising, settings }: HomePageProps) {
+export function HomePage({
+  categories,
+  merchandising,
+  settings,
+  categoryProductCounts = {},
+}: HomePageProps) {
   const locale = useLocale() as Locale;
   const tHero = useTranslations("Hero");
   const tHome = useTranslations("Home");
-  const products = uniqueProducts(merchandising);
   const clientCategories = categories.map((category) =>
-    toClientCategory(category, products)
+    toClientCategory(category, categoryProductCounts)
   );
   const bestSellers = merchandising.bestSellers.length
     ? merchandising.bestSellers

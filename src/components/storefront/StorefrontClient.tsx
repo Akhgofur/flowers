@@ -1,7 +1,12 @@
 "use client";
 
 import type { InitialCatalogFilters } from "@/features/catalog/catalog-utils";
-import type { CatalogCategory, CatalogProduct, PublicSiteSettings } from "@/lib/contracts";
+import type {
+  CatalogCategory,
+  CatalogProduct,
+  CategoryProductCounts,
+  PublicSiteSettings,
+} from "@/lib/contracts";
 import type { HomePageCatalogData } from "@/lib/services/home-merchandising-service";
 import { HomePage } from "@/features/home/HomePage";
 import { CatalogPageClient } from "./CatalogPageClient";
@@ -14,6 +19,7 @@ export type StorefrontClientProps = {
   initialFilters?: InitialCatalogFilters;
   mode?: "home" | "catalog";
   merchandising?: HomePageCatalogData;
+  categoryProductCounts?: CategoryProductCounts;
 };
 
 /** Browser-only interaction island. Server props intentionally contain no cart or favorites. */
@@ -24,6 +30,7 @@ export function StorefrontClient({
   initialFilters,
   mode = "catalog",
   merchandising,
+  categoryProductCounts,
 }: StorefrontClientProps) {
   const appKey = [
     initialFilters?.category ?? "",
@@ -48,7 +55,12 @@ export function StorefrontClient({
   return (
     <StorefrontFrame key={appKey} products={frameProducts} settings={settings}>
       {mode === "home" && merchandising ? (
-        <HomePage categories={categories} merchandising={merchandising} settings={settings} />
+        <HomePage
+          categories={categories}
+          merchandising={merchandising}
+          settings={settings}
+          categoryProductCounts={categoryProductCounts}
+        />
       ) : (
         <CatalogPageClient
           products={products}

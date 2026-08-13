@@ -3,6 +3,7 @@ import type { PipelineStage, QueryFilter, Types } from "mongoose";
 import type {
   CatalogCategory,
   CatalogProduct,
+  CategoryProductCounts,
   NormalizedPublicCatalogFilters,
   PublicSitemapEntries,
   ProductImage,
@@ -311,6 +312,51 @@ export async function findPublishedCategories(locale: Locale): Promise<CatalogCa
     .filter((document) => document.status === "published")
     .map((document) => toCatalogCategory(document, locale))
     .filter((category): category is CatalogCategory => category !== null);
+}
+
+export function buildCategoryProductCountAggregation(
+  categoryIds: readonly Types.ObjectId[]
+): PipelineStage[] {
+  return [
+    {
+      $match: {
+        ...publishedProductFilter,
+        categoryId: { $in: [...categoryIds] },
+      },
+    },
+    { $group: { _id: "$categoryId", total: { $sum: 1 } } },
+    { $project: { _id: 0, categoryId: { $toString: "$_id" }, total: 1 } },
+  ];
+}
+
+/**
+ * Counts every published product per category rather than whatever subset a page
+ * happens to render. The home page only loads its merchandising rails, so counting
+ * those client-side reported 0 for categories no rail happened to feature.
+ */
+export async function countPublishedProductsByCategory(): Promise<CategoryProductCounts> {
+  await dbConnect();
+
+  const categories = (await CategoryModel.find({ status: "published" })
+    .select({ _id: 1, slug: 1 })
+    .lean()
+    .exec()) as unknown as Array<Pick<CategoryDocument, "slug"> & { _id: Types.ObjectId }>;
+
+  if (categories.length === 0) return {};
+
+  const rows = (await ProductModel.aggregate(
+    buildCategoryProductCountAggregation(categories.map((category) => category._id))
+  ).exec()) as Array<{ categoryId: string; total: number }>;
+  const totals = new Map(rows.map((row) => [row.categoryId, row.total]));
+
+  // Categories with no published products stay in the map as 0 so the strip can
+  // still render them instead of silently omitting the key.
+  return Object.fromEntries(
+    categories.map((category) => [
+      category.slug,
+      totals.get(category._id.toString()) ?? 0,
+    ])
+  );
 }
 
 /** A compact, public-only projection used by sitemap generation. */

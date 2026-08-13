@@ -122,6 +122,9 @@ export type CatalogCategory = {
   status: "published";
 };
 
+/** Published product totals per category slug. Every published category is a key, including empty ones. */
+export type CategoryProductCounts = Record<string, number>;
+
 export type PublicCatalogFilters = {
   category?: string;
   sale?: boolean;

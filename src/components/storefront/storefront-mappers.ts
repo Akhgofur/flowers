@@ -1,4 +1,8 @@
-import type { CatalogCategory, CatalogProduct } from "@/lib/contracts";
+import type {
+  CatalogCategory,
+  CatalogProduct,
+  CategoryProductCounts,
+} from "@/lib/contracts";
 import type { Locale } from "@/i18n/config";
 import type { BootstrapCategory, BootstrapProduct } from "@/data/catalog";
 import { IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
@@ -37,18 +41,27 @@ export function toClientProduct(product: CatalogProduct): Product {
   };
 }
 
+/** Counts a product list the caller already holds in full — never a partial page. */
+export function countProductsByCategorySlug(
+  products: readonly CatalogProduct[]
+): CategoryProductCounts {
+  const counts: CategoryProductCounts = {};
+
+  for (const product of products) {
+    counts[product.categorySlug] = (counts[product.categorySlug] ?? 0) + 1;
+  }
+
+  return counts;
+}
+
 export function toClientCategory(
   category: CatalogCategory,
-  products: readonly CatalogProduct[]
+  productCounts: CategoryProductCounts
 ): Category {
-  const productCount = products.filter(
-    (product) => product.categorySlug === category.slug
-  ).length;
-
   return {
     id: category.slug,
     title: category.name,
-    productCount,
+    productCount: productCounts[category.slug] ?? 0,
     image: category.image?.url ?? IMAGE_FALLBACK_URL,
     icon: CATEGORY_ICONS[category.slug] ?? "bouquet",
   };

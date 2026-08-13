@@ -1,6 +1,7 @@
 import type {
   CatalogCategory,
   CatalogProduct,
+  CategoryProductCounts,
   NormalizedPublicCatalogFilters,
   PublicCatalogFilters,
   PublicSitemapEntries,
@@ -8,6 +9,7 @@ import type {
 import type { Locale } from "@/i18n/config";
 import { cacheCatalogReader } from "@/lib/cache";
 import {
+  countPublishedProductsByCategory,
   findPublishedCatalogProducts,
   findPublishedCategories,
   findPublishedProductBySlug,
@@ -47,6 +49,11 @@ const readPublishedProduct = cacheCatalogReader(
 const readPublishedCategories = cacheCatalogReader(
   async (locale: Locale) => findPublishedCategories(locale),
   ["published-categories"]
+);
+
+const readPublishedCategoryProductCounts = cacheCatalogReader(
+  async () => countPublishedProductsByCategory(),
+  ["published-category-product-counts"]
 );
 
 const readPublishedSitemapEntries = cacheCatalogReader(
@@ -142,6 +149,10 @@ export async function getPublishedProductBySlug(
 export async function getPublishedCategories(locale: Locale): Promise<CatalogCategory[]> {
   const categories = await readPublishedCategories(locale);
   return categories.filter((category) => category.status === "published");
+}
+
+export async function getPublishedCategoryProductCounts(): Promise<CategoryProductCounts> {
+  return readPublishedCategoryProductCounts();
 }
 
 export async function getPublishedSitemapEntries(): Promise<PublicSitemapEntries> {

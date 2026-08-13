@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { describe, expect, it } from "vitest";
 import {
   buildBestSellerAggregation,
+  buildCategoryProductCountAggregation,
   buildPublishedProductQuery,
   toCatalogProduct,
 } from "./catalog-repository";
@@ -81,6 +82,17 @@ describe("catalog repository mapping", () => {
       },
       { $sort: { quantity: -1, lastDeliveredAt: -1, _id: 1 } },
       { $project: { _id: 0, productId: { $toString: "$_id" } } },
+    ]);
+  });
+
+  it("counts only published products inside the published categories", () => {
+    const mixed = new Types.ObjectId("507f1f77bcf86cd799439021");
+    const wedding = new Types.ObjectId("507f1f77bcf86cd799439022");
+
+    expect(buildCategoryProductCountAggregation([mixed, wedding])).toEqual([
+      { $match: { status: "published", categoryId: { $in: [mixed, wedding] } } },
+      { $group: { _id: "$categoryId", total: { $sum: 1 } } },
+      { $project: { _id: 0, categoryId: { $toString: "$_id" }, total: 1 } },
     ]);
   });
 });

@@ -58,4 +58,39 @@ describe("HomePage", () => {
     expect(screen.getByRole("heading", { name: /recommended/i })).toBeVisible();
     expect(screen.queryByRole("heading", { name: /filters/i })).not.toBeInTheDocument();
   });
+
+  /**
+   * The rails carry a merchandised subset, so counting them reported "0 options"
+   * for every category no rail happened to feature.
+   */
+  it("shows whole-catalog totals rather than counting the merchandised rails", () => {
+    render(
+      <HomePage
+        categories={[category, { ...category, id: "tulips", slug: "tulips", name: "Tulips" }]}
+        merchandising={{
+          dynamicSections: [],
+          bestSellers: [product],
+          recommended: [product],
+        }}
+        categoryProductCounts={{ roses: 12, tulips: 5 }}
+      />,
+      { locale: "en" }
+    );
+
+    expect(screen.getByText("12 options")).toBeVisible();
+    expect(screen.getByText("5 options")).toBeVisible();
+  });
+
+  it("falls back to zero for a category missing from the counts", () => {
+    render(
+      <HomePage
+        categories={[category]}
+        merchandising={{ dynamicSections: [], bestSellers: [product], recommended: [product] }}
+        categoryProductCounts={{}}
+      />,
+      { locale: "en" }
+    );
+
+    expect(screen.getByText("0 options")).toBeVisible();
+  });
 });

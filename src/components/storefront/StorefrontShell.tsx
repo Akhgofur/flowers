@@ -4,18 +4,21 @@ import type { InitialCatalogFilters } from "@/features/catalog/catalog-utils";
 import type {
   CatalogCategory,
   CatalogProduct,
+  CategoryProductCounts,
   PublicCatalogFilters,
   PublicSiteSettings,
 } from "@/lib/contracts";
 import {
   getEntirePublishedCatalog,
   getPublishedCategories,
+  getPublishedCategoryProductCounts,
 } from "@/lib/services/catalog-service";
 import {
   getDefaultPublicSiteSettings,
   getPublicSiteSettings,
 } from "@/lib/services/public-settings-service";
 import {
+  countProductsByCategorySlug,
   toBootstrapCatalogCategory,
   toBootstrapCatalogProduct,
 } from "./storefront-mappers";
@@ -90,20 +93,26 @@ export async function StorefrontShell({
 }: StorefrontShellProps) {
   let data: StorefrontData;
   let merchandising: HomePageCatalogData | undefined;
+  let categoryProductCounts: CategoryProductCounts | undefined;
 
   if (mode === "home") {
     try {
-      const [categories, settings, homeData] = await Promise.all([
+      // Counts come from the catalog itself: the home page never loads every
+      // product, so the rails below cannot stand in for the real totals.
+      const [categories, settings, homeData, counts] = await Promise.all([
         getPublishedCategories(locale),
         getPublicSiteSettings(locale),
         getHomePageCatalogData(locale),
+        getPublishedCategoryProductCounts(),
       ]);
       merchandising = homeData;
+      categoryProductCounts = counts;
       data = { products: [], categories, settings, source: "mongo" };
     } catch (error) {
       if (process.env.NODE_ENV === "production") throw error;
       data = bootstrapStorefrontData(locale);
       const fallbackProducts = data.products;
+      categoryProductCounts = countProductsByCategorySlug(fallbackProducts);
       merchandising = {
         dynamicSections: [],
         bestSellers: fallbackProducts.slice(0, 8),
@@ -129,6 +138,7 @@ export async function StorefrontShell({
         initialFilters={toInitialClientFilters(filters)}
         mode={mode}
         merchandising={merchandising}
+        categoryProductCounts={categoryProductCounts}
       />
     </>
   );

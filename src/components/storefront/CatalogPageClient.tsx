@@ -14,7 +14,11 @@ import {
   type InitialCatalogFilters,
 } from "@/features/catalog/catalog-utils";
 import type { CatalogFilters as CatalogFilterState, CatalogTab } from "@/shared/types";
-import { toClientCategory, toClientProduct } from "./storefront-mappers";
+import {
+  countProductsByCategorySlug,
+  toClientCategory,
+  toClientProduct,
+} from "./storefront-mappers";
 import { useStorefront } from "./StorefrontFrame";
 
 export type CatalogPageClientProps = {
@@ -45,9 +49,13 @@ export function CatalogPageClient({
   const t = useTranslations("Catalog");
   const { addProduct, favoriteIds, toggleFavorite } = useStorefront();
   const clientProducts = useMemo(() => products.map(toClientProduct), [products]);
+  const productCounts = useMemo(
+    () => countProductsByCategorySlug(products),
+    [products]
+  );
   const clientCategories = useMemo(
-    () => categories.map((category) => toClientCategory(category, products)),
-    [categories, products]
+    () => categories.map((category) => toClientCategory(category, productCounts)),
+    [categories, productCounts]
   );
   const [draftFilters, setDraftFilters] = useState(() => createFilters(initialFilters));
   const [appliedFilters, setAppliedFilters] = useState(() => createFilters(initialFilters));
