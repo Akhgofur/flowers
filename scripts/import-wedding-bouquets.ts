@@ -1,35 +1,12 @@
-import { createHash } from "node:crypto";
-import { access, readdir } from "node:fs/promises";
-import path from "node:path";
 import nextEnv from "@next/env";
-import { v2 as cloudinary } from "cloudinary";
-import mongoose from "mongoose";
-import { CategoryModel } from "@/models/Category";
-import { ProductModel } from "@/models/Product";
+import { runBouquetImport, type Bouquet } from "./lib/bouquet-import";
 
 nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
-const SOURCE_ROOT = "C:\\Users\\gofur\\Desktop\\banketka\\edited_corrected";
+// Forward slashes on purpose: Node accepts them on Windows and they remove a
+// whole class of escaping mistakes from a path that is edited by hand.
+const SOURCE_ROOT = "C:/Users/gofur/Desktop/banketka/edited_corrected";
 const DRY_RUN = process.argv.includes("--dry-run");
-
-/** Wedding bouquets are quoted by the florist, so they ship without a price. */
-type Copy = {
-  name: string;
-  shortDescription: string;
-  description: string;
-  composition: string[];
-  deliveryEstimate: string;
-};
-
-type Bouquet = {
-  /** File names in SOURCE_ROOT. More than one means confirmed views of one bouquet. */
-  images: string[];
-  flowerTypes: string[];
-  colors: string[];
-  ru: Copy;
-  uz: Copy;
-  en: Copy;
-};
 
 const DELIVERY = {
   ru: "Дату и время согласует флорист",
@@ -571,145 +548,16 @@ const BOUQUETS: Bouquet[] = [
   },
 ];
 
-function digest(value: string): string {
-  return createHash("sha1").update(value).digest("hex").slice(0, 10);
-}
-
-/** Every source file must be claimed exactly once, or a bouquet is silently lost. */
-async function assertSourcesMatch(): Promise<void> {
-  const onDisk = (await readdir(SOURCE_ROOT))
-    .filter((name) => name.toLowerCase().endsWith(".png"))
-    .sort();
-  const claimed = BOUQUETS.flatMap((bouquet) => bouquet.images).sort();
-
-  const missing = claimed.filter((name) => !onDisk.includes(name));
-  if (missing.length) {
-    throw new Error(`Manifest names files that are not on disk: ${missing.join(", ")}`);
-  }
-
-  const unclaimed = onDisk.filter((name) => !claimed.includes(name));
-  if (unclaimed.length) {
-    throw new Error(`Source files no bouquet claims: ${unclaimed.join(", ")}`);
-  }
-
-  const duplicated = claimed.filter((name, index) => claimed.indexOf(name) !== index);
-  if (duplicated.length) {
-    throw new Error(`Source files claimed twice: ${[...new Set(duplicated)].join(", ")}`);
-  }
-}
-
-async function upload(fileName: string) {
-  const absolutePath = path.join(SOURCE_ROOT, fileName);
-  await access(absolutePath);
-
-  const result = await cloudinary.uploader.upload(absolutePath, {
-    public_id: `flowers/products/wedding/${digest(fileName)}`,
-    overwrite: true,
-    resource_type: "image",
-  });
-
-  if (!result.secure_url || !result.public_id) {
-    throw new Error(`Cloudinary did not return a URL for ${fileName}`);
-  }
-  return { url: result.secure_url, publicId: result.public_id };
-}
-
-async function main() {
-  const required = [
-    "MONGODB_URI",
-    "CLOUDINARY_CLOUD_NAME",
-    "CLOUDINARY_API_KEY",
-    "CLOUDINARY_API_SECRET",
-  ];
-  const missing = required.filter((name) => !process.env[name]);
-  if (missing.length) throw new Error(`Missing environment variables: ${missing.join(", ")}`);
-
-  await assertSourcesMatch();
-
-  const imageCount = BOUQUETS.reduce((count, bouquet) => count + bouquet.images.length, 0);
-  console.log(
-    `Wedding import plan: ${imageCount} source images -> ${BOUQUETS.length} products.`
-  );
-  for (const bouquet of BOUQUETS) {
-    console.log(
-      `  ${bouquet.ru.name} <- ${bouquet.images.length} image(s): ${bouquet.images.join(", ")}`
-    );
-  }
-  if (DRY_RUN) {
-    console.log("Dry run: nothing uploaded, nothing written.");
-    return;
-  }
-
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
-
-  await mongoose.connect(process.env.MONGODB_URI!);
-  try {
-    // Names the target without printing credentials: an import aimed at the
-    // wrong database is otherwise invisible until the wrong shop changes.
-    const { host, name } = mongoose.connection;
-    const existingWedding = await ProductModel.countDocuments({ status: "published" });
-    console.log(
-      `Writing to database "${name}" on ${host} (${existingWedding} published products today).`
-    );
-
-    const weddingCategory = await CategoryModel.findOne({ slug: "wedding" }).lean();
-    if (!weddingCategory) {
-      throw new Error("The wedding category is missing; create it before importing.");
-    }
-
-    let index = 0;
-    for (const bouquet of BOUQUETS) {
-      index += 1;
-
-      const images = [];
-      for (const fileName of bouquet.images) {
-        const uploaded = await upload(fileName);
-        images.push({ ...uploaded, alt: bouquet.ru.name });
-      }
-
-      const slug = `wedding-${digest(bouquet.images.join("|"))}`;
-      await ProductModel.findOneAndUpdate(
-        { slug },
-        {
-          $set: {
-            slug,
-            translations: { ru: bouquet.ru, uz: bouquet.uz, en: bouquet.en },
-            categoryId: weddingCategory._id,
-            currency: "UZS",
-            images,
-            flowerTypes: bouquet.flowerTypes,
-            colors: bouquet.colors,
-            seasons: ["all_year"],
-            sortOrder: 20_000 + index,
-            isFeatured: false,
-            isNewArrival: true,
-            isOnSale: false,
-            status: "published",
-          },
-          // Priced by the florist after a call, exactly like the studio catalogue.
-          $unset: { price: 1, originalPrice: 1 },
-        },
-        {
-          returnDocument: "after",
-          upsert: true,
-          runValidators: true,
-          setDefaultsOnInsert: true,
-        }
-      );
-
-      console.log(`[${index}/${BOUQUETS.length}] ${slug} — ${bouquet.ru.name}`);
-    }
-  } finally {
-    await mongoose.disconnect();
-  }
-}
-
-main().catch((error: unknown) => {
+runBouquetImport(
+  {
+    sourceRoot: SOURCE_ROOT,
+    categorySlug: "wedding",
+    cloudinaryFolder: "flowers/products/wedding",
+    sortOrderBase: 20_000,
+    bouquets: BOUQUETS,
+  },
+  { dryRun: DRY_RUN }
+).catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
