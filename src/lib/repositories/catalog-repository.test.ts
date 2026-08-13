@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { describe, expect, it } from "vitest";
 import {
   buildBestSellerAggregation,
+  buildPublishedProductQuery,
   toCatalogProduct,
 } from "./catalog-repository";
 
@@ -81,5 +82,40 @@ describe("catalog repository mapping", () => {
       { $sort: { quantity: -1, lastDeliveredAt: -1, _id: 1 } },
       { $project: { _id: 0, productId: { $toString: "$_id" } } },
     ]);
+  });
+});
+
+/**
+ * Hidden categories used to be excluded only after the database had already
+ * applied skip and limit, so their products spent the page budget and then
+ * vanished: a 48-row page returned 32 products, and everything sorted behind
+ * the hidden ones fell off the end of the catalogue entirely.
+ */
+describe("published catalog query scope", () => {
+  const baseFilters = { sale: false, page: 1, limit: 24 } as const;
+  const mixed = new Types.ObjectId("507f1f77bcf86cd799439021");
+  const wedding = new Types.ObjectId("507f1f77bcf86cd799439022");
+
+  it("limits an unfiltered catalogue to the published categories", () => {
+    const query = buildPublishedProductQuery({ ...baseFilters }, [mixed, wedding]);
+
+    expect(query.categoryId).toEqual({ $in: [mixed, wedding] });
+  });
+
+  it("keeps a single requested category exact rather than wrapping it", () => {
+    const query = buildPublishedProductQuery({ ...baseFilters, category: "wedding" }, wedding);
+
+    expect(query.categoryId).toBe(wedding);
+  });
+
+  it("scopes by category alongside the sale and search filters", () => {
+    const query = buildPublishedProductQuery(
+      { ...baseFilters, sale: true, query: "pion" },
+      [mixed]
+    );
+
+    expect(query.categoryId).toEqual({ $in: [mixed] });
+    expect(query.isOnSale).toBe(true);
+    expect(Array.isArray(query.$or)).toBe(true);
   });
 });

@@ -115,14 +115,23 @@ function toCatalogCategory(
   };
 }
 
-function buildPublishedProductQuery(
+/**
+ * `categoryScope` is one published category, or every published category when
+ * the shopper asked for no particular one. Scoping here rather than after the
+ * query matters: products in a hidden category used to fill the page budget and
+ * only then be dropped, so a page of 48 could return 32 and the tail of the
+ * catalogue never surfaced at all.
+ */
+export function buildPublishedProductQuery(
   filters: NormalizedPublicCatalogFilters,
-  categoryId?: Types.ObjectId
+  categoryScope: Types.ObjectId | readonly Types.ObjectId[]
 ): QueryFilter<ProductDocument> {
   const query: QueryFilter<ProductDocument> = { ...publishedProductFilter };
 
   if (filters.sale) query.isOnSale = true;
-  if (categoryId) query.categoryId = categoryId;
+  query.categoryId = Array.isArray(categoryScope)
+    ? { $in: [...categoryScope] }
+    : (categoryScope as Types.ObjectId);
 
   if (filters.query) {
     const searchExpression = new RegExp(escapeRegex(filters.query), "i");
@@ -153,6 +162,15 @@ async function resolvePublishedCategoryId(
   return category?._id ?? null;
 }
 
+async function findPublishedCategoryIds(): Promise<Types.ObjectId[]> {
+  const categories = await CategoryModel.find({ status: "published" })
+    .select({ _id: 1 })
+    .lean()
+    .exec();
+
+  return categories.map((category) => category._id);
+}
+
 export async function findPublishedCatalogProducts(
   locale: Locale,
   filters: NormalizedPublicCatalogFilters
@@ -162,8 +180,11 @@ export async function findPublishedCatalogProducts(
   const categoryId = await resolvePublishedCategoryId(filters.category);
   if (categoryId === null) return [];
 
+  const categoryScope = categoryId ?? (await findPublishedCategoryIds());
+  if (Array.isArray(categoryScope) && categoryScope.length === 0) return [];
+
   const documents = (await ProductModel.find(
-    buildPublishedProductQuery(filters, categoryId)
+    buildPublishedProductQuery(filters, categoryScope)
   )
     .populate({
       path: "categoryId",
