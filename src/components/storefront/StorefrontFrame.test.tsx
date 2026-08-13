@@ -253,6 +253,49 @@ describe("StorefrontFrame cart lines from other routes", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  /**
+   * Adding a product rewrites the cart, which used to abort the lookup already
+   * in flight for the other lines. Their ids were marked as looked up, so
+   * nothing retried and the drawer showed only the products this route shipped.
+   */
+  it("keeps looking up missing lines when the basket changes mid-request", async () => {
+    let deliverProducts: () => void = () => {};
+    const delivered = new Promise<void>((resolve) => {
+      deliverProducts = resolve;
+    });
+    const fetchMock = vi.fn().mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise((resolve, reject) => {
+          init?.signal?.addEventListener("abort", () =>
+            reject(Object.assign(new Error("aborted"), { name: "AbortError" }))
+          );
+          void delivered.then(() =>
+            resolve({ ok: true, json: async () => ({ products: [TULIPS] }) })
+          );
+        })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    seedCart(
+      { productId: ROSES.id, quantity: 1 },
+      { productId: TULIPS.id, quantity: 1 }
+    );
+
+    const user = userEvent.setup();
+    render(
+      <StorefrontFrame products={[ROSES]}>
+        <main><CartTrigger /></main>
+      </StorefrontFrame>,
+      { locale: "uz" }
+    );
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    await user.click(screen.getByRole("button", { name: "Savatga" }));
+    deliverProducts();
+
+    await openCart(user);
+    expect(await screen.findByText(TULIPS.name)).toBeInTheDocument();
+  });
+
   it("keeps the storefront usable when the lookup fails", async () => {
     const fetchMock = vi.fn().mockRejectedValue(new Error("offline"));
     vi.stubGlobal("fetch", fetchMock);

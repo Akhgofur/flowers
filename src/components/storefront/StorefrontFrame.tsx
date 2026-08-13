@@ -68,6 +68,7 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
   /** Basket products this route never shipped, fetched on demand and kept per session. */
   const [cartProducts, setCartProducts] = useState<readonly CatalogProduct[]>([]);
   const requestedIdsRef = useRef(new Set<string>());
+  const lookupAbortRef = useRef<AbortController | null>(null);
 
   const clientProducts = useMemo(
     () =>
@@ -95,6 +96,13 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
     if (isHydrated) writeFavorites(favoriteIds);
   }, [favoriteIds, isHydrated]);
 
+  // The lookup below is cancelled when the frame goes away, never when the
+  // basket changes. Cancelling on every basket change meant adding a second
+  // product aborted the request for the first, and since its id was already
+  // marked as looked up nothing ever retried: the line stayed missing from the
+  // drawer for the rest of the session.
+  useEffect(() => () => lookupAbortRef.current?.abort(), []);
+
   // The cart outlives the route: a product page ships one product, yet the
   // basket may name a dozen. Lines with no product data used to vanish from the
   // drawer and its total, so anything missing is looked up once per id.
@@ -109,8 +117,7 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
     if (missingIds.length === 0) return;
     for (const id of missingIds) requestedIdsRef.current.add(id);
 
-    const controller = new AbortController();
-
+    const controller = (lookupAbortRef.current ??= new AbortController());
     const query = new URLSearchParams({ ids: missingIds.join(","), locale });
     fetch(`/api/products?${query}`, { signal: controller.signal })
       .then((response) => (response.ok ? response.json() : null))
@@ -120,11 +127,12 @@ export function StorefrontFrame({ children, products, settings }: StorefrontFram
         setCartProducts((current) => [...current, ...fetched]);
       })
       .catch(() => {
-        // An offline or failing lookup must not break the page. The ids stay
-        // marked as requested so a render loop cannot retry them forever.
+        // An offline or failing lookup must not break the page. Nothing here
+        // re-renders, so releasing the ids cannot loop — it only lets the next
+        // basket change try again instead of hiding those lines for good.
+        if (controller.signal.aborted) return;
+        for (const id of missingIds) requestedIdsRef.current.delete(id);
       });
-
-    return () => controller.abort();
   }, [cartLines, isHydrated, locale, products]);
 
   useEffect(() => {
