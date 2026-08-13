@@ -3,6 +3,11 @@ import { fileURLToPath } from "node:url";
 import nextEnv from "@next/env";
 import mongoose from "mongoose";
 import { dbConnect } from "../src/lib/mongodb";
+import {
+  CURRENT_SITE_NAME,
+  RETIRED_SITE_NAMES,
+  resolveSiteName,
+} from "../src/lib/site-name";
 import { ProductModel } from "../src/models/Product";
 import { SiteSettingsModel } from "../src/models/SiteSettings";
 
@@ -35,14 +40,13 @@ const legacySiteNameFilter = {
   $or: [
     { siteName: { $exists: false } },
     { siteName: "" },
-    { siteName: "Nafis" },
-    { siteName: "Nafis Flowers" },
+    ...RETIRED_SITE_NAMES.map((siteName) => ({ siteName })),
   ],
 };
 
 const defaultSettings = {
   key: "default",
-  siteName: "Floraluxe",
+  siteName: CURRENT_SITE_NAME,
   translations: {
     ru: {
       siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту.",
@@ -80,8 +84,7 @@ export function createMongoMigrationStore(): FloraluxeMigrationStore {
 
       return {
         productsMissingSeasons,
-        legacySiteName:
-          !settings || ["", "Nafis", "Nafis Flowers"].includes(siteName),
+        legacySiteName: !settings || resolveSiteName(siteName) !== siteName,
       };
     },
     async apply() {
@@ -90,7 +93,7 @@ export function createMongoMigrationStore(): FloraluxeMigrationStore {
           $set: { seasons: ["all_year"] },
         }),
         SiteSettingsModel.collection.updateOne(legacySiteNameFilter, {
-          $set: { siteName: "Floraluxe" },
+          $set: { siteName: CURRENT_SITE_NAME },
         }),
       ]);
       const settingsInsertResult = await SiteSettingsModel.collection.updateOne(

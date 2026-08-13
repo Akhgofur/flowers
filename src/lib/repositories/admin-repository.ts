@@ -9,6 +9,7 @@ import type {
 import { AdminNotFoundError } from "@/lib/admin-api";
 import { resolveSiteSettingsTranslation } from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
+import { CURRENT_SITE_NAME, resolveSiteName } from "@/lib/site-name";
 import type {
   CategoryInput,
   ProductInput,
@@ -32,7 +33,7 @@ type NotificationRecord = OrderNotificationDocument & { _id: Types.ObjectId };
 type SettingsRecord = SiteSettingsDocument & { _id: Types.ObjectId };
 
 const DEFAULT_SETTINGS: AdminSiteSettings = {
-  siteName: "Floraluxe",
+  siteName: CURRENT_SITE_NAME,
   translations: {
     ru: { siteDescription: "Авторские букеты и бережная доставка цветов по Ташкенту." },
     uz: { siteDescription: "Toshkent bo‘ylab mualliflik buketlari va ehtiyotkor yetkazib berish." },
@@ -146,7 +147,9 @@ function toAdminSettings(document: SettingsRecord | null): AdminSiteSettings {
   };
 
   return {
-    siteName: document.siteName,
+    // The owner's own name wins; only a blank or retired one is replaced, so the
+    // admin form never re-saves the old brand back into the settings document.
+    siteName: resolveSiteName(document.siteName),
     ...(document.brandLogo === undefined ? {} : { brandLogo: { ...document.brandLogo } }),
     ...(document.brandMark === undefined ? {} : { brandMark: { ...document.brandMark } }),
     translations,

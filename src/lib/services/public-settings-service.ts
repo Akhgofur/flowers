@@ -4,6 +4,7 @@ import type { Locale } from "@/i18n/config";
 import { cacheSiteSettingsReader } from "@/lib/cache";
 import { resolveSiteSettingsTranslation } from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
+import { CURRENT_SITE_NAME, resolveSiteName } from "@/lib/site-name";
 import { SiteSettingsModel, type SiteSettingsDocument } from "@/models/SiteSettings";
 
 const DEFAULT_TRANSLATIONS: Record<Locale, SiteSettingsTranslation> = {
@@ -22,7 +23,7 @@ const DEFAULT_TRANSLATIONS: Record<Locale, SiteSettingsTranslation> = {
 };
 
 const DEFAULT_UNIVERSAL_SETTINGS = {
-  siteName: "Floraluxe",
+  siteName: CURRENT_SITE_NAME,
   brandLogo: { url: "/brand/floraluxe-logo.png", alt: "Floraluxe" },
   brandMark: { url: "/brand/floraluxe-mark.png", alt: "Floraluxe belgisi" },
   phone: "+998 88 780 22 08",
@@ -48,7 +49,7 @@ async function readPublicSiteSettings(locale: Locale): Promise<PublicSiteSetting
     resolveSiteSettingsTranslation(document, locale) ?? DEFAULT_TRANSLATIONS[locale];
 
   return {
-    siteName: document.siteName,
+    siteName: resolveSiteName(document.siteName),
     brandLogo: document.brandLogo === undefined
       ? { ...DEFAULT_UNIVERSAL_SETTINGS.brandLogo }
       : { ...document.brandLogo },

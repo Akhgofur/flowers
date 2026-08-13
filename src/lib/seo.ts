@@ -6,6 +6,7 @@ import {
 } from "@/i18n/config";
 import type { CatalogProduct } from "@/lib/contracts";
 import { getProductAvailability } from "@/lib/product-availability";
+import { CURRENT_SITE_NAME } from "@/lib/site-name";
 
 const FALLBACK_SITE_URL = "https://floraluxe.uz";
 
@@ -41,7 +42,7 @@ const OPEN_GRAPH_LOCALES: Record<Locale, string> = {
 };
 
 export const DEFAULT_PUBLIC_SEO_SETTINGS: PublicSeoSettings = {
-  siteName: "Floraluxe",
+  siteName: CURRENT_SITE_NAME,
   siteDescription:
     "Авторские букеты и бережная доставка цветов по Ташкенту.",
   phone: "+998 88 780 22 08",

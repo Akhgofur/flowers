@@ -37,8 +37,17 @@ const RETIRED_BRAND_COPY = /\bNafis\b|\bNAFIS\b|\bNF-/;
 const RETIRED_BRAND_IDENTIFIER = /nafis[-_]|nafis\.[a-z]|nafis[A-Z]/;
 
 describe("Floraluxe brand identity", () => {
+  /**
+   * The one module allowed to spell the retired name is the one that exists to
+   * erase it: stored settings documents predating the rebrand are rewritten on
+   * read, which needs the old spellings to recognise them.
+   */
+  const COPY_EXCEPTIONS = [join("lib", "site-name.ts")];
+
   it("does not leak the retired brand name or order prefix into production UI", () => {
     const violations = SOURCE_ROOTS.flatMap(collectProductionFiles).flatMap((path) => {
+      if (COPY_EXCEPTIONS.some((allowed) => path.endsWith(allowed))) return [];
+
       const content = readFileSync(path, "utf8");
       return RETIRED_BRAND_COPY.test(content) ? [path] : [];
     });
