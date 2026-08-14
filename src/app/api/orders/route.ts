@@ -10,10 +10,28 @@ import uz from "../../../../messages/uz.json";
 
 export const runtime = "nodejs";
 
-const CHECKOUT_RATE_LIMIT = {
-  namespace: "checkout",
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1_000;
+
+/**
+ * The abuse ceiling, charged per address before anything is parsed. It has to sit
+ * well above honest use: mobile carriers and offices put many shoppers behind one
+ * public address, and a strict per-address count locks out everyone but the first.
+ */
+const CHECKOUT_ATTEMPT_RATE_LIMIT = {
+  namespace: "checkout:attempt",
+  limit: 30,
+  windowMs: RATE_LIMIT_WINDOW_MS,
+} as const;
+
+/**
+ * The duplicate-order guard, charged per phone number and only once a submission is
+ * valid. Counting rejected submissions here would spend a shopper's whole quota on
+ * their own typos — a mistyped phone is the most common thing checkout rejects.
+ */
+const CHECKOUT_ORDER_RATE_LIMIT = {
+  namespace: "checkout:order",
   limit: 5,
-  windowMs: 15 * 60 * 1_000,
+  windowMs: RATE_LIMIT_WINDOW_MS,
 } as const;
 
 const PUBLIC_ORDER_ERRORS = new Set([
@@ -49,6 +67,14 @@ function getRequestSubject(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
   const forwardedAddress = forwardedFor?.split(",")[0]?.trim();
   return forwardedAddress || request.headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+/**
+ * Digits only, so the same number counts once however it was typed — `+998 90 123`
+ * and `998901230000` are one customer, not two quotas.
+ */
+function getPhoneSubject(phone: string): string {
+  return `phone:${phone.replace(/\D/g, "")}`;
 }
 
 function publicOrderError(
@@ -108,8 +134,8 @@ export async function POST(request: Request) {
     }
 
     locale = bodyLocale(body);
-    const decision = await rateLimiter.consume({
-      ...CHECKOUT_RATE_LIMIT,
+    const attempt = await rateLimiter.consume({
+      ...CHECKOUT_ATTEMPT_RATE_LIMIT,
       subject: getRequestSubject(request),
     });
 
@@ -122,10 +148,15 @@ export async function POST(request: Request) {
         },
         {
           status: 400,
-          headers: rateLimitHeaders(decision.limit, decision.remaining),
+          headers: rateLimitHeaders(attempt.limit, attempt.remaining),
         }
       );
     }
+
+    const decision = await rateLimiter.consume({
+      ...CHECKOUT_ORDER_RATE_LIMIT,
+      subject: getPhoneSubject(parsed.data.customer.phone),
+    });
 
     const order = await orderService.createPendingOrder(parsed.data);
     // Notification providers are best effort: an already committed order must
@@ -149,6 +180,9 @@ export async function POST(request: Request) {
         {
           code: "RATE_LIMITED",
           error: checkoutError(locale, "errorRateLimit"),
+          // "Try again later" leaves the shopper refreshing blind. The client turns
+          // this into the wait it actually is.
+          retryAfterSeconds: error.retryAfterSeconds,
         },
         {
           status: 429,

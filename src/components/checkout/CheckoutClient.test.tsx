@@ -386,6 +386,28 @@ describe("CheckoutClient", () => {
       { status: 201, headers: { "content-type": "application/json" } }
     );
 
+  /**
+   * Spreading jsdom's Navigator drops every property it defines on the prototype,
+   * including the `userAgent` and `platform` Leaflet reads the moment its module
+   * evaluates. Carrying them keeps a geolocation stub from breaking the map picker.
+   */
+  const stubGeolocation = (getCurrentPosition: Geolocation["getCurrentPosition"]) => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      geolocation: { getCurrentPosition },
+    });
+  };
+
+  /** The picker is a lazily loaded chunk, so its first appearance outlasts the default wait. */
+  const findMap = () =>
+    screen.findByRole(
+      "application",
+      { name: /yetkazib berish nuqtasi xaritasi/i },
+      { timeout: 10_000 }
+    );
+
   const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
     await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
@@ -399,16 +421,12 @@ describe("CheckoutClient", () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("navigator", {
-      ...navigator,
-      geolocation: {
-        getCurrentPosition: (onSuccess: PositionCallback) =>
-          onSuccess({
-            // Raw device output, deliberately more precise than a doorway.
-            coords: { latitude: 41.31108123, longitude: 69.2405621234 },
-          } as GeolocationPosition),
-      },
-    });
+    stubGeolocation((onSuccess: PositionCallback) =>
+      onSuccess({
+        // Raw device output, deliberately more precise than a doorway.
+        coords: { latitude: 41.31108123, longitude: 69.2405621234 },
+      } as GeolocationPosition)
+    );
 
     render(<CheckoutClient products={products} />, { locale: "uz" });
 
@@ -454,17 +472,50 @@ describe("CheckoutClient", () => {
     expect(body.customer.location).toEqual({ latitude: 41.311081, longitude: 69.240562 });
   });
 
+  // The map is a lazily loaded chunk, so the toggle is the only thing that proves
+  // the picker is reachable at all — a broken import fails silently otherwise.
+  it("opens the map picker on request and closes it again", async () => {
+    const user = userEvent.setup();
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    expect(screen.queryByRole("application")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /xaritadan belgilash/i }));
+
+    expect(await findMap()).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: /xaritani yopish/i }));
+
+    expect(screen.queryByRole("application")).not.toBeInTheDocument();
+  });
+
+  // A pin the shopper cannot see is a pin they cannot correct, and geolocation is
+  // routinely off by a building.
+  it("shows the map automatically once a pin is detected", async () => {
+    const user = userEvent.setup();
+    stubGeolocation((onSuccess: PositionCallback) =>
+      onSuccess({
+        coords: { latitude: 41.311081, longitude: 69.240562 },
+      } as GeolocationPosition)
+    );
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+
+    await screen.findByText(/pushti lola buketi/i);
+    await user.click(screen.getByRole("button", { name: /joylashuvimni aniqlash/i }));
+
+    expect(await findMap()).toBeVisible();
+  });
+
   it("orders without a pin when the browser refuses one", async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("navigator", {
-      ...navigator,
-      geolocation: {
-        getCurrentPosition: (_onSuccess: PositionCallback, onError: PositionErrorCallback) =>
-          onError({ code: 1, PERMISSION_DENIED: 1 } as GeolocationPositionError),
-      },
-    });
+    stubGeolocation((_onSuccess: PositionCallback, onError?: PositionErrorCallback) =>
+      onError?.({ code: 1, PERMISSION_DENIED: 1 } as GeolocationPositionError)
+    );
 
     render(<CheckoutClient products={products} />, { locale: "uz" });
 

@@ -243,6 +243,10 @@
     "locationHelp": "Kuryer sizni tezroq topadi, operator esa shu nuqtaga taksi chaqira oladi.",
     "locationDetect": "Joylashuvimni aniqlash",
     "locationDetecting": "Aniqlanmoqda…",
+    "locationPickOnMap": "Xaritadan belgilash",
+    "locationHideMap": "Xaritani yopish",
+    "locationMapLabel": "Yetkazib berish nuqtasi xaritasi",
+    "locationMapHint": "Xaritaning kerakli joyini bosing yoki nishonni sudrab aniq eshik oldiga qo‘ying.",
     "locationPicked": "Joylashuv tanlandi: {point}",
     "locationOpenMap": "Xaritada ko‘rish",
     "locationClear": "Bekor qilish",
@@ -286,6 +290,7 @@
     "invalidPhone": "To‘g‘ri telefon raqamini kiriting.",
     "errorValidation": "Buyurtma ma’lumotlarini tekshiring.",
     "errorRateLimit": "Juda ko‘p urinish. Keyinroq takrorlang.",
+    "errorRateLimitWait": "Juda ko‘p urinish. {minutes} daqiqadan so‘ng qayta urinib ko‘ring yoki bizga qo‘ng‘iroq qiling.",
     "errorUnavailable": "Mahsulotlardan biri endi mavjud emas.",
     "errorService": "Buyurtmani rasmiylashtirib bo‘lmadi. Keyinroq urinib ko‘ring."
   },

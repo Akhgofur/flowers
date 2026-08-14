@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
@@ -23,6 +24,16 @@ import { applyImageFallback, IMAGE_FALLBACK_URL } from "@/shared/image-fallback"
 import { buildMapLinks } from "@/shared/map-links";
 import type { CartLine } from "@/shared/types";
 import type { Locale } from "@/i18n/config";
+
+// Leaflet reaches for `window` at import time and is far larger than the rest of
+// checkout, so the map is fetched only once a shopper actually opens it.
+const LocationMap = dynamic(
+  () => import("./LocationMap").then((module) => module.LocationMap),
+  {
+    ssr: false,
+    loading: () => <div className="checkout-map checkout-map--loading" />,
+  }
+);
 
 type CheckoutClientProps = {
   products: readonly CatalogProduct[];
@@ -52,8 +63,11 @@ type LocationStatus =
 type CheckoutResponse = {
   order?: OrderCreationResult;
   error?: string;
+  code?: string;
   /** Set when the server rejected one specific line. */
   productId?: string;
+  /** Set alongside a `RATE_LIMITED` code: how long the shopper has to wait. */
+  retryAfterSeconds?: number;
 };
 
 /**
@@ -141,6 +155,7 @@ export function CheckoutClient({
   const [error, setError] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>({ kind: "idle" });
   const [pastedLocation, setPastedLocation] = useState("");
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<OrderCreationResult | null>(null);
   // Captured at submit time, before the cart is cleared: whether the order that was
   // just placed contained a line with no price, so the confirmation screen can flag
@@ -179,6 +194,10 @@ export function CheckoutClient({
     updateForm("location", location);
     setLocationStatus({ kind: "idle" });
     setPastedLocation("");
+    // A point that arrived from geolocation or a pasted link is worth showing on the
+    // map: it is the only way the shopper can tell the courier is sent to the right
+    // door before confirming, and the pin stays draggable from there.
+    if (location) setIsMapOpen(true);
   };
 
   const detectLocation = () => {
@@ -258,7 +277,12 @@ export function CheckoutClient({
         const rejected = payload.productId
           ? productsById.get(payload.productId)
           : undefined;
-        const message = payload.error ?? t("errorService");
+        const message =
+          payload.code === "RATE_LIMITED" && typeof payload.retryAfterSeconds === "number"
+            ? t("errorRateLimitWait", {
+                minutes: Math.max(1, Math.ceil(payload.retryAfterSeconds / 60)),
+              })
+            : payload.error ?? t("errorService");
         throw new Error(rejected ? `${message} — «${rejected.name}»` : message);
       }
 
@@ -404,6 +428,39 @@ export function CheckoutClient({
                     <p>{t("locationHelp")}</p>
                   </div>
 
+                  {/* Both ways in stay available after a point is chosen: the first
+                      pin is usually a rough one that the shopper then corrects. */}
+                  <div className="checkout-location__actions">
+                    <button
+                      type="button"
+                      className="checkout-location__detect"
+                      onClick={detectLocation}
+                      disabled={locationStatus.kind === "locating"}
+                    >
+                      {locationStatus.kind === "locating"
+                        ? t("locationDetecting")
+                        : t("locationDetect")}
+                    </button>
+                    <button
+                      type="button"
+                      aria-expanded={isMapOpen}
+                      onClick={() => setIsMapOpen((current) => !current)}
+                    >
+                      {isMapOpen ? t("locationHideMap") : t("locationPickOnMap")}
+                    </button>
+                  </div>
+
+                  {isMapOpen ? (
+                    <div className="checkout-location__map">
+                      <LocationMap
+                        value={form.location}
+                        onChange={setLocation}
+                        label={t("locationMapLabel")}
+                      />
+                      <p className="checkout-location__hint">{t("locationMapHint")}</p>
+                    </div>
+                  ) : null}
+
                   {form.location ? (
                     <div className="checkout-location__picked">
                       <p>
@@ -423,20 +480,7 @@ export function CheckoutClient({
                         </button>
                       </div>
                     </div>
-                  ) : (
-                    <div className="checkout-location__actions">
-                      <button
-                        type="button"
-                        className="checkout-location__detect"
-                        onClick={detectLocation}
-                        disabled={locationStatus.kind === "locating"}
-                      >
-                        {locationStatus.kind === "locating"
-                          ? t("locationDetecting")
-                          : t("locationDetect")}
-                      </button>
-                    </div>
-                  )}
+                  ) : null}
 
                   <div className="checkout-location__paste">
                     <label>

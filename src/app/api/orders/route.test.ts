@@ -97,9 +97,17 @@ describe("POST /api/orders", () => {
         status: "pending",
       },
     });
-    expect(rateLimit.rateLimiter.consume).toHaveBeenCalledWith({
-      namespace: "checkout",
+    expect(rateLimit.rateLimiter.consume).toHaveBeenNthCalledWith(1, {
+      namespace: "checkout:attempt",
       subject: "203.0.113.45",
+      limit: 30,
+      windowMs: 15 * 60 * 1_000,
+    });
+    // The order quota follows the customer, not the address: a carrier NAT or an
+    // office puts unrelated shoppers behind one address.
+    expect(rateLimit.rateLimiter.consume).toHaveBeenNthCalledWith(2, {
+      namespace: "checkout:order",
+      subject: "phone:998901234567",
       limit: 5,
       windowMs: 15 * 60 * 1_000,
     });
@@ -196,8 +204,34 @@ describe("POST /api/orders", () => {
     await expect(response.json()).resolves.toEqual({
       code: "RATE_LIMITED",
       error: "Слишком много попыток. Повторите позже.",
+      retryAfterSeconds: 42,
     });
     expect(orderService.createPendingOrder).not.toHaveBeenCalled();
+  });
+
+  // A mistyped phone number is the most common rejection at checkout. Charging the
+  // order quota for it spends a shopper's whole allowance on their own corrections.
+  it("does not spend the order quota on a submission that fails validation", async () => {
+    const response = await POST(postJson({ ...validCheckout, items: [] }));
+
+    expect(response.status).toBe(400);
+    expect(rateLimit.rateLimiter.consume).toHaveBeenCalledTimes(1);
+    expect(rateLimit.rateLimiter.consume).toHaveBeenCalledWith(
+      expect.objectContaining({ namespace: "checkout:attempt" })
+    );
+  });
+
+  // Without this cap, an invalid body would cost nothing and could be replayed
+  // without limit — validation-first quota accounting must not remove the ceiling.
+  it("still charges the attempt quota for a submission that fails validation", async () => {
+    rateLimit.rateLimiter.consume.mockRejectedValue(
+      new rateLimit.RateLimitExceededError(120)
+    );
+
+    const response = await POST(postJson({ ...validCheckout, items: [] }));
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("retry-after")).toBe("120");
   });
 
   it("returns stable codes and English copy for invalid English checkout data", async () => {

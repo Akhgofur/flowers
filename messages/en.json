@@ -243,6 +243,10 @@
     "locationHelp": "The courier finds you faster, and the operator can order a taxi straight to this point.",
     "locationDetect": "Detect my location",
     "locationDetecting": "Detecting…",
+    "locationPickOnMap": "Pick on the map",
+    "locationHideMap": "Hide the map",
+    "locationMapLabel": "Delivery point map",
+    "locationMapHint": "Tap the spot on the map, or drag the pin to the exact door.",
     "locationPicked": "Location picked: {point}",
     "locationOpenMap": "View on the map",
     "locationClear": "Remove",
@@ -286,6 +290,7 @@
     "invalidPhone": "Enter a valid phone number.",
     "errorValidation": "Check your order details.",
     "errorRateLimit": "Too many attempts. Please try again later.",
+    "errorRateLimitWait": "Too many attempts. Please try again in {minutes} min, or give us a call.",
     "errorUnavailable": "One of the products is no longer available.",
     "errorService": "We could not place your order. Please try again later."
   },

@@ -2730,6 +2730,66 @@ img {
   cursor: not-allowed;
 }
 
+.checkout-location__map {
+  display: grid;
+  gap: 8px;
+}
+
+.checkout-map {
+  width: 100%;
+  height: 280px;
+  border: 1px solid rgba(77, 42, 48, 0.18);
+  border-radius: 15px;
+  background: #eef2f0;
+  /* Leaflet paints tiles and controls right up to the corners otherwise. */
+  overflow: hidden;
+  /* The map owns the drag gesture; the page must still scroll past it vertically. */
+  touch-action: pan-y;
+  z-index: 0;
+}
+
+.checkout-map--loading {
+  animation: checkout-map-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes checkout-map-pulse {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-map--loading {
+    animation: none;
+  }
+}
+
+.checkout-map .leaflet-container {
+  font: inherit;
+}
+
+.checkout-map .leaflet-control-attribution {
+  font-size: 0.65rem;
+}
+
+/* Leaflet sizes the icon box; the teardrop itself is drawn inside it. */
+.checkout-map__pin span {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  background: var(--color-accent);
+  box-shadow: 0 3px 8px rgba(77, 42, 48, 0.35);
+  transform: rotate(-45deg);
+}
+
+.checkout-location__hint {
+  color: var(--color-ink-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .checkout-location__paste {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
