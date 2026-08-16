@@ -556,6 +556,8 @@ describe("CheckoutClient", () => {
     expect(
       screen.queryByRole("button", { name: /xaritadan belgilash/i })
     ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/xarita havolasini/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(screen.getByText("Do‘konda naqd pul bilan")).toBeVisible();
   });
 
@@ -592,9 +594,19 @@ describe("CheckoutClient", () => {
       screen.getByLabelText(/yetkazib berish manzili/i),
       "Yunusobod 19, Toshkent"
     );
+    // A pasted link is the least mocking way to establish a real pin — confirm it
+    // actually took effect, so this test would fail loudly if the seam did nothing.
+    await user.type(
+      screen.getByLabelText(/xarita havolasini/i),
+      "https://yandex.uz/maps/?pt=69.240562,41.311081&z=17"
+    );
+    await user.click(screen.getByRole("button", { name: /qo‘shish/i }));
+    expect(await screen.findByText(/41.311081, 69.240562/)).toBeVisible();
+
     await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
     await user.click(screen.getByRole("radio", { name: /Yandex yetkazib berish/i }));
 
     expect(screen.getByLabelText(/yetkazib berish manzili/i)).toHaveValue("");
+    expect(screen.queryByText(/41.311081, 69.240562/)).not.toBeInTheDocument();
   });
 });
