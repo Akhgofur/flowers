@@ -185,6 +185,9 @@ export function ProductDetail({
             </strong>
             {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
           </div>
+          {/* Shown whether or not a figure is on display: a price quoted by the
+              florist moves with the season just as a listed one does. */}
+          <p className="product-detail__price-note">{t("seasonalPriceNote")}</p>
 
           <dl className="product-detail__facts">
             <div>

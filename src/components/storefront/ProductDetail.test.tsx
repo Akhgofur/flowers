@@ -50,4 +50,18 @@ describe("ProductDetail gallery", () => {
     expect(screen.getByText("Price on request")).toBeVisible();
     expect(screen.getByRole("button", { name: "Add to cart" })).toBeVisible();
   });
+
+  it("warns that a shown price moves with the season", () => {
+    render(<ProductDetail product={{ ...product, price: 350000 }} />, { locale: "en" });
+
+    expect(screen.getByText("Prices may vary by season")).toBeVisible();
+  });
+
+  it("warns about seasonal prices even when the price is on request", () => {
+    render(<ProductDetail product={{ ...product, price: undefined }} />, {
+      locale: "en",
+    });
+
+    expect(screen.getByText("Prices may vary by season")).toBeVisible();
+  });
 });

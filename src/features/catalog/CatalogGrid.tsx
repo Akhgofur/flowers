@@ -128,6 +128,8 @@ export function CatalogGrid({
                       </strong>
                       {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
                     </span>
+                    {/* A span, not a paragraph: this card is the body of a link. */}
+                    <span className="product-card__price-note">{t("seasonalPriceNote")}</span>
                   </span>
                 </Link>
               ) : <>
@@ -161,6 +163,7 @@ export function CatalogGrid({
                   </strong>
                   {product.originalPrice ? <s>{formatSum(product.originalPrice, locale)}</s> : null}
                 </div>
+                <span className="product-card__price-note">{t("seasonalPriceNote")}</span>
                 <div className="product-card__actions">
                   <button
                     className="product-view-button"
