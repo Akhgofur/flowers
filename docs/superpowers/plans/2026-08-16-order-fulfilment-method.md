@@ -176,6 +176,7 @@ function orderDraft(overrides: Record<string, unknown> = {}) {
     ...overrides,
   });
 }
+```
 
 **Use `validate()`, never `validateSync()`, for the address cases.**
 `validateSync()` skips middleware, so a `pre("validate")` hook never runs under
