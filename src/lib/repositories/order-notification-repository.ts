@@ -1,7 +1,9 @@
 import "server-only";
 import mongoose, { type Types } from "mongoose";
-import type { NewOrderNotification } from "@/lib/services/order-notification-service";
+import type { FulfilmentMethod } from "@/lib/contracts";
 import { dbConnect } from "@/lib/mongodb";
+import { resolveFulfilment } from "@/lib/order-fulfilment";
+import type { NewOrderNotification } from "@/lib/services/order-notification-service";
 import { OrderModel, type OrderDocument } from "@/models/Order";
 import {
   OrderNotificationModel,
@@ -9,7 +11,13 @@ import {
 } from "@/models/OrderNotification";
 
 type NotificationRecord = OrderNotificationDocument & { _id: Types.ObjectId };
-type OrderRecord = OrderDocument & { _id: Types.ObjectId };
+// `.lean()` skips schema defaults, so an order written before this field
+// existed comes back with `fulfilment` entirely absent, not defaulted to
+// "delivery" — the same reason `customer.address` is optional here.
+type OrderRecord = Omit<OrderDocument, "fulfilment"> & {
+  _id: Types.ObjectId;
+  fulfilment?: FulfilmentMethod;
+};
 
 export type ClaimedNotificationRecord = {
   id: string;
@@ -91,6 +99,7 @@ export async function loadOrderNotification(
     orderNumber: document.number,
     total: document.total,
     paymentMethod: document.paymentMethod,
+    fulfilment: resolveFulfilment(document.fulfilment),
     items: document.items.map((item) => ({
       name: item.name,
       quantity: item.quantity,
@@ -100,7 +109,9 @@ export async function loadOrderNotification(
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,
-      address: document.customer.address,
+      ...(document.customer.address === undefined
+        ? {}
+        : { address: document.customer.address }),
       ...(document.customer.location === undefined
         ? {}
         : {

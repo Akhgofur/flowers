@@ -9,6 +9,7 @@ const order: NewOrderNotification = {
   orderNumber: "FL-20260811-AB12",
   total: 420_000,
   paymentMethod: "card_on_delivery",
+  fulfilment: "delivery",
   customer: {
     fullName: "Dilnoza Karimova",
     phone: "+998901234567",
@@ -197,4 +198,38 @@ describe("telegram photo delivery", () => {
     const [, message] = sendTelegram.mock.calls[0] ?? [];
     expect(message.photos).toEqual(["https://res.cloudinary.com/demo/roses.png"]);
   });
+});
+
+const baseNotification = {
+  orderNumber: "FL-260816-0001",
+  total: 350000,
+  paymentMethod: "cash_on_delivery" as const,
+  fulfilment: "delivery" as const,
+  customer: {
+    fullName: "Aziza Karimova",
+    phone: "+998901234567",
+    address: "Yunusobod 19, Toshkent",
+    location: { latitude: 41.3, longitude: 69.2 },
+  },
+};
+
+it("names Yandex delivery and keeps the address and map links", () => {
+  const text = formatNewOrderNotification(baseNotification);
+
+  expect(text).toContain("Olish usuli: Yandex yetkazib berish");
+  expect(text).toContain("Manzil: Yunusobod 19, Toshkent");
+  expect(text).toContain("Xarita: ");
+});
+
+it("names collection and prints no address or map links", () => {
+  const text = formatNewOrderNotification({
+    ...baseNotification,
+    fulfilment: "pickup",
+    customer: { fullName: "Aziza Karimova", phone: "+998901234567" },
+  });
+
+  expect(text).toContain("Olish usuli: Do‘kondan olib ketadi");
+  expect(text).not.toContain("Manzil:");
+  expect(text).not.toContain("Xarita:");
+  expect(text).not.toContain("Taksi:");
 });

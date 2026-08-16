@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   CATEGORY_STATUSES,
+  FULFILMENT_METHODS,
   HOME_SECTION_STATUSES,
   ORDER_STATUSES,
   PAYMENT_METHODS,
@@ -274,11 +275,12 @@ const geoPointSchema = z
 export const checkoutSchema = z
   .object({
     locale: z.enum(LOCALES),
+    fulfilment: z.enum(FULFILMENT_METHODS),
     customer: z
       .object({
         fullName: z.string().trim().min(3).max(120),
         phone: phoneSchema,
-        address: z.string().trim().min(8).max(500),
+        address: z.string().trim().min(8).max(500).optional(),
         location: geoPointSchema.optional(),
         deliveryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
         comment: z.string().trim().max(500).optional(),
@@ -311,6 +313,33 @@ export const checkoutSchema = z
       }
       productIds.add(item.productId);
     });
+
+    if (input.fulfilment === "delivery" && !input.customer.address) {
+      context.addIssue({
+        code: "custom",
+        path: ["customer", "address"],
+        message: "A delivery needs an address.",
+      });
+    }
+
+    // Rejected rather than quietly dropped: a client that sends these is broken,
+    // and silently cleaning the body would write a half-truth instead.
+    if (input.fulfilment === "pickup") {
+      if (input.customer.address !== undefined) {
+        context.addIssue({
+          code: "custom",
+          path: ["customer", "address"],
+          message: "A collected order must not carry an address.",
+        });
+      }
+      if (input.customer.location !== undefined) {
+        context.addIssue({
+          code: "custom",
+          path: ["customer", "location"],
+          message: "A collected order must not carry a map point.",
+        });
+      }
+    }
   });
 
 export const orderStatusSchema = z.enum(ORDER_STATUSES);

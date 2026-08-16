@@ -35,6 +35,7 @@ import { POST } from "./route";
 
 const validCheckout = {
   locale: "ru",
+  fulfilment: "delivery",
   customer: {
     fullName: "Ali Valiyev",
     phone: "+998901234567",

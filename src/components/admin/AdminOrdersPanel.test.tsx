@@ -13,6 +13,7 @@ const order: AdminOrder = {
   number: "FL-20260811-ABC123",
   locale: "ru",
   customer: { fullName: "Anna", phone: "+998901234567", address: "Tashkent" },
+  fulfilment: "delivery",
   items: [{
     productId: "507f1f77bcf86cd799439012",
     slug: "rose-basket",
@@ -101,6 +102,49 @@ describe("AdminOrdersPanel order lines", () => {
     render(<AdminOrdersPanel initialOrders={[priceless]} />);
 
     expect(screen.getByText(/narx so‘rov bo‘yicha/i)).toBeVisible();
+  });
+});
+
+describe("AdminOrdersPanel fulfilment method", () => {
+  it("marks a collected order and shows no address or map", () => {
+    render(
+      <AdminOrdersPanel
+        initialOrders={[
+          {
+            ...order,
+            fulfilment: "pickup",
+            customer: {
+              fullName: "Aziza Karimova",
+              phone: "+998901234567",
+              location: { latitude: 41.3, longitude: 69.2 },
+            },
+          },
+        ]}
+      />
+    );
+
+    expect(screen.getByText("Do‘kondan olib ketadi")).toBeVisible();
+    expect(screen.queryByRole("link", { name: /xarita/i })).not.toBeInTheDocument();
+  });
+
+  it("marks a delivery and keeps the address", () => {
+    render(<AdminOrdersPanel initialOrders={[{ ...order, fulfilment: "delivery" }]} />);
+
+    // The label sits in the meta line beside the item count and payment method,
+    // so it is one text node among several rather than an isolated element —
+    // matched the same way the file's other combined-text lines are (regex).
+    expect(screen.getByText(/Yetkazib berish/)).toBeVisible();
+    expect(screen.getByText(order.customer.address!)).toBeVisible();
+  });
+
+  it("falls back to delivery if a raw order ever reaches it unresolved", () => {
+    // `toAdminOrder` always resolves the method, so this state should be
+    // unreachable. The panel defends anyway: a future read path that forgets the
+    // helper would otherwise render a blank label rather than fail loudly.
+    const unresolved = { ...order, fulfilment: undefined } as unknown as AdminOrder;
+    render(<AdminOrdersPanel initialOrders={[unresolved]} />);
+
+    expect(screen.getByText(/Yetkazib berish/)).toBeVisible();
   });
 });
 

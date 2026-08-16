@@ -3,6 +3,7 @@ import mongoose, { type ClientSession, type Types } from "mongoose";
 import type {
   CheckoutInput,
   CurrentSeason,
+  FulfilmentMethod,
   OrderCreationResult,
   OrderStatus,
   PaymentMethod,
@@ -15,6 +16,7 @@ import {
   getTashkentSeason,
 } from "@/lib/product-availability";
 import { dbConnect } from "@/lib/mongodb";
+import { resolveFulfilment } from "@/lib/order-fulfilment";
 import { checkoutSchema } from "@/lib/validations";
 import { roundGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { OrderModel, type OrderDocument } from "@/models/Order";
@@ -54,7 +56,7 @@ export type StoredOrderItem = {
 export type StoredOrderCustomer = {
   fullName: string;
   phone: string;
-  address: string;
+  address?: string;
   location?: GeoPoint;
   deliveryDate?: Date;
   comment?: string;
@@ -64,6 +66,7 @@ export type PendingOrderRecord = {
   number: string;
   locale: Locale;
   customer: StoredOrderCustomer;
+  fulfilment: FulfilmentMethod;
   items: StoredOrderItem[];
   subtotal: number;
   deliveryFee: number;
@@ -131,7 +134,14 @@ type ProductRecord = Pick<
   _id: Types.ObjectId;
 };
 
-type OrderRecord = OrderDocument & { _id: Types.ObjectId };
+type OrderRecord = Omit<OrderDocument, "fulfilment"> & {
+  _id: Types.ObjectId;
+  /**
+   * `.lean()` skips schema defaults, so an order written before this field
+   * existed comes back with it entirely absent, not defaulted to "delivery".
+   */
+  fulfilment?: FulfilmentMethod;
+};
 
 export class OrderServiceError extends Error {
   constructor(
@@ -195,7 +205,7 @@ export class OrderStateConflictError extends OrderServiceError {
   }
 }
 
-function serializeOrder(document: OrderRecord): StoredOrder {
+export function serializeOrder(document: OrderRecord): StoredOrder {
   return {
     id: document._id.toString(),
     number: document.number,
@@ -203,7 +213,9 @@ function serializeOrder(document: OrderRecord): StoredOrder {
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,
-      address: document.customer.address,
+      ...(document.customer.address === undefined
+        ? {}
+        : { address: document.customer.address }),
       ...(document.customer.location === undefined
         ? {}
         : {
@@ -217,6 +229,7 @@ function serializeOrder(document: OrderRecord): StoredOrder {
         : { deliveryDate: document.customer.deliveryDate }),
       ...(document.customer.comment === undefined ? {} : { comment: document.customer.comment }),
     },
+    fulfilment: resolveFulfilment(document.fulfilment),
     items: document.items.map((item) => ({
       productId: item.productId.toString(),
       slug: item.slug,
@@ -416,10 +429,14 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
       for (let attempt = 0; attempt < MAX_ORDER_NUMBER_ATTEMPTS; attempt += 1) {
         try {
           return await dependencies.store.withTransaction(async (transaction) => {
-            const deliveryFee = ensureMoney(
-              await dependencies.store.getDeliveryFee(transaction),
-              "Delivery fee"
-            );
+            // A courier who never rides is not charged for.
+            const deliveryFee =
+              checkout.fulfilment === "pickup"
+                ? 0
+                : ensureMoney(
+                    await dependencies.store.getDeliveryFee(transaction),
+                    "Delivery fee"
+                  );
             const items: StoredOrderItem[] = [];
             let subtotal = 0;
 
@@ -480,7 +497,9 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                 customer: {
                   fullName: checkout.customer.fullName,
                   phone: checkout.customer.phone,
-                  address: checkout.customer.address,
+                  ...(checkout.customer.address === undefined
+                    ? {}
+                    : { address: checkout.customer.address }),
                   ...(checkout.customer.location === undefined
                     ? {}
                     : { location: roundGeoPoint(checkout.customer.location) }),
@@ -491,6 +510,7 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                     ? {}
                     : { comment: checkout.customer.comment }),
                 },
+                fulfilment: checkout.fulfilment,
                 items,
                 subtotal,
                 deliveryFee,

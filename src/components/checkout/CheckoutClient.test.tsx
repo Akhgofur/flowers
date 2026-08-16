@@ -106,6 +106,7 @@ describe("CheckoutClient", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/orders");
     expect(JSON.parse(String((request as RequestInit).body))).toEqual({
       locale: "uz",
+      fulfilment: "delivery",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",
@@ -408,13 +409,21 @@ describe("CheckoutClient", () => {
       { timeout: 10_000 }
     );
 
-  const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>) => {
+  // `includeAddress` defaults to true so every existing delivery-flow caller keeps
+  // filling the (required) address field exactly as before; a pickup order hides
+  // that field entirely, so those tests opt out instead.
+  const fillRequiredFields = async (
+    user: ReturnType<typeof userEvent.setup>,
+    { includeAddress = true }: { includeAddress?: boolean } = {}
+  ) => {
     await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
     await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
-    await user.type(
-      screen.getByLabelText(/yetkazib berish manzili/i),
-      "Toshkent shahri, Chilonzor tumani"
-    );
+    if (includeAddress) {
+      await user.type(
+        screen.getByLabelText(/yetkazib berish manzili/i),
+        "Toshkent shahri, Chilonzor tumani"
+      );
+    }
   };
 
   it("sends the detected map pin alongside the written address", async () => {
@@ -533,5 +542,125 @@ describe("CheckoutClient", () => {
     };
     expect(body.customer).not.toHaveProperty("location");
     expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
+  });
+
+  it("hides the address and the map once the shopper chooses to collect", async () => {
+    const user = userEvent.setup();
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    expect(screen.queryByLabelText(/yetkazib berish manzili/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /xaritadan belgilash/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/xarita havolasini/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByText("Do‘konda naqd pul bilan")).toBeVisible();
+  });
+
+  it("submits a collected order with no address or map point", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await fillRequiredFields(user, { includeAddress: false });
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      fulfilment: string;
+      customer: Record<string, unknown>;
+    };
+    expect(body.fulfilment).toBe("pickup");
+    expect(body.customer.address).toBeUndefined();
+    expect(body.customer.location).toBeUndefined();
+  });
+
+  it("forgets a typed address and a chosen pin when the shopper switches to collection", async () => {
+    const user = userEvent.setup();
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Yunusobod 19, Toshkent"
+    );
+    // A pasted link is the least mocking way to establish a real pin — confirm it
+    // actually took effect, so this test would fail loudly if the seam did nothing.
+    await user.type(
+      screen.getByLabelText(/xarita havolasini/i),
+      "https://yandex.uz/maps/?pt=69.240562,41.311081&z=17"
+    );
+    await user.click(screen.getByRole("button", { name: /qo‘shish/i }));
+    expect(await screen.findByText(/41.311081, 69.240562/)).toBeVisible();
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await user.click(screen.getByRole("radio", { name: /Yandex yetkazib berish/i }));
+
+    expect(screen.getByLabelText(/yetkazib berish manzili/i)).toHaveValue("");
+    expect(screen.queryByText(/41.311081, 69.240562/)).not.toBeInTheDocument();
+
+    // The paste box and any parse error are separate state from the pin itself —
+    // confirm they do not survive a switch either, so re-switching back cannot
+    // resurrect stale link text or a "could not parse" message the shopper
+    // believes they cleared.
+    await user.type(screen.getByLabelText(/xarita havolasini/i), "not a map link");
+    await user.click(screen.getByRole("button", { name: /qo‘shish/i }));
+    expect(
+      await screen.findByText(/havoladan koordinata topilmadi/i)
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await user.click(screen.getByRole("radio", { name: /Yandex yetkazib berish/i }));
+
+    expect(screen.getByLabelText(/xarita havolasini/i)).toHaveValue("");
+    expect(screen.queryByText(/havoladan koordinata topilmadi/i)).not.toBeInTheDocument();
+  });
+
+  it("shows where and when to collect", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CheckoutClient
+        products={products}
+        shop={{ address: "Yunusobod 19, Toshkent", workingHours: "08:00–22:00" }}
+      />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    expect(screen.getByText("Yunusobod 19, Toshkent")).toBeVisible();
+    expect(screen.getByText("08:00–22:00")).toBeVisible();
+  });
+
+  it("shows the collection label alone when the shop has no address on file", async () => {
+    const user = userEvent.setup();
+
+    const { container } = render(
+      <CheckoutClient products={products} shop={{}} />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    // Scoped to the panel on purpose: "Do‘kondan olib ketaman" is also the radio's
+    // own label, so an unscoped getByText would match two elements and throw.
+    const panel = container.querySelector(".checkout-pickup");
+    expect(panel).not.toBeNull();
+    expect(panel).toHaveTextContent("Do‘kondan olib ketaman");
+    expect(screen.queryByText("Do‘kon manzili")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ish vaqti")).not.toBeInTheDocument();
   });
 });

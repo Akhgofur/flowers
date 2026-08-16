@@ -66,13 +66,16 @@ export default async function CheckoutPage({
 }) {
   const { locale: candidate } = await params;
   const locale = isLocale(candidate) ? candidate : DEFAULT_LOCALE;
-  const { products, isDemoCatalog, catalogTruncated } =
-    await loadCheckoutProducts(locale);
+  const [{ products, isDemoCatalog, catalogTruncated }, settings] = await Promise.all([
+    loadCheckoutProducts(locale),
+    getPublicSiteSettings(locale),
+  ]);
   return (
     <CheckoutClient
       products={products}
       isDemoCatalog={isDemoCatalog}
       catalogTruncated={catalogTruncated}
+      shop={{ address: settings.address, workingHours: settings.workingHours }}
     />
   );
 }

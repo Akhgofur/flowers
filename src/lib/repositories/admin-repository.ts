@@ -5,10 +5,12 @@ import type {
   AdminOrder,
   AdminProduct,
   AdminSiteSettings,
+  FulfilmentMethod,
 } from "@/lib/contracts";
 import { AdminNotFoundError } from "@/lib/admin-api";
 import { resolveSiteSettingsTranslation } from "@/lib/locale-content";
 import { dbConnect } from "@/lib/mongodb";
+import { resolveFulfilment } from "@/lib/order-fulfilment";
 import { CURRENT_SITE_NAME, resolveSiteName } from "@/lib/site-name";
 import type {
   CategoryInput,
@@ -28,7 +30,13 @@ import { setAndUnsetOptionalFields } from "./update-fields";
 
 type ProductRecord = ProductDocument & { _id: Types.ObjectId };
 type CategoryRecord = CategoryDocument & { _id: Types.ObjectId };
-type OrderRecord = OrderDocument & { _id: Types.ObjectId };
+// `.lean()` skips schema defaults, so an order written before this field
+// existed comes back with `fulfilment` entirely absent, not defaulted to
+// "delivery" — the same reason `customer.address` is optional here.
+type OrderRecord = Omit<OrderDocument, "fulfilment"> & {
+  _id: Types.ObjectId;
+  fulfilment?: FulfilmentMethod;
+};
 type NotificationRecord = OrderNotificationDocument & { _id: Types.ObjectId };
 type SettingsRecord = SiteSettingsDocument & { _id: Types.ObjectId };
 
@@ -97,7 +105,9 @@ function toAdminOrder(
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,
-      address: document.customer.address,
+      ...(document.customer.address === undefined
+        ? {}
+        : { address: document.customer.address }),
       ...(document.customer.location === undefined
         ? {}
         : {
@@ -111,6 +121,7 @@ function toAdminOrder(
         : { deliveryDate: document.customer.deliveryDate.toISOString() }),
       ...(document.customer.comment === undefined ? {} : { comment: document.customer.comment }),
     },
+    fulfilment: resolveFulfilment(document.fulfilment),
     items: document.items.map((item) => ({
       productId: item.productId.toString(),
       slug: item.slug,

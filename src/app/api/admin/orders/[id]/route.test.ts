@@ -24,6 +24,7 @@ const order: StoredOrder = {
     phone: "+998901234567",
     address: "Toshkent shahri, Chilonzor tumani",
   },
+  fulfilment: "delivery",
   items: [
     {
       productId: "507f191e810c19729de860ea",

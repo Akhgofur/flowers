@@ -40,16 +40,23 @@ type CheckoutClientProps = {
   isDemoCatalog?: boolean;
   /** The catalog outgrew the page budget, so `products` is not the whole catalog. */
   catalogTruncated?: boolean;
+  /** Where to collect from; either field may be missing from site settings. */
+  shop?: { address?: string; workingHours?: string };
 };
 
 type CheckoutForm = Omit<
   CheckoutInput["customer"],
-  "deliveryDate" | "comment" | "location"
+  "address" | "deliveryDate" | "comment" | "location"
 > & {
+  // The textarea always needs a plain, controlled string regardless of
+  // fulfilment — CheckoutInput's address is optional only because a pickup
+  // order omits it from the payload entirely (see toCheckoutPayload).
+  address: string;
   deliveryDate: string;
   comment: string;
   location: GeoPoint | null;
   paymentMethod: CheckoutInput["paymentMethod"];
+  fulfilment: CheckoutInput["fulfilment"];
 };
 
 /** What the picker is doing, so the shopper is never left guessing after a tap. */
@@ -86,6 +93,7 @@ const EMPTY_FORM: CheckoutForm = {
   comment: "",
   location: null,
   paymentMethod: "cash_on_delivery",
+  fulfilment: "delivery",
 };
 
 function toCheckoutPayload(
@@ -93,13 +101,18 @@ function toCheckoutPayload(
   items: readonly CartLine[],
   locale: Locale
 ): CheckoutInput {
+  // The API rejects a pickup order that carries an address or a location, so a
+  // collecting shopper's payload must omit both entirely rather than send them empty.
+  const collecting = form.fulfilment === "pickup";
+
   return {
     locale,
+    fulfilment: form.fulfilment,
     customer: {
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),
-      address: form.address.trim(),
-      ...(form.location ? { location: form.location } : {}),
+      ...(collecting || !form.address.trim() ? {} : { address: form.address.trim() }),
+      ...(collecting || !form.location ? {} : { location: form.location }),
       ...(form.deliveryDate ? { deliveryDate: form.deliveryDate } : {}),
       ...(form.comment.trim() ? { comment: form.comment.trim() } : {}),
     },
@@ -120,6 +133,7 @@ export function CheckoutClient({
   products,
   isDemoCatalog = false,
   catalogTruncated = false,
+  shop,
 }: CheckoutClientProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Checkout");
@@ -188,6 +202,17 @@ export function CheckoutClient({
 
   const updateForm = <Key extends keyof CheckoutForm>(key: Key, value: CheckoutForm[Key]) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  // Clears the typed address, the chosen pin, the pasted map link text and any
+  // stale location status on every switch, so switching back to delivery cannot
+  // resurrect a pin — or a "could not parse" message — the shopper believes
+  // they removed.
+  const selectFulfilment = (fulfilment: CheckoutInput["fulfilment"]) => {
+    setForm((current) => ({ ...current, fulfilment, address: "", location: null }));
+    setIsMapOpen(false);
+    setPastedLocation("");
+    setLocationStatus({ kind: "idle" });
   };
 
   const setLocation = (location: GeoPoint | null) => {
@@ -410,113 +435,161 @@ export function CheckoutClient({
                     placeholder="+998 90 123 45 67"
                   />
                 </label>
-                <label className="checkout-fields__full">
-                  <span>{t("address")}</span>
-                  <textarea
-                    required
-                    name="address"
-                    autoComplete="street-address"
-                    rows={3}
-                    value={form.address}
-                    onChange={(event) => updateForm("address", event.target.value)}
-                    placeholder={t("addressPlaceholder")}
-                  />
-                </label>
-                <div className="checkout-fields__full checkout-location">
-                  <div className="checkout-location__heading">
-                    <span>{t("location")} <em>({t("optional")})</em></span>
-                    <p>{t("locationHelp")}</p>
-                  </div>
-
-                  {/* Both ways in stay available after a point is chosen: the first
-                      pin is usually a rough one that the shopper then corrects. */}
-                  <div className="checkout-location__actions">
-                    <button
-                      type="button"
-                      className="checkout-location__detect"
-                      onClick={detectLocation}
-                      disabled={locationStatus.kind === "locating"}
-                    >
-                      {locationStatus.kind === "locating"
-                        ? t("locationDetecting")
-                        : t("locationDetect")}
-                    </button>
-                    <button
-                      type="button"
-                      aria-expanded={isMapOpen}
-                      onClick={() => setIsMapOpen((current) => !current)}
-                    >
-                      {isMapOpen ? t("locationHideMap") : t("locationPickOnMap")}
-                    </button>
-                  </div>
-
-                  {isMapOpen ? (
-                    <div className="checkout-location__map">
-                      <LocationMap
-                        value={form.location}
-                        onChange={setLocation}
-                        label={t("locationMapLabel")}
-                      />
-                      <p className="checkout-location__hint">{t("locationMapHint")}</p>
-                    </div>
-                  ) : null}
-
-                  {form.location ? (
-                    <div className="checkout-location__picked">
-                      <p>
-                        <span aria-hidden="true">📍</span>
-                        {t("locationPicked", { point: formatGeoPoint(form.location) })}
-                      </p>
-                      <div className="checkout-location__actions">
-                        <a
-                          href={buildMapLinks(form.location).yandexMaps}
-                          target="_blank"
-                          rel="noreferrer noopener"
-                        >
-                          {t("locationOpenMap")}
-                        </a>
-                        <button type="button" onClick={() => setLocation(null)}>
-                          {t("locationClear")}
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="checkout-location__paste">
-                    <label>
-                      <span>{t("locationPaste")}</span>
-                      <input
-                        name="locationLink"
-                        inputMode="url"
-                        value={pastedLocation}
-                        onChange={(event) => {
-                          setPastedLocation(event.target.value);
-                          if (locationStatus.kind === "unparsed") {
-                            setLocationStatus({ kind: "idle" });
-                          }
-                        }}
-                        placeholder={t("locationPastePlaceholder")}
+                <div
+                  className="checkout-fields__full checkout-payment-options"
+                  role="radiogroup"
+                  aria-label={t("fulfilmentLabel")}
+                >
+                  <label data-selected={form.fulfilment === "delivery"}>
+                    <input
+                      type="radio"
+                      name="fulfilment"
+                      value="delivery"
+                      checked={form.fulfilment === "delivery"}
+                      onChange={() => selectFulfilment("delivery")}
+                    />
+                    <span aria-hidden="true">⇢</span>
+                    <strong>{t("fulfilmentDelivery")}</strong>
+                    <small>{t("fulfilmentDeliveryHelp")}</small>
+                  </label>
+                  <label data-selected={form.fulfilment === "pickup"}>
+                    <input
+                      type="radio"
+                      name="fulfilment"
+                      value="pickup"
+                      checked={form.fulfilment === "pickup"}
+                      onChange={() => selectFulfilment("pickup")}
+                    />
+                    <span aria-hidden="true">⌂</span>
+                    <strong>{t("fulfilmentPickup")}</strong>
+                    <small>{t("fulfilmentPickupHelp")}</small>
+                  </label>
+                </div>
+                {form.fulfilment === "delivery" ? (
+                  <>
+                    <label className="checkout-fields__full">
+                      <span>{t("address")}</span>
+                      <textarea
+                        required
+                        name="address"
+                        autoComplete="street-address"
+                        rows={3}
+                        value={form.address}
+                        onChange={(event) => updateForm("address", event.target.value)}
+                        placeholder={t("addressPlaceholder")}
                       />
                     </label>
-                    <button
-                      type="button"
-                      onClick={applyPastedLocation}
-                      disabled={pastedLocation.trim().length === 0}
-                    >
-                      {t("locationApply")}
-                    </button>
-                  </div>
+                    <div className="checkout-fields__full checkout-location">
+                      <div className="checkout-location__heading">
+                        <span>{t("location")} <em>({t("optional")})</em></span>
+                        <p>{t("locationHelp")}</p>
+                      </div>
 
-                  <p className="checkout-location__status" role="status">
-                    {locationStatus.kind === "denied"
-                      ? t("locationDenied")
-                      : locationStatus.kind === "unavailable"
-                        ? t("locationUnavailable")
-                        : locationStatus.kind === "unparsed"
-                          ? t("locationUnparsed")
-                          : ""}
-                  </p>
-                </div>
+                      {/* Both ways in stay available after a point is chosen: the first
+                          pin is usually a rough one that the shopper then corrects. */}
+                      <div className="checkout-location__actions">
+                        <button
+                          type="button"
+                          className="checkout-location__detect"
+                          onClick={detectLocation}
+                          disabled={locationStatus.kind === "locating"}
+                        >
+                          {locationStatus.kind === "locating"
+                            ? t("locationDetecting")
+                            : t("locationDetect")}
+                        </button>
+                        <button
+                          type="button"
+                          aria-expanded={isMapOpen}
+                          onClick={() => setIsMapOpen((current) => !current)}
+                        >
+                          {isMapOpen ? t("locationHideMap") : t("locationPickOnMap")}
+                        </button>
+                      </div>
+
+                      {isMapOpen ? (
+                        <div className="checkout-location__map">
+                          <LocationMap
+                            value={form.location}
+                            onChange={setLocation}
+                            label={t("locationMapLabel")}
+                          />
+                          <p className="checkout-location__hint">{t("locationMapHint")}</p>
+                        </div>
+                      ) : null}
+
+                      {form.location ? (
+                        <div className="checkout-location__picked">
+                          <p>
+                            <span aria-hidden="true">📍</span>
+                            {t("locationPicked", { point: formatGeoPoint(form.location) })}
+                          </p>
+                          <div className="checkout-location__actions">
+                            <a
+                              href={buildMapLinks(form.location).yandexMaps}
+                              target="_blank"
+                              rel="noreferrer noopener"
+                            >
+                              {t("locationOpenMap")}
+                            </a>
+                            <button type="button" onClick={() => setLocation(null)}>
+                              {t("locationClear")}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <div className="checkout-location__paste">
+                        <label>
+                          <span>{t("locationPaste")}</span>
+                          <input
+                            name="locationLink"
+                            inputMode="url"
+                            value={pastedLocation}
+                            onChange={(event) => {
+                              setPastedLocation(event.target.value);
+                              if (locationStatus.kind === "unparsed") {
+                                setLocationStatus({ kind: "idle" });
+                              }
+                            }}
+                            placeholder={t("locationPastePlaceholder")}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          onClick={applyPastedLocation}
+                          disabled={pastedLocation.trim().length === 0}
+                        >
+                          {t("locationApply")}
+                        </button>
+                      </div>
+
+                      <p className="checkout-location__status" role="status">
+                        {locationStatus.kind === "denied"
+                          ? t("locationDenied")
+                          : locationStatus.kind === "unavailable"
+                            ? t("locationUnavailable")
+                            : locationStatus.kind === "unparsed"
+                              ? t("locationUnparsed")
+                              : ""}
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="checkout-fields__full checkout-pickup">
+                    <strong>{t("fulfilmentPickup")}</strong>
+                    {shop?.address ? (
+                      <p>
+                        <span>{t("pickupPoint")}</span> {shop.address}
+                      </p>
+                    ) : null}
+                    {shop?.workingHours ? (
+                      <p>
+                        <span>{t("pickupHours")}</span> {shop.workingHours}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
 
                 <label>
                   <span>{t("deliveryDate")} <em>({t("optional")})</em></span>
@@ -544,7 +617,7 @@ export function CheckoutClient({
                 <span>02</span>
                 <div>
                   <h2 id="payment-title">{t("payment")}</h2>
-                  <p>{t("paymentHelp")}</p>
+                  <p>{t(form.fulfilment === "pickup" ? "paymentHelpPickup" : "paymentHelp")}</p>
                 </div>
               </div>
               <div className="checkout-payment-options" role="radiogroup" aria-label={t("paymentLabel")}>
@@ -557,8 +630,8 @@ export function CheckoutClient({
                     onChange={() => updateForm("paymentMethod", "cash_on_delivery")}
                   />
                   <span aria-hidden="true">₸</span>
-                  <strong>{t("cashOnDelivery")}</strong>
-                  <small>{t("cashHelp")}</small>
+                  <strong>{form.fulfilment === "pickup" ? t("cashAtShop") : t("cashOnDelivery")}</strong>
+                  <small>{form.fulfilment === "pickup" ? t("cashAtShopHelp") : t("cashHelp")}</small>
                 </label>
                 <label data-selected={form.paymentMethod === "card_on_delivery"}>
                   <input
@@ -569,8 +642,8 @@ export function CheckoutClient({
                     onChange={() => updateForm("paymentMethod", "card_on_delivery")}
                   />
                   <span aria-hidden="true">▣</span>
-                  <strong>{t("cardOnDelivery")}</strong>
-                  <small>{t("cardHelp")}</small>
+                  <strong>{form.fulfilment === "pickup" ? t("cardAtShop") : t("cardOnDelivery")}</strong>
+                  <small>{form.fulfilment === "pickup" ? t("cardAtShopHelp") : t("cardHelp")}</small>
                 </label>
               </div>
             </section>
