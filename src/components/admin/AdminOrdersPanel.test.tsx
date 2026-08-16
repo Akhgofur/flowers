@@ -113,7 +113,11 @@ describe("AdminOrdersPanel fulfilment method", () => {
           {
             ...order,
             fulfilment: "pickup",
-            customer: { fullName: "Aziza Karimova", phone: "+998901234567" },
+            customer: {
+              fullName: "Aziza Karimova",
+              phone: "+998901234567",
+              location: { latitude: 41.3, longitude: 69.2 },
+            },
           },
         ]}
       />
