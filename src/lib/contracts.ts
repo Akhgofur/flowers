@@ -227,6 +227,7 @@ export type AdminOrder = {
     deliveryDate?: string;
     comment?: string;
   };
+  fulfilment: FulfilmentMethod;
   items: Array<{
     productId: string;
     slug: string;

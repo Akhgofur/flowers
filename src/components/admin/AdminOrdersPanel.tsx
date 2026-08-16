@@ -3,7 +3,13 @@
 import { useRef, useState, type SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useFocusTrap } from "@/shared/a11y/useFocusTrap";
-import { allowedOrderTransitions, type AdminOrder, type OrderStatus } from "@/lib/contracts";
+import {
+  allowedOrderTransitions,
+  type AdminOrder,
+  type FulfilmentMethod,
+  type OrderStatus,
+} from "@/lib/contracts";
+import { resolveFulfilment } from "@/lib/order-fulfilment";
 import { formatSum } from "@/shared/format";
 import { formatGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { buildMapLinks } from "@/shared/map-links";
@@ -19,6 +25,11 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   delivering: "Yetkazilmoqda",
   delivered: "Yetkazildi",
   cancelled: "Bekor qilingan",
+};
+
+const FULFILMENT_LABELS: Record<FulfilmentMethod, string> = {
+  delivery: "Yetkazib berish",
+  pickup: "Do‘kondan olib ketadi",
 };
 
 function formatDate(value: string): string {
@@ -204,7 +215,8 @@ export function AdminOrdersPanel({ initialOrders }: AdminOrdersPanelProps) {
         {orders.length === 0 ? <p className="admin-empty-copy">Hali buyurtma yo‘q.</p> : <div className="admin-orders-list">{orders.map((order) => {
           const choices = allowedOrderTransitions[order.status];
           const selected = nextStatuses[order.id] ?? "";
-          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"}</span></div><div className="admin-order__address"><p>{order.customer.address}</p>{order.customer.location ? <OrderLocation location={order.customer.location} /> : null}</div><ul className="admin-order__items">{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>
+          const fulfilment = resolveFulfilment(order.fulfilment);
+          return <article key={order.id} className="admin-order"><header><div><p>{formatDate(order.createdAt)} · {order.number} · {order.locale.toUpperCase()}</p><h3>{order.customer.fullName}</h3><a href={`tel:${order.customer.phone}`}>{order.customer.phone}</a></div><span className="admin-status" data-status={order.status}>{STATUS_LABELS[order.status]}</span></header><div className="admin-order__body"><div><strong>{formatSum(order.total, "uz")}</strong><span>{order.items.reduce((sum, item) => sum + item.quantity, 0)} ta mahsulot · {order.paymentMethod === "cash_on_delivery" ? "Naqd" : "Karta"} · {FULFILMENT_LABELS[fulfilment]}</span></div><div className="admin-order__address">{fulfilment === "pickup" ? <p>{FULFILMENT_LABELS.pickup}</p> : <><p>{order.customer.address}</p>{order.customer.location ? <OrderLocation location={order.customer.location} /> : null}</>}</div><ul className="admin-order__items">{order.items.map((item) => <li key={`${order.id}-${item.productId}`}>
                     {item.imageUrl ? (
                       <button
                         className="admin-order__thumb-button"
