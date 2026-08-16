@@ -12,6 +12,7 @@ export type MobileFilterDrawerProps = {
   onChange: (filters: CatalogFilterState) => void;
   onApply: () => void;
   onReset: () => void;
+  priceCeiling?: number | null;
 };
 
 export function MobileFilterDrawer({
@@ -19,6 +20,7 @@ export function MobileFilterDrawer({
   onChange,
   onApply,
   onReset,
+  priceCeiling,
 }: MobileFilterDrawerProps) {
   const t = useTranslations("Catalog");
   const [open, setOpen] = useState(false);
@@ -88,6 +90,7 @@ export function MobileFilterDrawer({
             <CatalogFilters
               headingId="mobile-catalog-filters-title"
               filters={filters}
+              priceCeiling={priceCeiling}
               onChange={onChange}
               onApply={() => {
                 onApply();

@@ -10,7 +10,9 @@ import { CatalogGrid } from "@/features/catalog/CatalogGrid";
 import { MobileFilterDrawer } from "@/features/catalog/MobileFilterDrawer";
 import {
   DEFAULT_FILTERS,
+  FALLBACK_PRICE_CEILING,
   applyCatalogFilters,
+  resolvePriceCeiling,
   type InitialCatalogFilters,
 } from "@/features/catalog/catalog-utils";
 import type { CatalogFilters as CatalogFilterState, CatalogTab } from "@/shared/types";
@@ -29,11 +31,17 @@ export type CatalogPageClientProps = {
 
 const PAGE_SIZE = 24;
 
-function createFilters(initial?: InitialCatalogFilters): CatalogFilterState {
+function createFilters(
+  priceCeiling: number | null,
+  initial?: InitialCatalogFilters
+): CatalogFilterState {
   return {
     ...DEFAULT_FILTERS,
     flowerTypes: [...DEFAULT_FILTERS.flowerTypes],
     colors: [...DEFAULT_FILTERS.colors],
+    // Open at the full range, whatever the dearest bouquet costs today. With
+    // nothing priced the filter is hidden, so the value is never shown or used.
+    maxPrice: priceCeiling ?? FALLBACK_PRICE_CEILING,
     query: initial?.query ?? "",
     category: initial?.category ?? null,
     tab: initial?.tab ?? "all",
@@ -57,8 +65,13 @@ export function CatalogPageClient({
     () => categories.map((category) => toClientCategory(category, productCounts)),
     [categories, productCounts]
   );
-  const [draftFilters, setDraftFilters] = useState(() => createFilters(initialFilters));
-  const [appliedFilters, setAppliedFilters] = useState(() => createFilters(initialFilters));
+  const priceCeiling = useMemo(() => resolvePriceCeiling(clientProducts), [clientProducts]);
+  const [draftFilters, setDraftFilters] = useState(() =>
+    createFilters(priceCeiling, initialFilters)
+  );
+  const [appliedFilters, setAppliedFilters] = useState(() =>
+    createFilters(priceCeiling, initialFilters)
+  );
   const [favoritesOnly, setFavoritesOnly] = useState(
     () => initialFilters?.favoritesOnly === true
   );
@@ -106,7 +119,7 @@ export function CatalogPageClient({
   };
 
   const reset = () => {
-    const next = createFilters();
+    const next = createFilters(priceCeiling);
     setDraftFilters(next);
     setAppliedFilters(next);
     setPage(1);
@@ -137,7 +150,7 @@ export function CatalogPageClient({
   useEffect(() => {
     const restoreUrlState = () => {
       const params = new URLSearchParams(window.location.search);
-      const restored = createFilters({
+      const restored = createFilters(priceCeiling, {
         query: params.get("q") ?? "",
         category: params.get("category"),
         tab: params.get("sale") === "true" ? "sale" : "all",
@@ -151,7 +164,7 @@ export function CatalogPageClient({
 
     window.addEventListener("popstate", restoreUrlState);
     return () => window.removeEventListener("popstate", restoreUrlState);
-  }, []);
+  }, [priceCeiling]);
 
   return (
     <main className="catalog-page" aria-labelledby="catalog-page-title">
@@ -180,6 +193,7 @@ export function CatalogPageClient({
           </div>
           <MobileFilterDrawer
             filters={draftFilters}
+            priceCeiling={priceCeiling}
             onChange={setDraftFilters}
             onApply={apply}
             onReset={reset}
@@ -187,6 +201,7 @@ export function CatalogPageClient({
           <div className="catalog-layout">
             <CatalogFilters
               filters={draftFilters}
+              priceCeiling={priceCeiling}
               onChange={setDraftFilters}
               onApply={apply}
               onReset={reset}

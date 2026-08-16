@@ -3,6 +3,7 @@ import type {
   FlowerType,
   ProductColor,
 } from "../../shared/types";
+import { FALLBACK_PRICE_CEILING, PRICE_FLOOR, PRICE_STEP } from "./catalog-utils";
 import { formatSum } from "../../shared/format";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "@/i18n/config";
@@ -13,6 +14,8 @@ export type CatalogFiltersProps = {
   onApply: () => void;
   onReset: () => void;
   headingId?: string;
+  /** Top of both sliders. `null` hides the price filter entirely. */
+  priceCeiling?: number | null;
 };
 
 const FLOWER_TYPES: readonly FlowerType[] = [
@@ -51,6 +54,7 @@ export function CatalogFilters({
   onApply,
   onReset,
   headingId = "catalog-filters-title",
+  priceCeiling = FALLBACK_PRICE_CEILING,
 }: CatalogFiltersProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Catalog");
@@ -87,37 +91,41 @@ export function CatalogFilters({
         </span>
       </label>
 
-      <fieldset className="filter-group filter-price">
-        <legend>{t("priceRange")}</legend>
-        <label>
-          <span>{t("minimumPrice")}</span>
-          <span className="filter-price__value">{formatSum(filters.minPrice, locale)}</span>
-          <input
-            type="range"
-            min={20000}
-            max={1000000}
-            step={5000}
-            value={filters.minPrice}
-            onChange={(event) =>
-              onChange({ ...filters, minPrice: Number(event.currentTarget.value) })
-            }
-          />
-        </label>
-        <label>
-          <span>{t("maximumPrice")}</span>
-          <span className="filter-price__value">{formatSum(filters.maxPrice, locale)}</span>
-          <input
-            type="range"
-            min={20000}
-            max={1000000}
-            step={5000}
-            value={filters.maxPrice}
-            onChange={(event) =>
-              onChange({ ...filters, maxPrice: Number(event.currentTarget.value) })
-            }
-          />
-        </label>
-      </fieldset>
+      {/* Nothing priced means nothing to narrow: every bouquet is priced on
+          request and would pass any range the shopper picked. */}
+      {priceCeiling === null ? null : (
+        <fieldset className="filter-group filter-price">
+          <legend>{t("priceRange")}</legend>
+          <label>
+            <span>{t("minimumPrice")}</span>
+            <span className="filter-price__value">{formatSum(filters.minPrice, locale)}</span>
+            <input
+              type="range"
+              min={PRICE_FLOOR}
+              max={priceCeiling}
+              step={PRICE_STEP}
+              value={filters.minPrice}
+              onChange={(event) =>
+                onChange({ ...filters, minPrice: Number(event.currentTarget.value) })
+              }
+            />
+          </label>
+          <label>
+            <span>{t("maximumPrice")}</span>
+            <span className="filter-price__value">{formatSum(filters.maxPrice, locale)}</span>
+            <input
+              type="range"
+              min={PRICE_FLOOR}
+              max={priceCeiling}
+              step={PRICE_STEP}
+              value={filters.maxPrice}
+              onChange={(event) =>
+                onChange({ ...filters, maxPrice: Number(event.currentTarget.value) })
+              }
+            />
+          </label>
+        </fieldset>
+      )}
 
       <fieldset className="filter-group">
         <legend>{t("flowerType")}</legend>
