@@ -54,7 +54,7 @@ export type StoredOrderItem = {
 export type StoredOrderCustomer = {
   fullName: string;
   phone: string;
-  address: string;
+  address?: string;
   location?: GeoPoint;
   deliveryDate?: Date;
   comment?: string;

@@ -220,7 +220,7 @@ export type AdminOrder = {
   customer: {
     fullName: string;
     phone: string;
-    address: string;
+    address?: string;
     location?: GeoPoint;
     deliveryDate?: string;
     comment?: string;

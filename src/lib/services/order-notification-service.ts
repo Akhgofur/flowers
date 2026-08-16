@@ -21,7 +21,7 @@ export type NewOrderNotification = {
   customer: {
     fullName: string;
     phone: string;
-    address: string;
+    address?: string;
     /** Absent when the shopper placed the order without sharing a map pin. */
     location?: GeoPoint;
     deliveryDate?: string;
