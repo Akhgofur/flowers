@@ -21,6 +21,7 @@ import {
   type GeoPoint,
 } from "@/shared/geo-point";
 import { SocialLinks } from "@/components/social/SocialLinks";
+import { earliestDeliveryDate } from "@/shared/delivery-window";
 import { applyImageFallback, IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
 import { buildMapLinks } from "@/shared/map-links";
 import type { CartLine } from "@/shared/types";
@@ -216,6 +217,9 @@ export function CheckoutClient({
   // resurrect a pin — or a "could not parse" message — the shopper believes
   // they removed.
   const collecting = form.fulfilment === "pickup";
+  // Read once per mount: a shopper who leaves the tab open past midnight gets a
+  // stale floor, and the service re-checks anyway, so this is a hint not a gate.
+  const [earliestDate] = useState(() => earliestDeliveryDate(new Date()));
 
   const selectFulfilment = (fulfilment: CheckoutInput["fulfilment"]) => {
     setForm((current) => ({
@@ -645,10 +649,15 @@ export function CheckoutClient({
                 )}
 
                 <label>
-                  <span>{t("deliveryDate")} <em>({t("optional")})</em></span>
+                  <span>
+                    {t("deliveryDate")} <em>({t("deliveryDateHint")})</em>
+                  </span>
                   <input
                     name="deliveryDate"
                     type="date"
+                    // The same helper the service checks against, so the picker
+                    // cannot offer a date the order would then be refused for.
+                    min={earliestDate}
                     value={form.deliveryDate}
                     onChange={(event) => updateForm("deliveryDate", event.target.value)}
                   />

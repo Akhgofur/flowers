@@ -312,6 +312,36 @@ describe("transactional order service", () => {
     expect(store.orders).toHaveLength(1);
   });
 
+  it("refuses a delivery date that leaves the shop less than a day's notice", async () => {
+    const store = new InMemoryOrderStore();
+    const service = createOrderService({
+      store,
+      // 10:00 UTC is 15:00 in Tashkent, so the shop's today is 11 August and the
+      // earliest it will accept is the 12th.
+      now: () => new Date("2026-08-11T10:00:00.000Z"),
+    });
+
+    await expect(
+      service.createPendingOrder(checkoutInput({ customer: { ...checkoutInput().customer, deliveryDate: "2026-08-11" } }))
+    ).rejects.toMatchObject({ code: "DELIVERY_DATE_TOO_SOON", status: 400 });
+
+    // Nothing was written, so a refused date cannot leave a half-made order.
+    expect(store.orders).toHaveLength(0);
+  });
+
+  it("accepts the earliest date the shop will take", async () => {
+    const store = new InMemoryOrderStore();
+    const service = createOrderService({
+      store,
+      now: () => new Date("2026-08-11T10:00:00.000Z"),
+      generateOrderNumber: () => "FL-20260811-EARLIEST",
+    });
+
+    await expect(
+      service.createPendingOrder(checkoutInput({ customer: { ...checkoutInput().customer, deliveryDate: "2026-08-12" } }))
+    ).resolves.toMatchObject({ orderNumber: "FL-20260811-EARLIEST" });
+  });
+
   it("cancels an order without touching any product record", async () => {
     const store = new InMemoryOrderStore();
     const service = makeService(store);

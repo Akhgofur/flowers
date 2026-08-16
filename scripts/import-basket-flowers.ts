@@ -9,9 +9,9 @@ const SOURCE_ROOT = "C:/Users/gofur/Desktop/fl/savat/edited_corrected";
 const DRY_RUN = process.argv.includes("--dry-run");
 
 const DELIVERY = {
-  ru: "Сегодня от 90 минут",
-  uz: "Bugun 90 daqiqadan",
-  en: "Today, from 90 minutes",
+  ru: "Заказ минимум за 1 день",
+  uz: "Buyurtma kamida 1 kun oldin",
+  en: "Order at least 1 day ahead",
 } as const;
 
 const BASKETS: Bouquet[] = [

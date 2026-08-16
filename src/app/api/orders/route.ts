@@ -41,6 +41,7 @@ const PUBLIC_ORDER_ERRORS = new Set([
   "ORDER_STATE_CONFLICT",
   "DUPLICATE_ORDER_ITEM",
   "INVALID_DELIVERY_DATE",
+  "DELIVERY_DATE_TOO_SOON",
 ]);
 
 const MESSAGE_CATALOGS = { ru, uz, en } as const;
@@ -48,6 +49,7 @@ type CheckoutErrorKey =
   | "errorValidation"
   | "errorRateLimit"
   | "errorUnavailable"
+  | "errorDeliveryTooSoon"
   | "errorService";
 
 function checkoutError(locale: Locale, key: CheckoutErrorKey): string {
@@ -201,6 +203,10 @@ export async function POST(request: Request) {
             safeError.code === "PRODUCT_UNAVAILABLE" ||
               safeError.code === "PRODUCT_OUT_OF_SEASON"
               ? "errorUnavailable"
+              : // A generic "check your details" leaves the shopper hunting for
+              // what is wrong, when the fix is simply a later date.
+              safeError.code === "DELIVERY_DATE_TOO_SOON"
+              ? "errorDeliveryTooSoon"
               : "errorValidation"
           ),
           ...(safeError.productId ? { productId: safeError.productId } : {}),

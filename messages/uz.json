@@ -57,7 +57,7 @@
     "pause": "Karuselni pauza qilish",
     "resume": "Karuselni davom ettirish",
     "imageAlt": "{title} gul kompozitsiyasi",
-    "freshNote": "Buyurtma kuni terilgan",
+    "freshNote": "Yetkazish kuni terilgan",
     "saleRibbonKicker": "Hafta taklifi",
     "saleRibbonCopy": "Tanlangan buketlarda yoqimli narxlar",
     "saleRibbonCta": "Chegirmalarni ko‘rish",
@@ -85,7 +85,7 @@
   "Categories": {
     "kicker": "KAYFIYATGA MOS TANLOV",
     "title": "Gulingizni toping",
-    "subtitle": "Har bir kompozitsiya floristlarimiz tomonidan buyurtma kuni yaratiladi.",
+    "subtitle": "Har bir kompozitsiya floristlarimiz tomonidan yetkazish kuni yaratiladi.",
     "productCount": "{count} ta tanlov",
     "selected": "{name} tanlandi — katalog filtri qo‘llanadi.",
     "unselected": "Kategoriyani tanlang — natijalar katalogda ko‘rsatiladi."
@@ -112,7 +112,7 @@
     "subtitle": "So‘zsiz hamma narsani ayta oladigan buketni toping.",
     "showcaseKicker": "FLORIST TANLOVI",
     "showcaseTitle": "Floraluxe kolleksiyasi",
-    "showcaseDescription": "Kayfiyat, gul turi va byudjetga mos kompozitsiyani toping. Har biri buyurtma kuni yangi gullardan tayyorlanadi.",
+    "showcaseDescription": "Kayfiyat, gul turi va byudjetga mos kompozitsiyani toping. Har biri yetkazish kuni yangi gullardan tayyorlanadi.",
     "all": "Barchasi",
     "new": "Yangi",
     "sale": "Aksiya",
@@ -260,6 +260,7 @@
     "locationUnavailable": "Joylashuvni aniqlab bo‘lmadi. Xarita havolasini joylashtirib ko‘ring.",
     "locationUnparsed": "Havoladan koordinata topilmadi. Yandex yoki Google Maps havolasini yoki «41.31, 69.24» ko‘rinishini kiriting.",
     "deliveryDate": "Qulay sana",
+    "deliveryDateHint": "Kamida 1 kun oldin",
     "comment": "Izoh",
     "commentPlaceholder": "Qo‘ng‘iroq vaqti, tabrik matni…",
     "optional": "ixtiyoriy",
@@ -308,6 +309,7 @@
     "errorRateLimit": "Juda ko‘p urinish. Keyinroq takrorlang.",
     "errorRateLimitWait": "Juda ko‘p urinish. {minutes} daqiqadan so‘ng qayta urinib ko‘ring yoki bizga qo‘ng‘iroq qiling.",
     "errorUnavailable": "Mahsulotlardan biri endi mavjud emas.",
+    "errorDeliveryTooSoon": "Ertadan boshlab sana tanlang — buyurtmani kamida 1 kun oldin qabul qilamiz.",
     "errorService": "Buyurtmani rasmiylashtirib bo‘lmadi. Keyinroq urinib ko‘ring."
   },
   "Footer": {
@@ -325,7 +327,7 @@
     "fastTitle": "Shahar bo‘ylab yetkazish",
     "fastCopy": "Vaqtni florist kelishadi.",
     "freshTitle": "Yangi gullar",
-    "freshCopy": "Har bir buket buyurtma kuni yig‘iladi.",
+    "freshCopy": "Har bir buket yetkazish kuni yig‘iladi.",
     "confirmTitle": "Aniq tasdiq",
     "confirmCopy": "Tarkib va yetkazish vaqti florist bilan tasdiqlanadi.",
     "careTitle": "Parvarish yordami",

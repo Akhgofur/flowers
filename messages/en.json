@@ -57,7 +57,7 @@
     "pause": "Pause carousel",
     "resume": "Resume carousel",
     "imageAlt": "{title} flower arrangement",
-    "freshNote": "Gathered on the day you order",
+    "freshNote": "Gathered on the delivery day",
     "saleRibbonKicker": "Offer of the week",
     "saleRibbonCopy": "Special prices on selected bouquets",
     "saleRibbonCta": "Explore the sale",
@@ -85,7 +85,7 @@
   "Categories": {
     "kicker": "CHOOSE BY MOOD",
     "title": "Find your flowers",
-    "subtitle": "Every composition is arranged by our florists on the day of your order.",
+    "subtitle": "Every arrangement is made by our florist on the delivery day.",
     "productCount": "{count, plural, one {# option} other {# options}}",
     "selected": "{name} selected — the catalog filter is active.",
     "unselected": "Choose a category to filter the catalog."
@@ -112,7 +112,7 @@
     "subtitle": "Find the bouquet that says everything without words.",
     "showcaseKicker": "FLORIST’S EDIT",
     "showcaseTitle": "The Floraluxe collection",
-    "showcaseDescription": "Find a composition for the mood, flowers and budget. Every bouquet is arranged fresh on the day of your order.",
+    "showcaseDescription": "Find an arrangement by mood, colour and budget. Each bouquet is assembled on the delivery day.",
     "all": "All",
     "new": "New",
     "sale": "Sale",
@@ -260,6 +260,7 @@
     "locationUnavailable": "Could not detect your location. Try pasting a map link instead.",
     "locationUnparsed": "No coordinates in that text. Paste a Yandex or Google Maps link, or “41.31, 69.24”.",
     "deliveryDate": "Preferred date",
+    "deliveryDateHint": "At least 1 day ahead",
     "comment": "Comment",
     "commentPlaceholder": "Best time to call, card message…",
     "optional": "optional",
@@ -308,6 +309,7 @@
     "errorRateLimit": "Too many attempts. Please try again later.",
     "errorRateLimitWait": "Too many attempts. Please try again in {minutes} min, or give us a call.",
     "errorUnavailable": "One of the products is no longer available.",
+    "errorDeliveryTooSoon": "Choose tomorrow or later — orders need at least 1 day's notice.",
     "errorService": "We could not place your order. Please try again later."
   },
   "Footer": {
@@ -325,7 +327,7 @@
     "fastTitle": "Delivery across the city",
     "fastCopy": "The florist agrees the time.",
     "freshTitle": "Fresh flowers",
-    "freshCopy": "Every bouquet is arranged on the day of your order.",
+    "freshCopy": "Every bouquet is assembled on the delivery day.",
     "confirmTitle": "Clear confirmation",
     "confirmCopy": "A florist confirms the composition and delivery time.",
     "careTitle": "Care guidance",

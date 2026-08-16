@@ -17,7 +17,8 @@
     "migrate:floraluxe": "tsx scripts/migrate-floraluxe-commerce.ts",
     "import:wedding-bouquets": "tsx scripts/import-wedding-bouquets.ts",
     "import:mixed-bouquets": "tsx scripts/import-mixed-bouquets.ts",
-    "import:basket-flowers": "tsx scripts/import-basket-flowers.ts"
+    "import:basket-flowers": "tsx scripts/import-basket-flowers.ts",
+    "set:delivery-lead-time": "tsx scripts/set-delivery-lead-time.ts"
   },
   "dependencies": {
     "@next/env": "^16.3.0",

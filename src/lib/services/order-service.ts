@@ -18,6 +18,11 @@ import {
 import { dbConnect } from "@/lib/mongodb";
 import { resolveFulfilment } from "@/lib/order-fulfilment";
 import { checkoutSchema } from "@/lib/validations";
+import {
+  DELIVERY_NOTICE_DAYS,
+  earliestDeliveryDate,
+  isDeliveryDateTooSoon,
+} from "@/shared/delivery-window";
 import { roundGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { OrderModel, type OrderDocument } from "@/models/Order";
 import { ProductModel, type ProductDocument } from "@/models/Product";
@@ -184,6 +189,17 @@ export class ProductOutOfSeasonError extends OrderServiceError {
       409
     );
     this.name = "ProductOutOfSeasonError";
+  }
+}
+
+export class DeliveryDateTooSoonError extends OrderServiceError {
+  constructor(readonly earliest: string) {
+    super(
+      `Yetkazib berish uchun kamida ${DELIVERY_NOTICE_DAYS} kun oldin buyurtma bering.`,
+      "DELIVERY_DATE_TOO_SOON",
+      400
+    );
+    this.name = "DeliveryDateTooSoonError";
   }
 }
 
@@ -367,12 +383,18 @@ function createMongoOrderStore(): OrderStore {
   };
 }
 
-function parseDeliveryDate(value: string | undefined): Date | undefined {
+function parseDeliveryDate(value: string | undefined, requestedAt: Date): Date | undefined {
   if (!value) return undefined;
 
   const date = new Date(`${value}T12:00:00.000Z`);
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
     throw new OrderServiceError("Yetkazib berish sanasi noto'g'ri.", "INVALID_DELIVERY_DATE", 400);
+  }
+
+  // Checked against the request's own clock rather than `new Date()`, so the rule
+  // stays testable and a fixture cannot quietly rot into the past.
+  if (isDeliveryDateTooSoon(value, requestedAt)) {
+    throw new DeliveryDateTooSoonError(earliestDeliveryDate(requestedAt));
   }
 
   return date;
@@ -505,7 +527,7 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                     : { location: roundGeoPoint(checkout.customer.location) }),
                   ...(checkout.customer.deliveryDate === undefined
                     ? {}
-                    : { deliveryDate: parseDeliveryDate(checkout.customer.deliveryDate) }),
+                    : { deliveryDate: parseDeliveryDate(checkout.customer.deliveryDate, requestedAt) }),
                   ...(checkout.customer.comment === undefined
                     ? {}
                     : { comment: checkout.customer.comment }),
