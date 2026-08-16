@@ -261,6 +261,8 @@ export type AdminSiteSettings = {
   phone?: string;
   email?: string;
   address?: string;
+  /** The shop's own pin; absent until the owner drops it on the map. */
+  location?: GeoPoint;
   workingHours?: string;
   deliveryFee: number;
   instagramUrl?: string;
@@ -298,6 +300,8 @@ export type PublicSiteSettings = {
   phone?: string;
   email?: string;
   address?: string;
+  /** The shop's own pin, so a collecting customer can navigate to it. */
+  location?: GeoPoint;
   workingHours?: string;
   deliveryPolicy?: string;
   instagramUrl?: string;

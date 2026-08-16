@@ -663,4 +663,44 @@ describe("CheckoutClient", () => {
     expect(screen.queryByText("Do‘kon manzili")).not.toBeInTheDocument();
     expect(screen.queryByText("Ish vaqti")).not.toBeInTheDocument();
   });
+
+  it("offers a map and a taxi to the shop once its location is on file", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CheckoutClient
+        products={products}
+        shop={{ location: { latitude: 41.338, longitude: 69.334 } }}
+      />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    const map = screen.getByRole("link", { name: "Xaritada ochish" });
+    const taxi = screen.getByRole("link", { name: "Taksi chaqirish" });
+
+    // Yandex point parameters are longitude-first; route legs are latitude-first.
+    expect(map).toHaveAttribute("href", expect.stringContaining("pt=69.334,41.338"));
+    // The empty leg before `~` leaves the pick-up wherever the shopper is, so the
+    // ride is addressed to the shop they are travelling to.
+    expect(taxi).toHaveAttribute("href", expect.stringContaining("rtext=~41.338,69.334"));
+    expect(taxi).toHaveAttribute("href", expect.stringContaining("rtt=taxi"));
+  });
+
+  it("offers no map links when the shop has no location on file", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CheckoutClient products={products} shop={{ address: "Yunusobod 19, Toshkent" }} />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    expect(screen.queryByRole("link", { name: "Xaritada ochish" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Taksi chaqirish" })).not.toBeInTheDocument();
+  });
 });

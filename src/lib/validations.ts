@@ -355,6 +355,7 @@ export const siteSettingsInputSchema = z
     phone: z.string().trim().min(7).max(32).optional(),
     email: z.string().trim().email().max(254).optional(),
     address: z.string().trim().min(4).max(500).optional(),
+    location: geoPointSchema.optional(),
     workingHours: z.string().trim().min(2).max(160).optional(),
     deliveryFee: nonNegativeIntegerSchema,
     instagramUrl: optionalUrlSchema,

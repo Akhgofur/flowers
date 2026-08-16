@@ -2924,6 +2924,40 @@ img {
   color: var(--color-muted);
 }
 
+/* Wraps rather than overflowing: two links plus a long shop name outgrow a
+   narrow phone in one line. */
+.checkout-pickup__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 4px;
+}
+
+.checkout-pickup__links a {
+  color: var(--color-accent-dark);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.admin-shop-location {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-shop-location__hint,
+.admin-shop-location__picked {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+}
+
+.admin-shop-location__picked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
 .checkout-submit-panel {
   display: flex;
   align-items: center;

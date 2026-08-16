@@ -28,7 +28,7 @@ import type { Locale } from "@/i18n/config";
 // Leaflet reaches for `window` at import time and is far larger than the rest of
 // checkout, so the map is fetched only once a shopper actually opens it.
 const LocationMap = dynamic(
-  () => import("./LocationMap").then((module) => module.LocationMap),
+  () => import("../map/LocationMap").then((module) => module.LocationMap),
   {
     ssr: false,
     loading: () => <div className="checkout-map checkout-map--loading" />,
@@ -40,8 +40,8 @@ type CheckoutClientProps = {
   isDemoCatalog?: boolean;
   /** The catalog outgrew the page budget, so `products` is not the whole catalog. */
   catalogTruncated?: boolean;
-  /** Where to collect from; either field may be missing from site settings. */
-  shop?: { address?: string; workingHours?: string };
+  /** Where to collect from; any field may be missing from site settings. */
+  shop?: { address?: string; workingHours?: string; location?: GeoPoint };
 };
 
 type CheckoutForm = Omit<
@@ -586,6 +586,27 @@ export function CheckoutClient({
                     {shop?.workingHours ? (
                       <p>
                         <span>{t("pickupHours")}</span> {shop.workingHours}
+                      </p>
+                    ) : null}
+                    {/* Plain links so the phone hands off to the Yandex app. The
+                        taxi link routes from wherever the shopper is to the shop,
+                        which is exactly the direction they are travelling. */}
+                    {shop?.location ? (
+                      <p className="checkout-pickup__links">
+                        <a
+                          href={buildMapLinks(shop.location).yandexMaps}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t("pickupOpenMap")}
+                        </a>
+                        <a
+                          href={buildMapLinks(shop.location).yandexTaxi}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t("pickupOrderTaxi")}
+                        </a>
                       </p>
                     ) : null}
                   </div>

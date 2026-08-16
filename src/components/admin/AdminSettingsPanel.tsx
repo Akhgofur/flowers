@@ -1,13 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { LOCALES, type Locale } from "@/i18n/config";
 import type {
   AdminSiteSettings,
   SiteSettingsTranslation,
 } from "@/lib/contracts";
+import { formatGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { AdminLocaleTabs, ADMIN_LOCALE_LABELS } from "./AdminLocaleTabs";
 import { ImageUploader } from "./ImageUploader";
+
+// Leaflet reaches for the DOM as it loads, so the map may only ever run in the
+// browser — the same reason the checkout imports it this way.
+const LocationMap = dynamic(
+  () => import("../map/LocationMap").then((module) => module.LocationMap),
+  {
+    ssr: false,
+    loading: () => <div className="checkout-map checkout-map--loading" />,
+  }
+);
 
 type AdminSettingsPanelProps = { initialSettings: AdminSiteSettings };
 type ApiResponse = { settings?: AdminSiteSettings; error?: string };
@@ -19,6 +31,8 @@ type SettingsDraft = {
   phone: string;
   email: string;
   address: string;
+  /** Not a string like its neighbours: the map hands back a coordinate pair. */
+  location: GeoPoint | null;
   workingHours: string;
   deliveryFee: string;
   instagramUrl: string;
@@ -55,6 +69,7 @@ function toDraft(settings: AdminSiteSettings): SettingsDraft {
     phone: settings.phone ?? "",
     email: settings.email ?? "",
     address: settings.address ?? "",
+    location: settings.location ?? null,
     workingHours: settings.workingHours ?? "",
     deliveryFee: String(settings.deliveryFee),
     instagramUrl: settings.instagramUrl ?? "",
@@ -184,6 +199,7 @@ export function AdminSettingsPanel({ initialSettings }: AdminSettingsPanelProps)
         ...(draft.phone ? { phone: draft.phone } : {}),
         ...(draft.email ? { email: draft.email } : {}),
         ...(draft.address ? { address: draft.address } : {}),
+        ...(draft.location ? { location: draft.location } : {}),
         ...(draft.workingHours ? { workingHours: draft.workingHours } : {}),
         deliveryFee: Number(draft.deliveryFee),
         ...(draft.instagramUrl ? { instagramUrl: draft.instagramUrl } : {}),
@@ -290,6 +306,30 @@ export function AdminSettingsPanel({ initialSettings }: AdminSettingsPanelProps)
               onChange={(event) => update("address", event.target.value)}
             />
           </label>
+          <div className="admin-form-grid__full admin-shop-location">
+            <span>
+              Do‘kon joylashuvi <em>(ixtiyoriy)</em>
+            </span>
+            <p className="admin-shop-location__hint">
+              Xaritani bosib do‘konni belgilang — olib ketishni tanlagan mijoz shu
+              nuqtaga yo‘l oladi.
+            </p>
+            <LocationMap
+              value={draft.location}
+              onChange={(point) => update("location", point)}
+              label="Do‘kon joylashuvini tanlash xaritasi"
+            />
+            {draft.location ? (
+              <p className="admin-shop-location__picked">
+                <span>{formatGeoPoint(draft.location)}</span>
+                <button type="button" onClick={() => update("location", null)}>
+                  Joylashuvni olib tashlash
+                </button>
+              </p>
+            ) : (
+              <p className="admin-shop-location__picked">Hali belgilanmagan.</p>
+            )}
+          </div>
           <label>
             <span>Ish vaqti</span>
             <input

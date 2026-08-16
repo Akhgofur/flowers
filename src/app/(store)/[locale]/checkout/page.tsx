@@ -75,7 +75,11 @@ export default async function CheckoutPage({
       products={products}
       isDemoCatalog={isDemoCatalog}
       catalogTruncated={catalogTruncated}
-      shop={{ address: settings.address, workingHours: settings.workingHours }}
+      shop={{
+        address: settings.address,
+        workingHours: settings.workingHours,
+        location: settings.location,
+      }}
     />
   );
 }

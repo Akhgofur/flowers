@@ -283,6 +283,33 @@ describe("commerce validation boundaries", () => {
     ).toThrow();
   });
 
+  it("accepts a shop location, or none at all, but not one off the planet", () => {
+    const base = {
+      siteName: "Floraluxe",
+      translations: {
+        ru: { siteDescription: "Авторские букеты в Ташкенте." },
+        uz: { siteDescription: "Toshkent bo‘ylab nafis guldastalar." },
+        en: { siteDescription: "Signature bouquets in Tashkent." },
+      },
+      deliveryFee: 0,
+    };
+
+    expect(siteSettingsInputSchema.parse(base).location).toBeUndefined();
+    expect(
+      siteSettingsInputSchema.parse({
+        ...base,
+        location: { latitude: 41.338, longitude: 69.334 },
+      }).location
+    ).toEqual({ latitude: 41.338, longitude: 69.334 });
+
+    expect(() =>
+      siteSettingsInputSchema.parse({ ...base, location: { latitude: 91, longitude: 69.3 } })
+    ).toThrow();
+    expect(() =>
+      siteSettingsInputSchema.parse({ ...base, location: { latitude: 41.3 } })
+    ).toThrow();
+  });
+
   it("accepts an ordered home section and rejects duplicate products", () => {
     expect(homeSectionInputSchema.parse(validHomeSectionInput).productIds).toEqual([
       "507f1f77bcf86cd799439011",

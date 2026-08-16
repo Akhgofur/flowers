@@ -4,8 +4,18 @@ import type {
   ProductImage,
   SiteSettingsTranslation,
 } from "@/lib/contracts";
+import type { GeoPoint } from "@/shared/geo-point";
 
 const { model, models, Schema } = mongoose;
+
+/** Bounds are Earth's own; anything outside them is a caller bug, not a shop. */
+const shopLocationSchema = new Schema<GeoPoint>(
+  {
+    latitude: { type: Number, required: true, min: -90, max: 90 },
+    longitude: { type: Number, required: true, min: -180, max: 180 },
+  },
+  { _id: false }
+);
 
 export type SiteSettingsDocument = {
   key: "default";
@@ -16,6 +26,8 @@ export type SiteSettingsDocument = {
   phone?: string;
   email?: string;
   address?: string;
+  /** The shop's own pin, so a collecting customer can navigate to it. */
+  location?: GeoPoint;
   workingHours?: string;
   deliveryFee: number;
   instagramUrl?: string;
@@ -78,6 +90,7 @@ const siteSettingsSchema = new Schema<SiteSettingsDocument>(
     phone: { type: String, trim: true, maxlength: 32 },
     email: { type: String, trim: true, lowercase: true, maxlength: 254 },
     address: { type: String, trim: true, maxlength: 500 },
+    location: { type: shopLocationSchema, required: false },
     workingHours: { type: String, trim: true, maxlength: 160 },
     deliveryFee: {
       type: Number,

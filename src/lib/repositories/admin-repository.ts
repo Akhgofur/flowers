@@ -175,6 +175,14 @@ function toAdminSettings(document: SettingsRecord | null): AdminSiteSettings {
     ...(document.phone === undefined ? {} : { phone: document.phone }),
     ...(document.email === undefined ? {} : { email: document.email }),
     ...(document.address === undefined ? {} : { address: document.address }),
+    ...(document.location === undefined
+      ? {}
+      : {
+          location: {
+            latitude: document.location.latitude,
+            longitude: document.location.longitude,
+          },
+        }),
     ...(document.workingHours === undefined ? {} : { workingHours: document.workingHours }),
     deliveryFee: document.deliveryFee,
     ...(document.instagramUrl === undefined
