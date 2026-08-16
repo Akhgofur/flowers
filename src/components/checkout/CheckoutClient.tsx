@@ -20,6 +20,7 @@ import {
   roundGeoPoint,
   type GeoPoint,
 } from "@/shared/geo-point";
+import { SocialLinks } from "@/components/social/SocialLinks";
 import { applyImageFallback, IMAGE_FALLBACK_URL } from "@/shared/image-fallback";
 import { buildMapLinks } from "@/shared/map-links";
 import type { CartLine } from "@/shared/types";
@@ -42,6 +43,8 @@ type CheckoutClientProps = {
   catalogTruncated?: boolean;
   /** Where to collect from; any field may be missing from site settings. */
   shop?: { address?: string; workingHours?: string; location?: GeoPoint };
+  /** Shown once the order is placed, so the shopper can follow what comes next. */
+  social?: { instagramUrl?: string; telegramUrl?: string };
 };
 
 type CheckoutForm = Omit<
@@ -134,6 +137,7 @@ export function CheckoutClient({
   isDemoCatalog = false,
   catalogTruncated = false,
   shop,
+  social,
 }: CheckoutClientProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Checkout");
@@ -352,6 +356,18 @@ export function CheckoutClient({
           <Link href="/catalog" className="primary-button">
             {t("continueShopping")}
           </Link>
+          {/* The one moment the shopper is certain to be looking: the order is
+              placed and there is nothing left to do on this page. */}
+          {social?.instagramUrl || social?.telegramUrl ? (
+            <div className="checkout-confirmation__follow">
+              <p>{t("followUs")}</p>
+              <SocialLinks
+                instagramUrl={social.instagramUrl}
+                telegramUrl={social.telegramUrl}
+                showLabels
+              />
+            </div>
+          ) : null}
         </div>
       </main>
     );

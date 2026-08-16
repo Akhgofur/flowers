@@ -294,6 +294,7 @@
     "statusPending": "Qabul qilindi",
     "finalTotal": "Yakuniy jami",
     "continueShopping": "Xaridga qaytish",
+    "followUs": "Yangiliklardan xabardor bo‘lish uchun obuna bo‘ling",
     "selectionKicker": "Sizning tanlovingiz",
     "summary": "Buyurtma tarkibi",
     "each": "dona",
@@ -333,6 +334,7 @@
     "aboutTitle": "Biz haqimizda",
     "deliveryTitle": "Yetkazib berish",
     "contactTitle": "Aloqa",
+    "social": "Bizni kuzatib boring",
     "deliveryCopy": "{hours} oralig‘ida Toshkent shahri bo‘ylab. {policy}",
     "deliveryFallback": "Yetkazish vaqti buyurtmada aniqlanadi.",
     "createdIn": "Mehr bilan Toshkentda yaratilgan"

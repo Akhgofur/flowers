@@ -294,6 +294,7 @@
     "statusPending": "Принят",
     "finalTotal": "Итоговая сумма",
     "continueShopping": "Вернуться к покупкам",
+    "followUs": "Подпишитесь, чтобы следить за новинками",
     "selectionKicker": "Ваш выбор",
     "summary": "Состав заказа",
     "each": "за штуку",
@@ -333,6 +334,7 @@
     "aboutTitle": "О нас",
     "deliveryTitle": "Доставка",
     "contactTitle": "Контакты",
+    "social": "Мы в соцсетях",
     "deliveryCopy": "По Ташкенту с {hours}. {policy}",
     "deliveryFallback": "Время доставки уточняется при заказе.",
     "createdIn": "Создано с заботой в Ташкенте"

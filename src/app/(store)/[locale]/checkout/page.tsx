@@ -80,6 +80,10 @@ export default async function CheckoutPage({
         workingHours: settings.workingHours,
         location: settings.location,
       }}
+      social={{
+        instagramUrl: settings.instagramUrl,
+        telegramUrl: settings.telegramUrl,
+      }}
     />
   );
 }

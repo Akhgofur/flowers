@@ -689,6 +689,52 @@ describe("CheckoutClient", () => {
     expect(taxi).toHaveAttribute("href", expect.stringContaining("rtt=taxi"));
   });
 
+  it("invites the shopper to follow the shop once the order is placed", async () => {
+    const user = userEvent.setup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            order: {
+              orderId: "507f191e810c19729de860ea",
+              orderNumber: "FL-20260816-FOLLOWUS1",
+              total: 320_000,
+              status: "pending",
+            },
+          }),
+          { status: 201, headers: { "content-type": "application/json" } }
+        )
+      )
+    );
+
+    render(
+      <CheckoutClient
+        products={products}
+        social={{
+          instagramUrl: "https://instagram.com/floraluxe",
+          telegramUrl: "https://t.me/floraluxe",
+        }}
+      />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+    await fillRequiredFields(user);
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    expect(
+      await screen.findByText("Yangiliklardan xabardor bo‘lish uchun obuna bo‘ling")
+    ).toBeVisible();
+    expect(screen.getByRole("link", { name: "Instagram" })).toHaveAttribute(
+      "href",
+      "https://instagram.com/floraluxe"
+    );
+    expect(screen.getByRole("link", { name: "Telegram" })).toHaveAttribute(
+      "href",
+      "https://t.me/floraluxe"
+    );
+  });
+
   it("offers no map links when the shop has no location on file", async () => {
     const user = userEvent.setup();
 

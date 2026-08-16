@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/storefront/LanguageSwitcher";
+import { SocialLinks } from "@/components/social/SocialLinks";
 import type { ProductImage, PublicSiteSettings } from "@/lib/contracts";
 
 export type HeaderProps = {
@@ -63,8 +64,10 @@ export function Header({ cartItemCount, favoriteCount, isCartOpen, brandLogo, se
           </div>
           <div className="utility-bar__group utility-bar__meta">
             <LanguageSwitcher />
-            {settings?.instagramUrl ? <a href={settings.instagramUrl}>Instagram</a> : null}
-            {settings?.telegramUrl ? <a href={settings.telegramUrl}>Telegram</a> : null}
+            <SocialLinks
+              instagramUrl={settings?.instagramUrl}
+              telegramUrl={settings?.telegramUrl}
+            />
           </div>
         </div>
       </div>

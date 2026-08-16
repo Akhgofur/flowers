@@ -1,6 +1,7 @@
 import type { PublicSiteSettings } from "@/lib/contracts";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import { SocialLinks } from "@/components/social/SocialLinks";
 
 type FooterProps = { settings?: PublicSiteSettings };
 
@@ -70,6 +71,17 @@ export function Footer({ settings }: FooterProps) {
             <a href={phoneHref(value.phone)}>{value.phone}</a>
             {value.email ? <a href={`mailto:${value.email}`}>{value.email}</a> : null}
             <p>{value.address}</p>
+            {settings?.instagramUrl || settings?.telegramUrl ? (
+              <>
+                <p className="footer-social__title">{t("social")}</p>
+                <SocialLinks
+                  instagramUrl={settings.instagramUrl}
+                  telegramUrl={settings.telegramUrl}
+                  showLabels
+                  className="social-links--footer"
+                />
+              </>
+            ) : null}
           </section>
         </div>
         <div className="shell footer-bottom">

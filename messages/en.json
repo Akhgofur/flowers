@@ -294,6 +294,7 @@
     "statusPending": "Received",
     "finalTotal": "Final total",
     "continueShopping": "Continue shopping",
+    "followUs": "Subscribe to follow our new arrivals",
     "selectionKicker": "Your selection",
     "summary": "Order summary",
     "each": "each",
@@ -333,6 +334,7 @@
     "aboutTitle": "About us",
     "deliveryTitle": "Delivery",
     "contactTitle": "Contact",
+    "social": "Follow us",
     "deliveryCopy": "Across Tashkent during {hours}. {policy}",
     "deliveryFallback": "Delivery time is confirmed with your order.",
     "createdIn": "Thoughtfully created in Tashkent"
