@@ -264,6 +264,7 @@
     "optional": "optional",
     "payment": "Payment method",
     "paymentHelp": "There is no online payment — pay when your order arrives.",
+    "paymentHelpPickup": "There is no online payment — pay when you collect your order.",
     "cashOnDelivery": "Cash on delivery",
     "cashHelp": "Pay the courier in cash.",
     "cardOnDelivery": "Card on delivery",

@@ -264,6 +264,7 @@
     "optional": "ixtiyoriy",
     "payment": "To‘lov usuli",
     "paymentHelp": "Online to‘lov yo‘q — to‘lovni yetkazib berilganda qilasiz.",
+    "paymentHelpPickup": "Online to‘lov yo‘q — to‘lovni olib ketayotganda qilasiz.",
     "cashOnDelivery": "Yetkazib berilganda naqd",
     "cashHelp": "Kuryerga naqd pul bilan to‘laysiz.",
     "cardOnDelivery": "Yetkazib berilganda karta",
