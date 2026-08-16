@@ -3,6 +3,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "@/components/storefront/LanguageSwitcher";
+import { ShopAddressLink } from "@/components/shop/ShopAddressLink";
 import { SocialLinks } from "@/components/social/SocialLinks";
 import type { ProductImage, PublicSiteSettings } from "@/lib/contracts";
 
@@ -58,7 +59,11 @@ export function Header({ cartItemCount, favoriteCount, isCartOpen, brandLogo, se
       <div className="utility-bar">
         <div className="shell utility-bar__content">
           <div className="utility-bar__group">
-            <span>{settings?.address ?? t("location")}</span>
+            <ShopAddressLink
+              address={settings?.address ?? t("location")}
+              location={settings?.location}
+              label={t("openOnMap")}
+            />
             <span>{settings?.workingHours ?? t("schedule")}</span>
             <span>{t("deliveryNotice")}</span>
           </div>

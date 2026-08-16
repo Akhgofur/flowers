@@ -1,6 +1,7 @@
 import type { PublicSiteSettings } from "@/lib/contracts";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
+import { ShopAddressLink } from "@/components/shop/ShopAddressLink";
 import { SocialLinks } from "@/components/social/SocialLinks";
 
 type FooterProps = { settings?: PublicSiteSettings };
@@ -70,7 +71,12 @@ export function Footer({ settings }: FooterProps) {
             <h2>{t("contactTitle")}</h2>
             <a href={phoneHref(value.phone)}>{value.phone}</a>
             {value.email ? <a href={`mailto:${value.email}`}>{value.email}</a> : null}
-            <p>{value.address}</p>
+            <ShopAddressLink
+              address={value.address}
+              location={settings?.location}
+              label={t("openOnMap")}
+              className="shop-address--footer"
+            />
             {settings?.instagramUrl || settings?.telegramUrl ? (
               <>
                 <p className="footer-social__title">{t("social")}</p>

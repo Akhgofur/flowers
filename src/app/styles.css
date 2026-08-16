@@ -3277,6 +3277,21 @@ img {
   font-size: 0.78rem;
 }
 
+.shop-address {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* The mark must not shrink when the address wraps beside it. */
+.shop-address svg {
+  flex: none;
+}
+
+.shop-address--footer {
+  margin-top: 2px;
+}
+
 @media (max-width: 980px) {
   .checkout-layout {
     grid-template-columns: minmax(0, 1fr);
