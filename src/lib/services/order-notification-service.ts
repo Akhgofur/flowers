@@ -2,7 +2,6 @@ import "server-only";
 import nodemailer from "nodemailer-runtime";
 import type { FulfilmentMethod, PaymentMethod } from "@/lib/contracts";
 import { env } from "@/lib/env";
-import { resolveFulfilment } from "@/lib/order-fulfilment";
 import { formatSum } from "@/shared/format";
 import { formatGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { buildMapLinks } from "@/shared/map-links";
@@ -19,8 +18,7 @@ export type NewOrderNotification = {
   orderNumber: string;
   total: number;
   paymentMethod: PaymentMethod;
-  /** Absent on notifications stored before collection existed; read as delivery. */
-  fulfilment?: FulfilmentMethod;
+  fulfilment: FulfilmentMethod;
   customer: {
     fullName: string;
     phone: string;
@@ -127,19 +125,18 @@ export function formatNewOrderNotification(order: NewOrderNotification): string 
       ]
     : [];
 
-  const fulfilment = resolveFulfilment(order.fulfilment);
   // An address and a taxi link on a collected order would send the courier to
   // the shop's own door, which is the whole point of telling the florist.
   const destinationRows =
-    fulfilment === "pickup"
+    order.fulfilment === "pickup"
       ? []
-      : [`Manzil: ${order.customer.address ?? "—"}`, ...locationRows(order.customer.location)];
+      : [`Manzil: ${order.customer.address}`, ...locationRows(order.customer.location)];
 
   return [
     `Yangi buyurtma: ${order.orderNumber}`,
     `Jami: ${formatSum(order.total, "uz")}`,
     `To'lov: ${paymentMethodLabel(order.paymentMethod)}`,
-    `Olish usuli: ${fulfilmentLabel(fulfilment)}`,
+    `Olish usuli: ${fulfilmentLabel(order.fulfilment)}`,
     ...itemRows,
     "",
     `Mijoz: ${order.customer.fullName}`,

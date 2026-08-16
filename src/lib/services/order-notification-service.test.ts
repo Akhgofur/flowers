@@ -9,6 +9,7 @@ const order: NewOrderNotification = {
   orderNumber: "FL-20260811-AB12",
   total: 420_000,
   paymentMethod: "card_on_delivery",
+  fulfilment: "delivery",
   customer: {
     fullName: "Dilnoza Karimova",
     phone: "+998901234567",
@@ -231,13 +232,4 @@ it("names collection and prints no address or map links", () => {
   expect(text).not.toContain("Manzil:");
   expect(text).not.toContain("Xarita:");
   expect(text).not.toContain("Taksi:");
-});
-
-it("reads a notification stored before the field existed as a delivery", () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured only to drop it from legacy
-  const { fulfilment: _omitted, ...legacy } = baseNotification;
-  const text = formatNewOrderNotification(legacy as typeof baseNotification);
-
-  expect(text).toContain("Olish usuli: Yandex yetkazib berish");
-  expect(text).toContain("Manzil: Yunusobod 19, Toshkent");
 });
