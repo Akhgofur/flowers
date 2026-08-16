@@ -3,6 +3,7 @@ import mongoose, { type ClientSession, type Types } from "mongoose";
 import type {
   CheckoutInput,
   CurrentSeason,
+  FulfilmentMethod,
   OrderCreationResult,
   OrderStatus,
   PaymentMethod,
@@ -64,6 +65,7 @@ export type PendingOrderRecord = {
   number: string;
   locale: Locale;
   customer: StoredOrderCustomer;
+  fulfilment: FulfilmentMethod;
   items: StoredOrderItem[];
   subtotal: number;
   deliveryFee: number;
@@ -217,6 +219,7 @@ function serializeOrder(document: OrderRecord): StoredOrder {
         : { deliveryDate: document.customer.deliveryDate }),
       ...(document.customer.comment === undefined ? {} : { comment: document.customer.comment }),
     },
+    fulfilment: document.fulfilment,
     items: document.items.map((item) => ({
       productId: item.productId.toString(),
       slug: item.slug,
@@ -416,10 +419,14 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
       for (let attempt = 0; attempt < MAX_ORDER_NUMBER_ATTEMPTS; attempt += 1) {
         try {
           return await dependencies.store.withTransaction(async (transaction) => {
-            const deliveryFee = ensureMoney(
-              await dependencies.store.getDeliveryFee(transaction),
-              "Delivery fee"
-            );
+            // A courier who never rides is not charged for.
+            const deliveryFee =
+              checkout.fulfilment === "pickup"
+                ? 0
+                : ensureMoney(
+                    await dependencies.store.getDeliveryFee(transaction),
+                    "Delivery fee"
+                  );
             const items: StoredOrderItem[] = [];
             let subtotal = 0;
 
@@ -480,7 +487,9 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                 customer: {
                   fullName: checkout.customer.fullName,
                   phone: checkout.customer.phone,
-                  address: checkout.customer.address,
+                  ...(checkout.customer.address === undefined
+                    ? {}
+                    : { address: checkout.customer.address }),
                   ...(checkout.customer.location === undefined
                     ? {}
                     : { location: roundGeoPoint(checkout.customer.location) }),
@@ -491,6 +500,7 @@ export function createOrderService(dependencies: OrderServiceDependencies) {
                     ? {}
                     : { comment: checkout.customer.comment }),
                 },
+                fulfilment: checkout.fulfilment,
                 items,
                 subtotal,
                 deliveryFee,

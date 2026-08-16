@@ -24,22 +24,25 @@ import { resolveProductTranslation } from "@/lib/locale-content";
 const redRoseId = "507f1f77bcf86cd799439011";
 const tulipId = "507f1f77bcf86cd799439012";
 
-const checkoutInput: CheckoutInput = {
-  locale: "ru",
-  fulfilment: "delivery",
-  customer: {
-    fullName: "Ali Valiyev",
-    phone: "+998901234567",
-    address: "Toshkent shahri, Chilonzor tumani",
-    deliveryDate: "2026-08-12",
-    comment: "Eshik oldida qo'ng'iroq qiling",
-  },
-  paymentMethod: "cash_on_delivery",
-  items: [
-    { productId: redRoseId, quantity: 2 },
-    { productId: tulipId, quantity: 1 },
-  ],
-};
+function checkoutInput(overrides: Partial<CheckoutInput> = {}): CheckoutInput {
+  return {
+    locale: "ru",
+    fulfilment: "delivery",
+    customer: {
+      fullName: "Ali Valiyev",
+      phone: "+998901234567",
+      address: "Toshkent shahri, Chilonzor tumani",
+      deliveryDate: "2026-08-12",
+      comment: "Eshik oldida qo'ng'iroq qiling",
+    },
+    paymentMethod: "cash_on_delivery",
+    items: [
+      { productId: redRoseId, quantity: 2 },
+      { productId: tulipId, quantity: 1 },
+    ],
+    ...overrides,
+  };
+}
 
 type MutableProduct = ReservedProduct & {
   status: ProductStatus;
@@ -70,6 +73,7 @@ class InMemoryOrderStore implements OrderStore {
   readonly reservationSeasons: CurrentSeason[] = [];
   deliveryFee = 20_000;
   duplicateNumberOnce = false;
+  lastCreatedOrder: StoredOrder | undefined;
   private nextOrderId = 1;
 
   async withTransaction<T>(operation: (transaction: object) => Promise<T>): Promise<T> {
@@ -136,6 +140,7 @@ class InMemoryOrderStore implements OrderStore {
     const id = `order-${this.nextOrderId++}`;
     const stored: StoredOrder = { ...record, id };
     this.orders.set(id, stored);
+    this.lastCreatedOrder = stored;
     return stored;
   }
 
@@ -169,10 +174,18 @@ function makeService(store: InMemoryOrderStore) {
   });
 }
 
+function buildService(options: { deliveryFee?: number } = {}) {
+  const store = new InMemoryOrderStore();
+  if (options.deliveryFee !== undefined) {
+    store.deliveryFee = options.deliveryFee;
+  }
+  return { service: makeService(store), store };
+}
+
 describe("transactional order service", () => {
   it("takes prices from reserved products, snapshots them, and reserves products sequentially", async () => {
     const store = new InMemoryOrderStore();
-    const result = await makeService(store).createPendingOrder(checkoutInput);
+    const result = await makeService(store).createPendingOrder(checkoutInput());
     const order = store.orders.get(result.orderId);
 
     expect(result).toEqual({
@@ -218,11 +231,12 @@ describe("transactional order service", () => {
       };
     };
 
-    const result = await makeService(store).createPendingOrder({
-      ...checkoutInput,
-      locale: "en",
-      items: [{ productId: redRoseId, quantity: 1 }],
-    });
+    const result = await makeService(store).createPendingOrder(
+      checkoutInput({
+        locale: "en",
+        items: [{ productId: redRoseId, quantity: 1 }],
+      })
+    );
 
     expect(store.orders.get(result.orderId)).toMatchObject({
       locale: "en",
@@ -234,7 +248,7 @@ describe("transactional order service", () => {
     const store = new InMemoryOrderStore();
     store.products.get(tulipId)!.status = "archived";
 
-    await expect(makeService(store).createPendingOrder(checkoutInput)).rejects.toBeInstanceOf(
+    await expect(makeService(store).createPendingOrder(checkoutInput())).rejects.toBeInstanceOf(
       ProductUnavailableError
     );
 
@@ -247,10 +261,9 @@ describe("transactional order service", () => {
     store.products.get(redRoseId)!.seasons = ["winter"];
 
     const error = await makeService(store)
-      .createPendingOrder({
-        ...checkoutInput,
-        items: [{ productId: redRoseId, quantity: 1 }],
-      })
+      .createPendingOrder(
+        checkoutInput({ items: [{ productId: redRoseId, quantity: 1 }] })
+      )
       .catch((reason: unknown) => reason);
 
     expect(error).toBeInstanceOf(ProductOutOfSeasonError);
@@ -267,7 +280,7 @@ describe("transactional order service", () => {
     priceless.price = undefined as unknown as number;
     store.products.set(tulipId, priceless);
 
-    const result = await makeService(store).createPendingOrder(checkoutInput);
+    const result = await makeService(store).createPendingOrder(checkoutInput());
     const order = store.orders.get(result.orderId);
 
     expect(order?.items).toEqual([
@@ -290,7 +303,7 @@ describe("transactional order service", () => {
       generateOrderNumber: () => `FL-20260811-RETRY${++generated}`,
     });
 
-    await expect(service.createPendingOrder(checkoutInput)).resolves.toMatchObject({
+    await expect(service.createPendingOrder(checkoutInput())).resolves.toMatchObject({
       orderNumber: "FL-20260811-RETRY2",
     });
     expect(store.orders).toHaveLength(1);
@@ -299,7 +312,7 @@ describe("transactional order service", () => {
   it("cancels an order without touching any product record", async () => {
     const store = new InMemoryOrderStore();
     const service = makeService(store);
-    const created = await service.createPendingOrder(checkoutInput);
+    const created = await service.createPendingOrder(checkoutInput());
     const before = new Map(
       [...store.products].map(([id, value]) => [id, { ...value }])
     );
@@ -316,6 +329,30 @@ describe("transactional order service", () => {
     await expect(
       makeService(new InMemoryOrderStore()).transitionOrderStatus("missing", "confirmed")
     ).rejects.toBeInstanceOf(OrderNotFoundError);
+  });
+
+  it("charges no delivery fee on a collected order", async () => {
+    const { service, store } = buildService({ deliveryFee: 25000 });
+
+    await service.createPendingOrder(
+      checkoutInput({
+        fulfilment: "pickup",
+        customer: { fullName: "Aziza Karimova", phone: "+998901234567" },
+      })
+    );
+
+    expect(store.lastCreatedOrder?.deliveryFee).toBe(0);
+    expect(store.lastCreatedOrder?.fulfilment).toBe("pickup");
+    expect(store.lastCreatedOrder?.customer.address).toBeUndefined();
+  });
+
+  it("still charges the settings fee on a delivery", async () => {
+    const { service, store } = buildService({ deliveryFee: 25000 });
+
+    await service.createPendingOrder(checkoutInput({ fulfilment: "delivery" }));
+
+    expect(store.lastCreatedOrder?.deliveryFee).toBe(25000);
+    expect(store.lastCreatedOrder?.fulfilment).toBe("delivery");
   });
 });
 
