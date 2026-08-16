@@ -177,37 +177,51 @@ function orderDraft(overrides: Record<string, unknown> = {}) {
   });
 }
 
+**Use `validate()`, never `validateSync()`, for the address cases.**
+`validateSync()` skips middleware, so a `pre("validate")` hook never runs under
+it and every one of these assertions would pass whether the hook exists or not.
+
+```ts
+async function validationErrors(overrides: Record<string, unknown> = {}) {
+  try {
+    await orderDraft(overrides).validate();
+    return null;
+  } catch (error) {
+    return error as { errors: Record<string, unknown> };
+  }
+}
+
 it("defaults an order to delivery", () => {
   expect(orderDraft().fulfilment).toBe("delivery");
 });
 
-it("refuses a delivery with no address", () => {
-  const error = orderDraft({ fulfilment: "delivery" }).validateSync();
+it("refuses a delivery with no address", async () => {
+  const error = await validationErrors({ fulfilment: "delivery" });
 
   expect(error?.errors["customer.address"]).toBeDefined();
 });
 
-it("accepts a collection with no address", () => {
-  const error = orderDraft({ fulfilment: "pickup" }).validateSync();
+it("accepts a collection with no address", async () => {
+  const error = await validationErrors({ fulfilment: "pickup" });
 
   expect(error?.errors["customer.address"]).toBeUndefined();
 });
 
-it("accepts a delivery that carries an address", () => {
-  const error = orderDraft({
+it("accepts a delivery that carries an address", async () => {
+  const error = await validationErrors({
     fulfilment: "delivery",
     customer: {
       fullName: "Aziza Karimova",
       phone: "+998901234567",
       address: "Yunusobod 19, Toshkent",
     },
-  }).validateSync();
+  });
 
   expect(error?.errors["customer.address"]).toBeUndefined();
 });
 
-it("rejects a method outside the two on offer", () => {
-  const error = orderDraft({ fulfilment: "drone" }).validateSync();
+it("rejects a method outside the two on offer", async () => {
+  const error = await validationErrors({ fulfilment: "drone" });
 
   expect(error?.errors.fulfilment).toBeDefined();
 });
@@ -1139,12 +1153,17 @@ it("shows where and when to collect", async () => {
 
 it("shows the collection label alone when the shop has no address on file", async () => {
   const user = userEvent.setup();
-  renderCheckout({ shop: {} });
+  const { container } = renderCheckout({ shop: {} });
 
   await user.click(screen.getByRole("radio", { name: /Забрать из магазина/i }));
 
-  expect(screen.getByText("Забрать из магазина")).toBeVisible();
+  // Scoped to the panel on purpose: "Забрать из магазина" is also the radio's
+  // own label, so an unscoped getByText would match two elements and throw.
+  const panel = container.querySelector(".checkout-pickup");
+  expect(panel).not.toBeNull();
+  expect(panel).toHaveTextContent("Забрать из магазина");
   expect(screen.queryByText("Адрес магазина")).not.toBeInTheDocument();
+  expect(screen.queryByText("Часы работы")).not.toBeInTheDocument();
 });
 ```
 
