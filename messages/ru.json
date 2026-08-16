@@ -273,6 +273,8 @@
     "fulfilmentDeliveryHelp": "Курьер привезёт по адресу.",
     "fulfilmentPickup": "Забрать из магазина",
     "fulfilmentPickupHelp": "Вы заберёте заказ сами.",
+    "pickupPoint": "Адрес магазина",
+    "pickupHours": "Часы работы",
     "cashAtShop": "Наличными в магазине",
     "cashAtShopHelp": "Оплатите при получении.",
     "cardAtShop": "Картой в магазине",

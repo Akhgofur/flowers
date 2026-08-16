@@ -609,4 +609,42 @@ describe("CheckoutClient", () => {
     expect(screen.getByLabelText(/yetkazib berish manzili/i)).toHaveValue("");
     expect(screen.queryByText(/41.311081, 69.240562/)).not.toBeInTheDocument();
   });
+
+  it("shows where and when to collect", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <CheckoutClient
+        products={products}
+        shop={{ address: "Yunusobod 19, Toshkent", workingHours: "08:00–22:00" }}
+      />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    expect(screen.getByText("Yunusobod 19, Toshkent")).toBeVisible();
+    expect(screen.getByText("08:00–22:00")).toBeVisible();
+  });
+
+  it("shows the collection label alone when the shop has no address on file", async () => {
+    const user = userEvent.setup();
+
+    const { container } = render(
+      <CheckoutClient products={products} shop={{}} />,
+      { locale: "uz" }
+    );
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    // Scoped to the panel on purpose: "Do‘kondan olib ketaman" is also the radio's
+    // own label, so an unscoped getByText would match two elements and throw.
+    const panel = container.querySelector(".checkout-pickup");
+    expect(panel).not.toBeNull();
+    expect(panel).toHaveTextContent("Do‘kondan olib ketaman");
+    expect(screen.queryByText("Do‘kon manzili")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ish vaqti")).not.toBeInTheDocument();
+  });
 });

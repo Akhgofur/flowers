@@ -40,6 +40,8 @@ type CheckoutClientProps = {
   isDemoCatalog?: boolean;
   /** The catalog outgrew the page budget, so `products` is not the whole catalog. */
   catalogTruncated?: boolean;
+  /** Where to collect from; either field may be missing from site settings. */
+  shop?: { address?: string; workingHours?: string };
 };
 
 type CheckoutForm = Omit<
@@ -131,6 +133,7 @@ export function CheckoutClient({
   products,
   isDemoCatalog = false,
   catalogTruncated = false,
+  shop,
 }: CheckoutClientProps) {
   const locale = useLocale() as Locale;
   const t = useTranslations("Checkout");
@@ -569,7 +572,21 @@ export function CheckoutClient({
                       </p>
                     </div>
                   </>
-                ) : null}
+                ) : (
+                  <div className="checkout-fields__full checkout-pickup">
+                    <strong>{t("fulfilmentPickup")}</strong>
+                    {shop?.address ? (
+                      <p>
+                        <span>{t("pickupPoint")}</span> {shop.address}
+                      </p>
+                    ) : null}
+                    {shop?.workingHours ? (
+                      <p>
+                        <span>{t("pickupHours")}</span> {shop.workingHours}
+                      </p>
+                    ) : null}
+                  </div>
+                )}
 
                 <label>
                   <span>{t("deliveryDate")} <em>({t("optional")})</em></span>

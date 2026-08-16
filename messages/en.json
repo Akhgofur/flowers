@@ -273,6 +273,8 @@
     "fulfilmentDeliveryHelp": "A courier brings it to your address.",
     "fulfilmentPickup": "Collect from the shop",
     "fulfilmentPickupHelp": "You collect the order yourself.",
+    "pickupPoint": "Shop address",
+    "pickupHours": "Opening hours",
     "cashAtShop": "In cash at the shop",
     "cashAtShopHelp": "Pay when you collect.",
     "cardAtShop": "By card at the shop",

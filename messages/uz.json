@@ -273,6 +273,8 @@
     "fulfilmentDeliveryHelp": "Kuryer manzilingizga olib boradi.",
     "fulfilmentPickup": "Do‘kondan olib ketaman",
     "fulfilmentPickupHelp": "Buyurtmani o‘zingiz olib ketasiz.",
+    "pickupPoint": "Do‘kon manzili",
+    "pickupHours": "Ish vaqti",
     "cashAtShop": "Do‘konda naqd pul bilan",
     "cashAtShopHelp": "Olayotganda naqd to‘lang.",
     "cardAtShop": "Do‘konda karta bilan",
