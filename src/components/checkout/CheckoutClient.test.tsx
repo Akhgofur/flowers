@@ -409,13 +409,21 @@ describe("CheckoutClient", () => {
       { timeout: 10_000 }
     );
 
-  const fillRequiredFields = async (user: ReturnType<typeof userEvent.setup>) => {
+  // `includeAddress` defaults to true so every existing delivery-flow caller keeps
+  // filling the (required) address field exactly as before; a pickup order hides
+  // that field entirely, so those tests opt out instead.
+  const fillRequiredFields = async (
+    user: ReturnType<typeof userEvent.setup>,
+    { includeAddress = true }: { includeAddress?: boolean } = {}
+  ) => {
     await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
     await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
-    await user.type(
-      screen.getByLabelText(/yetkazib berish manzili/i),
-      "Toshkent shahri, Chilonzor tumani"
-    );
+    if (includeAddress) {
+      await user.type(
+        screen.getByLabelText(/yetkazib berish manzili/i),
+        "Toshkent shahri, Chilonzor tumani"
+      );
+    }
   };
 
   it("sends the detected map pin alongside the written address", async () => {
@@ -534,5 +542,59 @@ describe("CheckoutClient", () => {
     };
     expect(body.customer).not.toHaveProperty("location");
     expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
+  });
+
+  it("hides the address and the map once the shopper chooses to collect", async () => {
+    const user = userEvent.setup();
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    expect(screen.queryByLabelText(/yetkazib berish manzili/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /xaritadan belgilash/i })
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Do‘konda naqd pul bilan")).toBeVisible();
+  });
+
+  it("submits a collected order with no address or map point", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(orderAccepted());
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await fillRequiredFields(user, { includeAddress: false });
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      fulfilment: string;
+      customer: Record<string, unknown>;
+    };
+    expect(body.fulfilment).toBe("pickup");
+    expect(body.customer.address).toBeUndefined();
+    expect(body.customer.location).toBeUndefined();
+  });
+
+  it("forgets a typed address and a chosen pin when the shopper switches to collection", async () => {
+    const user = userEvent.setup();
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Yunusobod 19, Toshkent"
+    );
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await user.click(screen.getByRole("radio", { name: /Yandex yetkazib berish/i }));
+
+    expect(screen.getByLabelText(/yetkazib berish manzili/i)).toHaveValue("");
   });
 });
