@@ -322,6 +322,17 @@ export const checkoutSchema = z
       });
     }
 
+    // A Yandex courier collects nothing on the shop's behalf, so a delivered
+    // order is paid to the shop before the courier is sent. Cash is offered for
+    // collection only, and the boundary says so rather than trusting the form.
+    if (input.fulfilment === "delivery" && input.paymentMethod === "cash_on_delivery") {
+      context.addIssue({
+        code: "custom",
+        path: ["paymentMethod"],
+        message: "A delivered order cannot be paid in cash.",
+      });
+    }
+
     // Rejected rather than quietly dropped: a client that sends these is broken,
     // and silently cleaning the body would write a half-truth instead.
     if (input.fulfilment === "pickup") {

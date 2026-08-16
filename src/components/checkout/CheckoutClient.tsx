@@ -95,7 +95,10 @@ const EMPTY_FORM: CheckoutForm = {
   deliveryDate: "",
   comment: "",
   location: null,
-  paymentMethod: "cash_on_delivery",
+  // Card, not cash: the form opens on delivery, and cash is offered for
+  // collection only — so cash here would leave the radio group with nothing
+  // selected until the shopper switched.
+  paymentMethod: "card_on_delivery",
   fulfilment: "delivery",
 };
 
@@ -212,8 +215,21 @@ export function CheckoutClient({
   // stale location status on every switch, so switching back to delivery cannot
   // resurrect a pin — or a "could not parse" message — the shopper believes
   // they removed.
+  const collecting = form.fulfilment === "pickup";
+
   const selectFulfilment = (fulfilment: CheckoutInput["fulfilment"]) => {
-    setForm((current) => ({ ...current, fulfilment, address: "", location: null }));
+    setForm((current) => ({
+      ...current,
+      fulfilment,
+      address: "",
+      location: null,
+      // Cash exists only for collection, so a shopper who picked it and then
+      // switched to delivery would otherwise carry an unofferable method into
+      // the order — the server rejects that, and the radio would show nothing
+      // selected.
+      paymentMethod:
+        fulfilment === "delivery" ? "card_on_delivery" : current.paymentMethod,
+    }));
     setIsMapOpen(false);
     setPastedLocation("");
     setLocationStatus({ kind: "idle" });
@@ -658,18 +674,23 @@ export function CheckoutClient({
                 </div>
               </div>
               <div className="checkout-payment-options" role="radiogroup" aria-label={t("paymentLabel")}>
-                <label data-selected={form.paymentMethod === "cash_on_delivery"}>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="cash_on_delivery"
-                    checked={form.paymentMethod === "cash_on_delivery"}
-                    onChange={() => updateForm("paymentMethod", "cash_on_delivery")}
-                  />
-                  <span aria-hidden="true">₸</span>
-                  <strong>{form.fulfilment === "pickup" ? t("cashAtShop") : t("cashOnDelivery")}</strong>
-                  <small>{form.fulfilment === "pickup" ? t("cashAtShopHelp") : t("cashHelp")}</small>
-                </label>
+                {/* Cash is offered for collection only: a delivered order is paid
+                    to the shop before a Yandex courier is sent, and that courier
+                    collects nothing on the shop's behalf. */}
+                {collecting ? (
+                  <label data-selected={form.paymentMethod === "cash_on_delivery"}>
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cash_on_delivery"
+                      checked={form.paymentMethod === "cash_on_delivery"}
+                      onChange={() => updateForm("paymentMethod", "cash_on_delivery")}
+                    />
+                    <span aria-hidden="true">₸</span>
+                    <strong>{t("cashAtShop")}</strong>
+                    <small>{t("cashAtShopHelp")}</small>
+                  </label>
+                ) : null}
                 <label data-selected={form.paymentMethod === "card_on_delivery"}>
                   <input
                     type="radio"
@@ -679,8 +700,8 @@ export function CheckoutClient({
                     onChange={() => updateForm("paymentMethod", "card_on_delivery")}
                   />
                   <span aria-hidden="true">▣</span>
-                  <strong>{form.fulfilment === "pickup" ? t("cardAtShop") : t("cardOnDelivery")}</strong>
-                  <small>{form.fulfilment === "pickup" ? t("cardAtShopHelp") : t("cardHelp")}</small>
+                  <strong>{collecting ? t("cardAtShop") : t("cardBeforeDelivery")}</strong>
+                  <small>{collecting ? t("cardAtShopHelp") : t("cardBeforeDeliveryHelp")}</small>
                 </label>
               </div>
             </section>

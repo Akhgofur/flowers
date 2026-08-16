@@ -70,7 +70,7 @@ function checkoutBody(overrides: Record<string, unknown> = {}) {
       phone: "+998901234567",
       address: "Yunusobod 19, Toshkent",
     },
-    paymentMethod: "cash_on_delivery",
+    paymentMethod: "card_on_delivery",
     items: [{ productId: "507f1f77bcf86cd799439011", quantity: 1 }],
     ...overrides,
   };
@@ -103,7 +103,7 @@ describe("commerce validation boundaries", () => {
           phone: "+998901234567",
           address: "Toshkent shahri, Chilonzor tumani",
         },
-        paymentMethod: "cash_on_delivery",
+        paymentMethod: "card_on_delivery",
         total: 1,
         items: [
           {
@@ -161,7 +161,7 @@ describe("commerce validation boundaries", () => {
           phone: "+998901234567",
           address: "Toshkent shahri, Chilonzor tumani",
         },
-        paymentMethod: "cash_on_delivery",
+        paymentMethod: "card_on_delivery",
         items: [
           { productId: "507f1f77bcf86cd799439011", quantity: 1 },
           { productId: "507f1f77bcf86cd799439011", quantity: 2 },
@@ -232,7 +232,7 @@ describe("commerce validation boundaries", () => {
         phone: "+998901234567",
         address: "Toshkent shahri, Chilonzor tumani",
       },
-      paymentMethod: "cash_on_delivery",
+      paymentMethod: "card_on_delivery",
       items: [{ productId: "507f1f77bcf86cd799439011", quantity: 1 }],
     };
 
@@ -281,6 +281,29 @@ describe("commerce validation boundaries", () => {
         seoOgImage: { url: "https://example.com/og.jpg", alt: "" },
       })
     ).toThrow();
+  });
+
+  it("refuses cash on a delivered order, since no courier collects for the shop", () => {
+    const result = checkoutSchema.safeParse(
+      checkoutBody({ paymentMethod: "cash_on_delivery" })
+    );
+
+    expect(result.success).toBe(false);
+    expect(
+      result.error?.issues.some((issue) => issue.path.join(".") === "paymentMethod")
+    ).toBe(true);
+  });
+
+  it("allows cash when the shopper collects the order themselves", () => {
+    const result = checkoutSchema.safeParse(
+      checkoutBody({
+        fulfilment: "pickup",
+        paymentMethod: "cash_on_delivery",
+        customer: { fullName: "Aziza Karimova", phone: "+998901234567" },
+      })
+    );
+
+    expect(result.success).toBe(true);
   });
 
   it("accepts a shop location, or none at all, but not one off the planet", () => {

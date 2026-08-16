@@ -36,7 +36,7 @@ function checkoutInput(overrides: Partial<CheckoutInput> = {}): CheckoutInput {
       deliveryDate: "2026-08-12",
       comment: "Eshik oldida qo'ng'iroq qiling",
     },
-    paymentMethod: "cash_on_delivery",
+    paymentMethod: "card_on_delivery",
     items: [
       { productId: redRoseId, quantity: 2 },
       { productId: tulipId, quantity: 1 },
@@ -200,7 +200,9 @@ describe("transactional order service", () => {
     expect(store.reservationSeasons).toEqual(["summer", "summer"]);
     expect(order).toMatchObject({
       paymentStatus: "unpaid",
-      paymentMethod: "cash_on_delivery" as PaymentMethod,
+      // Carried straight through from the checkout input, which is card because
+      // a delivered order cannot be paid in cash.
+      paymentMethod: "card_on_delivery" as PaymentMethod,
       subtotal: 390_000,
       deliveryFee: 20_000,
       total: 410_000,

@@ -112,7 +112,7 @@ describe("CheckoutClient", () => {
         phone: "+998901234567",
         address: "Toshkent shahri, Chilonzor tumani",
       },
-      paymentMethod: "cash_on_delivery",
+      paymentMethod: "card_on_delivery",
       items: [{ productId: products[0]?.id, quantity: 2 }],
     });
     expect(await screen.findByText(/buyurtmangiz qabul qilindi/i)).toBeVisible();
@@ -687,6 +687,67 @@ describe("CheckoutClient", () => {
     // ride is addressed to the shop they are travelling to.
     expect(taxi).toHaveAttribute("href", expect.stringContaining("rtext=~41.338,69.334"));
     expect(taxi).toHaveAttribute("href", expect.stringContaining("rtt=taxi"));
+  });
+
+  it("offers cash only for collection, since no courier collects for the shop", async () => {
+    const user = userEvent.setup();
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    // Delivery is preselected: card only, and it must already be the choice or
+    // the radio group would show nothing selected.
+    expect(screen.getByRole("radio", { name: /Oldindan karta bilan/i })).toBeChecked();
+    expect(
+      screen.queryByRole("radio", { name: /naqd pul bilan/i })
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+
+    expect(screen.getByRole("radio", { name: /Do‘konda naqd pul bilan/i })).toBeVisible();
+    expect(screen.getByRole("radio", { name: /Do‘konda karta bilan/i })).toBeVisible();
+  });
+
+  it("drops a cash choice when the shopper switches back to delivery", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          order: {
+            orderId: "507f191e810c19729de860ea",
+            orderNumber: "FL-20260816-CASHSWAP1",
+            total: 320_000,
+            status: "pending",
+          },
+        }),
+        { status: 201, headers: { "content-type": "application/json" } }
+      )
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<CheckoutClient products={products} />, { locale: "uz" });
+    await screen.findByText(/pushti lola buketi/i);
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await user.click(screen.getByRole("radio", { name: /Do‘konda naqd pul bilan/i }));
+    await user.click(screen.getByRole("radio", { name: /Yandex yetkazib berish/i }));
+
+    // Cash is gone from the group, so a stale cash choice would leave the order
+    // carrying a method the server refuses.
+    await user.type(screen.getByLabelText(/ism va familiya/i), "Ali Valiyev");
+    await user.type(screen.getByLabelText(/telefon raqami/i), "+998901234567");
+    await user.type(
+      screen.getByLabelText(/yetkazib berish manzili/i),
+      "Toshkent shahri, Chilonzor tumani"
+    );
+    await user.click(screen.getByRole("button", { name: /buyurtmani tasdiqlash/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, request] = fetchMock.mock.calls[0] ?? [];
+    const body = JSON.parse(String((request as RequestInit).body)) as {
+      paymentMethod: string;
+    };
+    expect(body.paymentMethod).toBe("card_on_delivery");
   });
 
   it("invites the shopper to follow the shop once the order is placed", async () => {

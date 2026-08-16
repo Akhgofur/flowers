@@ -41,7 +41,7 @@ const validCheckout = {
     phone: "+998901234567",
     address: "Toshkent shahri, Chilonzor tumani",
   },
-  paymentMethod: "cash_on_delivery",
+  paymentMethod: "card_on_delivery",
   items: [{ productId: "507f1f77bcf86cd799439011", quantity: 2 }],
 };
 
