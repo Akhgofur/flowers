@@ -13,6 +13,7 @@ import {
   ProductUnavailableError,
   RESERVED_PRODUCT_PROJECTION,
   createOrderService,
+  serializeOrder,
   type OrderStore,
   type PendingOrderRecord,
   type ProductPurchaseState,
@@ -353,6 +354,38 @@ describe("transactional order service", () => {
 
     expect(store.lastCreatedOrder?.deliveryFee).toBe(25000);
     expect(store.lastCreatedOrder?.fulfilment).toBe("delivery");
+  });
+});
+
+/**
+ * `serializeOrder` reads a `.lean()` Mongo document, which skips schema
+ * defaults entirely. An order written before `fulfilment` existed on the
+ * schema therefore comes back with the field completely absent, not
+ * defaulted to "delivery" the way a hydrated Mongoose document would be.
+ * This pins that read path to `resolveFulfilment`'s fallback so a legacy
+ * order is never silently mistreated as some other method.
+ */
+describe("serializeOrder", () => {
+  it("defaults a legacy order with no stored fulfilment to delivery", () => {
+    const legacyDocument = {
+      _id: { toString: () => "order-legacy" },
+      number: "FL-20250101-LEGACY",
+      locale: "ru",
+      customer: {
+        fullName: "Eski Mijoz",
+        phone: "+998901234567",
+        address: "Toshkent shahri, Chilonzor tumani",
+      },
+      items: [],
+      subtotal: 0,
+      deliveryFee: 20_000,
+      total: 20_000,
+      paymentMethod: "cash_on_delivery",
+      status: "pending",
+      // fulfilment intentionally absent: this order predates the field.
+    } as never;
+
+    expect(serializeOrder(legacyDocument).fulfilment).toBe("delivery");
   });
 });
 

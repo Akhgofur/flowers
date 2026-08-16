@@ -16,6 +16,7 @@ import {
   getTashkentSeason,
 } from "@/lib/product-availability";
 import { dbConnect } from "@/lib/mongodb";
+import { resolveFulfilment } from "@/lib/order-fulfilment";
 import { checkoutSchema } from "@/lib/validations";
 import { roundGeoPoint, type GeoPoint } from "@/shared/geo-point";
 import { OrderModel, type OrderDocument } from "@/models/Order";
@@ -133,7 +134,14 @@ type ProductRecord = Pick<
   _id: Types.ObjectId;
 };
 
-type OrderRecord = OrderDocument & { _id: Types.ObjectId };
+type OrderRecord = Omit<OrderDocument, "fulfilment"> & {
+  _id: Types.ObjectId;
+  /**
+   * `.lean()` skips schema defaults, so an order written before this field
+   * existed comes back with it entirely absent, not defaulted to "delivery".
+   */
+  fulfilment?: FulfilmentMethod;
+};
 
 export class OrderServiceError extends Error {
   constructor(
@@ -197,7 +205,7 @@ export class OrderStateConflictError extends OrderServiceError {
   }
 }
 
-function serializeOrder(document: OrderRecord): StoredOrder {
+export function serializeOrder(document: OrderRecord): StoredOrder {
   return {
     id: document._id.toString(),
     number: document.number,
@@ -219,7 +227,7 @@ function serializeOrder(document: OrderRecord): StoredOrder {
         : { deliveryDate: document.customer.deliveryDate }),
       ...(document.customer.comment === undefined ? {} : { comment: document.customer.comment }),
     },
-    fulfilment: document.fulfilment,
+    fulfilment: resolveFulfilment(document.fulfilment),
     items: document.items.map((item) => ({
       productId: item.productId.toString(),
       slug: item.slug,
