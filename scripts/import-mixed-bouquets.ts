@@ -5,7 +5,11 @@ nextEnv.loadEnvConfig(process.cwd(), process.env.NODE_ENV !== "production");
 
 // Forward slashes on purpose: Node accepts them on Windows and they remove a
 // whole class of escaping mistakes from a path that is edited by hand.
-const SOURCE_ROOT = "C:/Users/gofur/Desktop/bkt/edited_corrected";
+//
+// One shoot at a time. The previous shoot's manifest is in commit 2ed8cd5; its
+// seven products stay published because slugs are derived from the file names,
+// so a new shoot can never collide with or orphan an older one.
+const SOURCE_ROOT = "C:/Users/gofur/Desktop/fl/buket/edited_corrected";
 const DRY_RUN = process.argv.includes("--dry-run");
 
 const DELIVERY = {
@@ -16,205 +20,182 @@ const DELIVERY = {
 
 const BOUQUETS: Bouquet[] = [
   {
-    images: ["photo_1_2026-08-13_18-30-23.png"],
-    flowerTypes: ["rose", "peony"],
-    colors: ["pink", "purple"],
-    ru: {
-      name: "Пионовидная фуксия",
-      shortDescription: "Крупный букет пионовидных кустовых роз цвета фуксии.",
-      description:
-        "Плотная охапка пионовидных кустовых роз насыщенного розового цвета, собранная в сиреневую матовую упаковку и перевязанная лентой.",
-      composition: ["Пионовидные кустовые розы", "Сиреневая упаковка", "Атласная лента"],
-      deliveryEstimate: DELIVERY.ru,
-    },
-    uz: {
-      name: "Fuksiya pion buketi",
-      shortDescription: "To‘q pushti pion shaklidagi buta atirgullardan yirik buket.",
-      description:
-        "To‘q pushti pion shaklidagi buta atirgullardan zich quchoq, siren rangli mat qadoqqa yig‘ilgan va lenta bilan bog‘langan.",
-      composition: ["Pion buta atirgullar", "Siren qadoq", "Atlas lenta"],
-      deliveryEstimate: DELIVERY.uz,
-    },
-    en: {
-      name: "Fuchsia peony spray",
-      shortDescription: "A large bouquet of fuchsia peony spray roses.",
-      description:
-        "A dense armful of deep pink peony spray roses gathered in matte lilac wrapping and tied with ribbon.",
-      composition: ["Peony spray roses", "Lilac wrapping", "Satin ribbon"],
-      deliveryEstimate: DELIVERY.en,
-    },
-  },
-  {
-    images: ["photo_2_2026-08-13_18-30-23.png"],
-    flowerTypes: ["rose"],
-    colors: ["pink", "white"],
-    ru: {
-      name: "Розовая кайма",
-      shortDescription: "Двухцветные розы с кремовой серединой и розовым краем.",
-      description:
-        "Розы с кремовыми лепестками и яркой розовой каймой, собранные ровным куполом в розовую и белую упаковку.",
-      composition: ["Двухцветные розы", "Розовая упаковка", "Атласная лента"],
-      deliveryEstimate: DELIVERY.ru,
-    },
-    uz: {
-      name: "Pushti hoshiya",
-      shortDescription: "Krem markazli va pushti hoshiyali ikki rangli atirgullar.",
-      description:
-        "Krem gulbargli va yorqin pushti hoshiyali atirgullar, tekis gumbaz shaklida pushti va oq qadoqqa yig‘ilgan.",
-      composition: ["Ikki rangli atirgullar", "Pushti qadoq", "Atlas lenta"],
-      deliveryEstimate: DELIVERY.uz,
-    },
-    en: {
-      name: "Pink edge",
-      shortDescription: "Two-tone roses with cream centres and pink edges.",
-      description:
-        "Roses with cream petals edged in bright pink, gathered into an even dome in pink and white wrapping.",
-      composition: ["Two-tone roses", "Pink wrapping", "Satin ribbon"],
-      deliveryEstimate: DELIVERY.en,
-    },
-  },
-  {
-    images: ["photo_3_2026-08-13_18-30-23.png"],
-    flowerTypes: ["seasonal", "mixed"],
-    colors: ["white", "pink", "purple"],
-    ru: {
-      name: "Розовое облако",
-      shortDescription: "Белые и сиреневые хризантемы с розовой гипсофилой.",
-      description:
-        "Ромашковые хризантемы белого и сиреневого оттенков в облаке розовой гипсофилы, в яркой малиновой упаковке.",
-      composition: ["Белые хризантемы", "Сиреневые хризантемы", "Розовая гипсофила"],
-      deliveryEstimate: DELIVERY.ru,
-    },
-    uz: {
-      name: "Pushti bulut",
-      shortDescription: "Oq va siren xrizantemalar pushti gipsofila bilan.",
-      description:
-        "Oq va siren rangli romashka xrizantemalar pushti gipsofila bulutida, yorqin malina rangli qadoqda.",
-      composition: ["Oq xrizantemalar", "Siren xrizantemalar", "Pushti gipsofila"],
-      deliveryEstimate: DELIVERY.uz,
-    },
-    en: {
-      name: "Pink cloud",
-      shortDescription: "White and lilac chrysanthemums with pink gypsophila.",
-      description:
-        "Daisy chrysanthemums in white and lilac set in a cloud of pink gypsophila, wrapped in bright raspberry paper.",
-      composition: ["White chrysanthemums", "Lilac chrysanthemums", "Pink gypsophila"],
-      deliveryEstimate: DELIVERY.en,
-    },
-  },
-  {
-    images: ["photo_4_2026-08-13_18-30-23.png"],
+    images: ["photo_1_2026-08-16_12-50-50.png"],
     flowerTypes: ["seasonal"],
-    colors: ["pink", "white"],
+    colors: ["white", "pink"],
     ru: {
-      name: "Зефирные помпоны",
-      shortDescription: "Помпонные хризантемы кремового и розового оттенков.",
+      name: "Белое облако",
+      shortDescription: "Крупные белые хризантемы с альстромерией в розовой упаковке.",
       description:
-        "Круглые помпонные хризантемы кремового и нежно-розового цвета, уложенные плотным куполом в пудровую упаковку.",
-      composition: ["Помпонные хризантемы", "Пудровая упаковка", "Атласная лента"],
+        "Плотный купол крупных белых хризантем с кремовой серединой, подсвеченный белой альстромерией, в ярко-розовой матовой упаковке.",
+      composition: ["Белые хризантемы", "Белая альстромерия", "Розовая упаковка"],
       deliveryEstimate: DELIVERY.ru,
     },
     uz: {
-      name: "Zefir pomponlar",
-      shortDescription: "Krem va pushti rangli pompon xrizantemalar.",
+      name: "Oq bulut",
+      shortDescription: "Pushti qadoqda alstromeriya bilan yirik oq xrizantemalar.",
       description:
-        "Krem va mayin pushti rangli dumaloq pompon xrizantemalar, zich gumbaz shaklida pudra qadoqqa terilgan.",
-      composition: ["Pompon xrizantemalar", "Pudra qadoq", "Atlas lenta"],
+        "Krem markazli yirik oq xrizantemalardan zich gumbaz, oq alstromeriya bilan jonlantirilgan, yorqin pushti mat qadoqda.",
+      composition: ["Oq xrizantemalar", "Oq alstromeriya", "Pushti qadoq"],
       deliveryEstimate: DELIVERY.uz,
     },
     en: {
-      name: "Marshmallow pompons",
-      shortDescription: "Pompon chrysanthemums in cream and soft pink.",
+      name: "White cloud",
+      shortDescription: "Large white chrysanthemums with alstroemeria in pink wrapping.",
       description:
-        "Round pompon chrysanthemums in cream and soft pink, packed into a dense dome in powder-pink wrapping.",
-      composition: ["Pompon chrysanthemums", "Powder wrapping", "Satin ribbon"],
+        "A dense dome of large white chrysanthemums with cream centres, lifted by white alstroemeria and wrapped in bright pink matte paper.",
+      composition: ["White chrysanthemums", "White alstroemeria", "Pink wrapping"],
       deliveryEstimate: DELIVERY.en,
     },
   },
   {
-    images: ["photo_5_2026-08-13_18-30-23.png"],
-    flowerTypes: ["seasonal", "mixed"],
-    colors: ["blue", "pink", "white"],
+    images: ["photo_2_2026-08-16_12-50-50.png"],
+    flowerTypes: ["rose", "mixed"],
+    colors: ["pink", "white", "purple"],
     ru: {
-      name: "Гортензии пастель",
-      shortDescription: "Голубые, розовые и кремовые гортензии.",
+      name: "Лавандовое утро",
+      shortDescription: "Розовые и белые кустовые розы с альстромерией и статицей.",
       description:
-        "Крупные шапки гортензий в голубых, розовых и кремовых тонах, собранные в белую упаковку с розовой лентой.",
-      composition: ["Голубые гортензии", "Розовые гортензии", "Кремовые гортензии"],
+        "Розовые и белые кустовые розы с белой альстромерией и сиреневой статицей, собранные в лиловую упаковку с широкими лепестками и атласной лентой.",
+      composition: ["Розовые кустовые розы", "Белая альстромерия", "Сиреневая статица"],
       deliveryEstimate: DELIVERY.ru,
     },
     uz: {
-      name: "Pastel gortenziya",
-      shortDescription: "Ko‘k, pushti va krem rangli gortenziyalar.",
+      name: "Lavanda tongi",
+      shortDescription: "Alstromeriya va statitsa bilan pushti va oq buta atirgullar.",
       description:
-        "Ko‘k, pushti va krem tusdagi yirik gortenziya boshlari, oq qadoqqa yig‘ilib pushti lenta bilan bog‘langan.",
-      composition: ["Ko‘k gortenziyalar", "Pushti gortenziyalar", "Krem gortenziyalar"],
+        "Pushti va oq buta atirgullar oq alstromeriya va siren statitsa bilan, keng gulbargli lilo qadoqqa va atlas lenta bilan yig‘ilgan.",
+      composition: ["Pushti buta atirgullar", "Oq alstromeriya", "Siren statitsa"],
       deliveryEstimate: DELIVERY.uz,
     },
     en: {
-      name: "Pastel hydrangeas",
-      shortDescription: "Blue, pink and cream hydrangeas.",
+      name: "Lavender morning",
+      shortDescription: "Pink and white spray roses with alstroemeria and statice.",
       description:
-        "Large hydrangea heads in blue, pink and cream, gathered in white wrapping with a pink ribbon.",
-      composition: ["Blue hydrangeas", "Pink hydrangeas", "Cream hydrangeas"],
+        "Pink and white spray roses with white alstroemeria and lilac statice, gathered into wide-petalled violet wrapping and finished with a satin ribbon.",
+      composition: ["Pink spray roses", "White alstroemeria", "Lilac statice"],
       deliveryEstimate: DELIVERY.en,
     },
   },
   {
-    images: ["photo_6_2026-08-13_18-30-23.png"],
+    // Two views of one bouquet: front and three-quarter. Split into two entries
+    // if these are in fact two separate arrangements.
+    images: ["photo_3_2026-08-16_12-50-50.png", "photo_7_2026-08-16_12-50-50.png"],
     flowerTypes: ["seasonal"],
-    colors: ["purple", "white"],
+    colors: ["white", "peach"],
     ru: {
-      name: "Сиреневое поле",
-      shortDescription: "Сиреневые и белые ромашковые хризантемы.",
+      name: "Снежная ромашка",
+      shortDescription: "Белые хризантемы и мелкие ромашковые хризантемы в пудровой упаковке.",
       description:
-        "Пышный букет из сиреневых и белых ромашковых хризантем в кремовой упаковке с сиреневой лентой.",
-      composition: ["Сиреневые хризантемы", "Белые хризантемы", "Сиреневая лента"],
+        "Крупные белоснежные хризантемы вперемешку с мелкими ромашковыми хризантемами с зелёной серединкой, в персиково-пудровой упаковке с кремовой лентой.",
+      composition: ["Белые хризантемы", "Ромашковые хризантемы", "Пудровая упаковка"],
       deliveryEstimate: DELIVERY.ru,
     },
     uz: {
-      name: "Siren dala",
-      shortDescription: "Siren va oq romashka xrizantemalar.",
+      name: "Qorli romashka",
+      shortDescription: "Pudra qadoqda oq xrizantemalar va mayda romashka xrizantemalar.",
       description:
-        "Siren va oq romashka xrizantemalardan to‘kis buket, krem qadoqda va siren lenta bilan.",
-      composition: ["Siren xrizantemalar", "Oq xrizantemalar", "Siren lenta"],
+        "Yirik qordek oq xrizantemalar yashil markazli mayda romashka xrizantemalar bilan aralash, shaftoli-pudra qadoqda va krem lenta bilan.",
+      composition: ["Oq xrizantemalar", "Romashka xrizantemalar", "Pudra qadoq"],
       deliveryEstimate: DELIVERY.uz,
     },
     en: {
-      name: "Lilac field",
-      shortDescription: "Lilac and white daisy chrysanthemums.",
+      name: "Snow daisy",
+      shortDescription: "White chrysanthemums and small daisy chrysanthemums in powder wrapping.",
       description:
-        "A full bouquet of lilac and white daisy chrysanthemums in cream wrapping with a lilac ribbon.",
-      composition: ["Lilac chrysanthemums", "White chrysanthemums", "Lilac ribbon"],
+        "Large snow-white chrysanthemums threaded with small green-eyed daisy chrysanthemums, in peach and powder wrapping with a cream ribbon.",
+      composition: ["White chrysanthemums", "Daisy chrysanthemums", "Powder wrapping"],
       deliveryEstimate: DELIVERY.en,
     },
   },
   {
-    images: ["photo_7_2026-08-13_18-30-23.png"],
-    flowerTypes: ["seasonal"],
-    colors: ["white", "blue"],
+    images: ["photo_4_2026-08-16_12-50-50.png"],
+    flowerTypes: ["rose", "peony", "mixed"],
+    colors: ["pink", "white", "purple"],
     ru: {
-      name: "Морская свежесть",
-      shortDescription: "Белые хризантемы с голубой гипсофилой.",
+      name: "Малиновый сад",
+      shortDescription: "Пионовидные розы цвета фуксии с альстромерией и статицей.",
       description:
-        "Белые ромашковые хризантемы, подсвеченные голубой гипсофилой, в бело-голубой упаковке с синей лентой.",
-      composition: ["Белые хризантемы", "Голубая гипсофила", "Синяя лента"],
+        "Пионовидные кустовые розы насыщенного малинового цвета с белой альстромерией, белой и сиреневой статицей и веточками рускуса, в розовой упаковке с лентой.",
+      composition: ["Пионовидные розы фуксия", "Белая альстромерия", "Белая и сиреневая статица"],
       deliveryEstimate: DELIVERY.ru,
     },
     uz: {
-      name: "Dengiz salqini",
-      shortDescription: "Oq xrizantemalar va ko‘k gipsofila.",
+      name: "Malina bog‘i",
+      shortDescription: "Alstromeriya va statitsa bilan fuksiya rangli pion atirgullar.",
       description:
-        "Ko‘k gipsofila bilan jonlantirilgan oq romashka xrizantemalar, oq-ko‘k qadoqda va ko‘k lenta bilan.",
-      composition: ["Oq xrizantemalar", "Ko‘k gipsofila", "Ko‘k lenta"],
+        "To‘q malina rangli pion shaklidagi buta atirgullar oq alstromeriya, oq va siren statitsa hamda ruskus shoxchalari bilan, pushti qadoqda va lenta bilan.",
+      composition: ["Fuksiya pion atirgullar", "Oq alstromeriya", "Oq va siren statitsa"],
       deliveryEstimate: DELIVERY.uz,
     },
     en: {
-      name: "Sea freshness",
-      shortDescription: "White chrysanthemums with blue gypsophila.",
+      name: "Raspberry garden",
+      shortDescription: "Fuchsia peony roses with alstroemeria and statice.",
       description:
-        "White daisy chrysanthemums lifted by blue gypsophila, in white and blue wrapping with a blue ribbon.",
-      composition: ["White chrysanthemums", "Blue gypsophila", "Blue ribbon"],
+        "Deep raspberry peony spray roses with white alstroemeria, white and lilac statice and sprigs of ruscus, in pink wrapping tied with ribbon.",
+      composition: ["Fuchsia peony roses", "White alstroemeria", "White and lilac statice"],
+      deliveryEstimate: DELIVERY.en,
+    },
+  },
+  {
+    // Two views of one bouquet: overhead and front. Split into two entries if
+    // these are in fact two separate arrangements.
+    images: ["photo_5_2026-08-16_12-50-50.png", "photo_8_2026-08-16_12-50-50.png"],
+    flowerTypes: ["seasonal"],
+    colors: ["white", "purple"],
+    ru: {
+      name: "Сливочная фиалка",
+      shortDescription: "Кремовые и фиалковые хризантемы с лентами «Happy Birthday».",
+      description:
+        "Кремовые хризантемы вокруг сердцевины из хризантем с фиалковыми кончиками лепестков, в лиловой упаковке с лентами «Happy Birthday».",
+      composition: ["Кремовые хризантемы", "Фиалковые хризантемы", "Ленты «Happy Birthday»"],
+      deliveryEstimate: DELIVERY.ru,
+    },
+    uz: {
+      name: "Qaymoqli binafsha",
+      shortDescription: "«Happy Birthday» lentalari bilan qaymoq va binafsha xrizantemalar.",
+      description:
+        "Gulbarg uchlari binafsha rangli xrizantemalar yadrosi atrofida qaymoq rangli xrizantemalar, lilo qadoqda «Happy Birthday» lentalari bilan.",
+      composition: ["Qaymoq xrizantemalar", "Binafsha xrizantemalar", "«Happy Birthday» lentalari"],
+      deliveryEstimate: DELIVERY.uz,
+    },
+    en: {
+      name: "Cream and violet",
+      shortDescription: "Cream and violet-tipped chrysanthemums with Happy Birthday ribbons.",
+      description:
+        "Cream chrysanthemums ringing a heart of violet-tipped blooms, in lilac wrapping threaded with Happy Birthday ribbons.",
+      composition: ["Cream chrysanthemums", "Violet-tipped chrysanthemums", "Happy Birthday ribbons"],
+      deliveryEstimate: DELIVERY.en,
+    },
+  },
+  {
+    // Two views of one bouquet: front and three-quarter. Split into two entries
+    // if these are in fact two separate arrangements.
+    images: ["photo_6_2026-08-16_12-50-50.png", "photo_9_2026-08-16_12-50-50.png"],
+    flowerTypes: ["seasonal", "rose", "mixed"],
+    colors: ["blue", "purple", "pink"],
+    ru: {
+      name: "Лазурный сюрприз",
+      shortDescription: "Голубые хризантемы с сиреневыми пионовидными розами.",
+      description:
+        "Ярко-голубые хризантемы в окружении сиреневых пионовидных кустовых роз и облака фиолетовой статицы, в розовой упаковке с атласной лентой.",
+      composition: ["Голубые хризантемы", "Сиреневые пионовидные розы", "Фиолетовая статица"],
+      deliveryEstimate: DELIVERY.ru,
+    },
+    uz: {
+      name: "Moviy syurpriz",
+      shortDescription: "Siren pion atirgullar bilan moviy xrizantemalar.",
+      description:
+        "Yorqin moviy xrizantemalar siren pion shaklidagi buta atirgullar va binafsha statitsa buluti bilan o‘ralgan, pushti qadoqda va atlas lenta bilan.",
+      composition: ["Moviy xrizantemalar", "Siren pion atirgullar", "Binafsha statitsa"],
+      deliveryEstimate: DELIVERY.uz,
+    },
+    en: {
+      name: "Azure surprise",
+      shortDescription: "Blue chrysanthemums with lilac peony roses.",
+      description:
+        "Bright blue chrysanthemums surrounded by lilac peony spray roses and a cloud of purple statice, in pink wrapping with a satin ribbon.",
+      composition: ["Blue chrysanthemums", "Lilac peony roses", "Purple statice"],
       deliveryEstimate: DELIVERY.en,
     },
   },
@@ -225,7 +206,7 @@ runBouquetImport(
     sourceRoot: SOURCE_ROOT,
     categorySlug: "mixed",
     cloudinaryFolder: "flowers/products/mixed",
-    sortOrderBase: 21_000,
+    sortOrderBase: 22_000,
     bouquets: BOUQUETS,
   },
   { dryRun: DRY_RUN }
