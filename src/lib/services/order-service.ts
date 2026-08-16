@@ -213,7 +213,9 @@ export function serializeOrder(document: OrderRecord): StoredOrder {
     customer: {
       fullName: document.customer.fullName,
       phone: document.customer.phone,
-      address: document.customer.address,
+      ...(document.customer.address === undefined
+        ? {}
+        : { address: document.customer.address }),
       ...(document.customer.location === undefined
         ? {}
         : {
