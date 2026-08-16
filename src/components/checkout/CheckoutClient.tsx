@@ -44,8 +44,12 @@ type CheckoutClientProps = {
 
 type CheckoutForm = Omit<
   CheckoutInput["customer"],
-  "deliveryDate" | "comment" | "location"
+  "address" | "deliveryDate" | "comment" | "location"
 > & {
+  // This form only ever collects a delivery today, so the field the shopper
+  // types into stays a plain required string — CheckoutInput's address is
+  // optional only because a pickup order (added by a later task) omits it.
+  address: string;
   deliveryDate: string;
   comment: string;
   location: GeoPoint | null;
@@ -95,6 +99,9 @@ function toCheckoutPayload(
 ): CheckoutInput {
   return {
     locale,
+    // Placeholder literal: this form only ever builds a delivery order today.
+    // Task 7 replaces this with the value the shopper actually chose.
+    fulfilment: "delivery",
     customer: {
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),

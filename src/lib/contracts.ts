@@ -157,11 +157,13 @@ export type PublicSitemapEntries = {
 
 export type CheckoutInput = {
   locale: Locale;
+  fulfilment: FulfilmentMethod;
   customer: {
     fullName: string;
     phone: string;
-    address: string;
-    /** Optional map pin. The written address stays required — it names the door. */
+    /** Required for delivery, absent for pickup — checkoutSchema enforces which. */
+    address?: string;
+    /** Optional map pin. Delivery only; a pickup order rejects one entirely. */
     location?: GeoPoint;
     deliveryDate?: string;
     comment?: string;

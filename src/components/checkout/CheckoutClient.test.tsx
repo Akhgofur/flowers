@@ -106,6 +106,7 @@ describe("CheckoutClient", () => {
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/orders");
     expect(JSON.parse(String((request as RequestInit).body))).toEqual({
       locale: "uz",
+      fulfilment: "delivery",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",

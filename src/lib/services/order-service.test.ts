@@ -26,6 +26,7 @@ const tulipId = "507f1f77bcf86cd799439012";
 
 const checkoutInput: CheckoutInput = {
   locale: "ru",
+  fulfilment: "delivery",
   customer: {
     fullName: "Ali Valiyev",
     phone: "+998901234567",

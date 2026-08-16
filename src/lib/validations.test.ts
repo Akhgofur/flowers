@@ -61,6 +61,21 @@ const validHomeSectionInput = {
   endsAt: "2026-09-01T00:00:00.000Z",
 } as const;
 
+function checkoutBody(overrides: Record<string, unknown> = {}) {
+  return {
+    locale: "ru",
+    fulfilment: "delivery",
+    customer: {
+      fullName: "Aziza Karimova",
+      phone: "+998901234567",
+      address: "Yunusobod 19, Toshkent",
+    },
+    paymentMethod: "cash_on_delivery",
+    items: [{ productId: "507f1f77bcf86cd799439011", quantity: 1 }],
+    ...overrides,
+  };
+}
+
 describe("commerce validation boundaries", () => {
   it("requires complete Russian, Uzbek and English product content", () => {
     expect(
@@ -82,6 +97,7 @@ describe("commerce validation boundaries", () => {
     expect(() =>
       checkoutSchema.parse({
         locale: "ru",
+        fulfilment: "delivery",
         customer: {
           fullName: "Ali Valiyev",
           phone: "+998901234567",
@@ -117,6 +133,7 @@ describe("commerce validation boundaries", () => {
   it("accepts a valid quantity in the inclusive 1 through 99 range", () => {
     const parsed = checkoutSchema.parse({
       locale: "uz",
+      fulfilment: "delivery",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",
@@ -138,6 +155,7 @@ describe("commerce validation boundaries", () => {
     expect(() =>
       checkoutSchema.parse({
         locale: "ru",
+        fulfilment: "delivery",
         customer: {
           fullName: "Ali Valiyev",
           phone: "+998901234567",
@@ -208,6 +226,7 @@ describe("commerce validation boundaries", () => {
   it("accepts only the three supported checkout locales", () => {
     const input = {
       locale: "ru",
+      fulfilment: "delivery",
       customer: {
         fullName: "Ali Valiyev",
         phone: "+998901234567",
@@ -289,5 +308,65 @@ describe("commerce validation boundaries", () => {
       })
     ).toThrow(/after/i);
     expect(() => homeSectionPatchInputSchema.parse({})).toThrow(/required/i);
+  });
+
+  it("accepts a delivery that carries an address", () => {
+    expect(checkoutSchema.safeParse(checkoutBody()).success).toBe(true);
+  });
+
+  it("refuses a delivery with no address", () => {
+    const result = checkoutSchema.safeParse(
+      checkoutBody({ customer: { fullName: "Aziza Karimova", phone: "+998901234567" } })
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.some((issue) => issue.path.join(".") === "customer.address")).toBe(
+      true
+    );
+  });
+
+  it("accepts a collection with no address", () => {
+    const result = checkoutSchema.safeParse(
+      checkoutBody({
+        fulfilment: "pickup",
+        customer: { fullName: "Aziza Karimova", phone: "+998901234567" },
+      })
+    );
+
+    expect(result.success).toBe(true);
+  });
+
+  it("refuses a collection that smuggles an address", () => {
+    const result = checkoutSchema.safeParse(checkoutBody({ fulfilment: "pickup" }));
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.some((issue) => issue.path.join(".") === "customer.address")).toBe(
+      true
+    );
+  });
+
+  it("refuses a collection that smuggles a map pin", () => {
+    const result = checkoutSchema.safeParse(
+      checkoutBody({
+        fulfilment: "pickup",
+        customer: {
+          fullName: "Aziza Karimova",
+          phone: "+998901234567",
+          location: { latitude: 41.3, longitude: 69.2 },
+        },
+      })
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.some((issue) => issue.path.join(".") === "customer.location")).toBe(
+      true
+    );
+  });
+
+  it("still refuses a body with no fulfilment at all", () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured only to drop it from withoutMethod
+    const { fulfilment: _omitted, ...withoutMethod } = checkoutBody();
+
+    expect(checkoutSchema.safeParse(withoutMethod).success).toBe(false);
   });
 });
