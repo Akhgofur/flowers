@@ -1,5 +1,10 @@
 import mongoose, { type Model, type Types } from "mongoose";
-import type { OrderStatus, PaymentMethod } from "@/lib/contracts";
+import {
+  FULFILMENT_METHODS,
+  type FulfilmentMethod,
+  type OrderStatus,
+  type PaymentMethod,
+} from "@/lib/contracts";
 import { LOCALES, type Locale } from "@/i18n/config";
 import type { GeoPoint } from "@/shared/geo-point";
 
@@ -10,7 +15,8 @@ const { model, models, Schema } = mongoose;
 export type OrderCustomer = {
   fullName: string;
   phone: string;
-  address: string;
+  /** Absent on a collected order; the shopper comes to the shop. */
+  address?: string;
   location?: GeoPoint;
   deliveryDate?: Date;
   comment?: string;
@@ -30,6 +36,7 @@ export type OrderDocument = {
   number: string;
   locale: Locale;
   customer: OrderCustomer;
+  fulfilment: FulfilmentMethod;
   items: OrderItemSnapshot[];
   subtotal: number;
   deliveryFee: number;
@@ -90,7 +97,7 @@ const orderCustomerSchema = new Schema<OrderCustomer>(
   {
     fullName: { type: String, required: true, trim: true, minlength: 3, maxlength: 120 },
     phone: { type: String, required: true, trim: true, maxlength: 32 },
-    address: { type: String, required: true, trim: true, minlength: 8, maxlength: 500 },
+    address: { type: String, trim: true, minlength: 8, maxlength: 500 },
     // Optional: orders placed before the map picker existed have no pin, and a
     // shopper on a desktop browser may still decline to share one.
     location: { type: orderLocationSchema, required: false },
@@ -110,6 +117,12 @@ const orderSchema = new Schema<OrderDocument>(
       default: "ru",
     },
     customer: { type: orderCustomerSchema, required: true },
+    fulfilment: {
+      type: String,
+      required: true,
+      enum: FULFILMENT_METHODS,
+      default: "delivery",
+    },
     items: {
       type: [orderItemSchema],
       required: true,
@@ -143,6 +156,19 @@ const orderSchema = new Schema<OrderDocument>(
   },
   { timestamps: true, versionKey: false }
 );
+
+/**
+ * The rule cannot live on `address` itself. That field belongs to
+ * `orderCustomerSchema`, and inside a subdocument validator `this` is the
+ * subdocument, which cannot see `fulfilment` on the order above it. Raising the
+ * check to the parent also means it holds for any write, not only for writes
+ * that arrived through the checkout route.
+ */
+orderSchema.pre("validate", function () {
+  if (this.fulfilment === "delivery" && !this.customer?.address?.trim()) {
+    this.invalidate("customer.address", "A delivery order needs an address.");
+  }
+});
 
 orderSchema.index({ number: 1 }, { unique: true });
 orderSchema.index({ status: 1, createdAt: -1 });

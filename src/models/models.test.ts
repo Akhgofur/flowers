@@ -288,4 +288,70 @@ describe("Mongoose model invariants", () => {
       (validationError as { errors?: Record<string, unknown> }).errors?.endsAt
     ).toBeDefined();
   });
+
+  function orderDraft(overrides: Record<string, unknown> = {}) {
+    return new OrderModel({
+      number: "FL-260816-0001",
+      locale: "ru",
+      customer: { fullName: "Aziza Karimova", phone: "+998901234567" },
+      items: [
+        {
+          productId: "507f1f77bcf86cd799439011",
+          slug: "azure-surprise",
+          name: "Azure surprise",
+          imageUrl: "https://example.com/a.png",
+          quantity: 1,
+        },
+      ],
+      subtotal: 0,
+      deliveryFee: 0,
+      total: 0,
+      paymentMethod: "cash_on_delivery",
+      ...overrides,
+    });
+  }
+
+  async function validationErrors(overrides: Record<string, unknown> = {}) {
+    try {
+      await orderDraft(overrides).validate();
+      return null;
+    } catch (error) {
+      return error as { errors: Record<string, unknown> };
+    }
+  }
+
+  it("defaults an order to delivery", () => {
+    expect(orderDraft().fulfilment).toBe("delivery");
+  });
+
+  it("refuses a delivery with no address", async () => {
+    const error = await validationErrors({ fulfilment: "delivery" });
+
+    expect(error?.errors["customer.address"]).toBeDefined();
+  });
+
+  it("accepts a collection with no address", async () => {
+    const error = await validationErrors({ fulfilment: "pickup" });
+
+    expect(error?.errors["customer.address"]).toBeUndefined();
+  });
+
+  it("accepts a delivery that carries an address", async () => {
+    const error = await validationErrors({
+      fulfilment: "delivery",
+      customer: {
+        fullName: "Aziza Karimova",
+        phone: "+998901234567",
+        address: "Yunusobod 19, Toshkent",
+      },
+    });
+
+    expect(error?.errors["customer.address"]).toBeUndefined();
+  });
+
+  it("rejects a method outside the two on offer", async () => {
+    const error = await validationErrors({ fulfilment: "drone" });
+
+    expect(error?.errors.fulfilment).toBeDefined();
+  });
 });
