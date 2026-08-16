@@ -22,6 +22,7 @@ export const PAYMENT_METHODS = [
   "cash_on_delivery",
   "card_on_delivery",
 ] as const;
+export const FULFILMENT_METHODS = ["delivery", "pickup"] as const;
 export const SEASONS = [
   "spring",
   "summer",
@@ -36,6 +37,7 @@ export type HomeSectionStatus = (typeof HOME_SECTION_STATUSES)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type OrderNotificationStatus = (typeof ORDER_NOTIFICATION_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+export type FulfilmentMethod = (typeof FULFILMENT_METHODS)[number];
 export type Season = (typeof SEASONS)[number];
 export type CurrentSeason = Exclude<Season, "all_year">;
 export type ProductAvailabilityReason =
