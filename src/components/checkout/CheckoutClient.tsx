@@ -204,12 +204,15 @@ export function CheckoutClient({
     setForm((current) => ({ ...current, [key]: value }));
   };
 
-  // Clears both the typed address and the chosen pin on every switch, so
-  // switching back to delivery cannot resurrect a pin the shopper believes
+  // Clears the typed address, the chosen pin, the pasted map link text and any
+  // stale location status on every switch, so switching back to delivery cannot
+  // resurrect a pin — or a "could not parse" message — the shopper believes
   // they removed.
   const selectFulfilment = (fulfilment: CheckoutInput["fulfilment"]) => {
     setForm((current) => ({ ...current, fulfilment, address: "", location: null }));
     setIsMapOpen(false);
+    setPastedLocation("");
+    setLocationStatus({ kind: "idle" });
   };
 
   const setLocation = (location: GeoPoint | null) => {
@@ -614,7 +617,7 @@ export function CheckoutClient({
                 <span>02</span>
                 <div>
                   <h2 id="payment-title">{t("payment")}</h2>
-                  <p>{t("paymentHelp")}</p>
+                  <p>{t(form.fulfilment === "pickup" ? "paymentHelpPickup" : "paymentHelp")}</p>
                 </div>
               </div>
               <div className="checkout-payment-options" role="radiogroup" aria-label={t("paymentLabel")}>

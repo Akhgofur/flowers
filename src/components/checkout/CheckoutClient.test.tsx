@@ -608,6 +608,22 @@ describe("CheckoutClient", () => {
 
     expect(screen.getByLabelText(/yetkazib berish manzili/i)).toHaveValue("");
     expect(screen.queryByText(/41.311081, 69.240562/)).not.toBeInTheDocument();
+
+    // The paste box and any parse error are separate state from the pin itself —
+    // confirm they do not survive a switch either, so re-switching back cannot
+    // resurrect stale link text or a "could not parse" message the shopper
+    // believes they cleared.
+    await user.type(screen.getByLabelText(/xarita havolasini/i), "not a map link");
+    await user.click(screen.getByRole("button", { name: /qo‘shish/i }));
+    expect(
+      await screen.findByText(/havoladan koordinata topilmadi/i)
+    ).toBeVisible();
+
+    await user.click(screen.getByRole("radio", { name: /Do‘kondan olib ketaman/i }));
+    await user.click(screen.getByRole("radio", { name: /Yandex yetkazib berish/i }));
+
+    expect(screen.getByLabelText(/xarita havolasini/i)).toHaveValue("");
+    expect(screen.queryByText(/havoladan koordinata topilmadi/i)).not.toBeInTheDocument();
   });
 
   it("shows where and when to collect", async () => {
